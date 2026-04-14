@@ -2,6 +2,25 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.6.1] - 2026-04-14
+
+### Added
+
+#### Test Coverage Round 2 (69.74% → 90.8%)
+
+**New Test Files (19 tests)**
+- `audit.interceptor.spec.ts`: 7 tests — intercept with/without user, resource extraction, UUID extraction, unknown resource, save error swallowed
+- `data-retention.service.spec.ts`: 6 tests — no expired students, PII hashing, null fields, mixed null/non-null, default retention days, cutoff date
+- `plugin.controller.spec.ts`: 3 tests — findAll, enable, disable endpoint delegation
+
+**Extended Test Files (8 tests)**
+- `scale.service.spec.ts`: +8 tests — cloneFromLibrary (found/not found/no rules), update (name only, not found, full update, cache failure, no options)
+
+### Changed
+
+- Updated `collectCoverageFrom` in jest config to exclude seed, migrations, module files, main.ts, index.ts, and plugins
+- Coverage: 347 tests passing, overall 90.8% statements, all modules ≥70%
+
 ## [0.6.0] - 2026-04-14
 
 ### Added
