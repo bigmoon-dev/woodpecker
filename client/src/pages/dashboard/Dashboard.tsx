@@ -209,7 +209,6 @@ export default function Dashboard() {
               colorField="type"
               stack
               height={300}
-              color={['#52c41a', '#faad14', '#cf1322']}
               legend={{ position: 'top-right' as const }}
             />
           </Card>
@@ -221,7 +220,6 @@ export default function Dashboard() {
               xField="name"
               yField="value"
               height={300}
-              color="#1890ff"
               label={{
                 text: (d: any) => d.value,
                 position: 'outside' as const,
