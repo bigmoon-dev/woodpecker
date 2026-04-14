@@ -12,21 +12,22 @@ const LIBRARY_SCALES = [
   { file: 'SCL-90.xlsx', name: '症状自评量表 (SCL-90)' },
   { file: 'SDS.xlsx', name: '抑郁自评量表 (SDS)' },
   { file: 'SAS.xlsx', name: '焦虑自评量表 (SAS)' },
+  { file: 'MHT.xlsx', name: '心理健康测试 (MHT)' },
 ];
 
 export async function seedScaleLibrary(dataSource: DataSource): Promise<void> {
   const scaleRepo = dataSource.getRepository(Scale);
-  const existing = await scaleRepo.find({ where: { isLibrary: true } });
-  if (existing.length > 0) {
-    console.log(
-      `Scale library already seeded (${existing.length} scales), skipping.`,
-    );
-    return;
-  }
-
   const importService = new ExcelImportService();
 
   for (const entry of LIBRARY_SCALES) {
+    const existing = await scaleRepo.findOne({
+      where: { isLibrary: true, source: `library:${entry.file}` },
+    });
+    if (existing) {
+      console.log(`Library scale already exists: ${entry.name}, skipping.`);
+      continue;
+    }
+
     const filepath = path.join(TEMPLATES_DIR, entry.file);
     if (!fs.existsSync(filepath)) {
       console.warn(`Template not found: ${filepath}, skipping.`);
