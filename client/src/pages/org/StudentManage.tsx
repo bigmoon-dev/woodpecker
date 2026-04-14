@@ -73,7 +73,7 @@ export default function StudentManage() {
   const handleImport = async () => {
     if (!fileList.length) return message.warning('请选择文件');
     const formData = new FormData();
-    const file = fileList[0].originFileObj || fileList[0];
+    const file = (fileList[0] as { originFileObj?: Blob }).originFileObj ?? (fileList[0] as unknown as Blob);
     formData.append('file', file);
     setImporting(true);
     try {

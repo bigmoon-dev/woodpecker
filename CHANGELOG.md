@@ -2,6 +2,22 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.5.1] - 2026-04-14
+
+### Fixed
+
+- **BUG-1 (HIGH)**: Font file not found in production — added `"assets": ["assets"]` to `nest-cli.json` so NotoSansSC font is copied to `dist/` on build
+- **BUG-2 (MEDIUM)**: `ReportExportController` now returns PDF via `ExportService.generatePdf()` instead of plain-text JSON
+- **BUG-3 (LOW)**: PDF report now includes gradeName and className by querying Student→Class→Grade relations
+- Dashboard.tsx: removed unsupported `color` prop from `Area` and `Column` chart components (fixes tsc error)
+- StudentManage.tsx: fixed `UploadFile` type cast for FormData.append (fixes tsc error)
+
+### Changed
+
+- `ExportModule` now imports and exports `ExportService` (consumable by other modules)
+- `ExportModule` registers Student, Class, Grade repositories for PDF grade/class lookup
+- `ResultModule` imports `ExportModule` for `ReportExportController` PDF generation
+
 ## [0.5.0] - 2026-04-14
 
 ### Added

@@ -6,6 +6,9 @@ import { ResultWithContext } from '../result/result.service';
 import { AlertRecord } from '../../entities/audit/alert-record.entity';
 import { TaskResult } from '../../entities/task/task-result.entity';
 import { TaskAnswer } from '../../entities/task/task-answer.entity';
+import { Student } from '../../entities/org/student.entity';
+import { Class } from '../../entities/org/class.entity';
+import { Grade } from '../../entities/org/grade.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EncryptionService } from '../core/encryption.service';
@@ -45,6 +48,12 @@ export class ExportService {
     private resultRepo: Repository<TaskResult>,
     @InjectRepository(TaskAnswer)
     private answerRepo: Repository<TaskAnswer>,
+    @InjectRepository(Student)
+    private studentRepo: Repository<Student>,
+    @InjectRepository(Class)
+    private classRepo: Repository<Class>,
+    @InjectRepository(Grade)
+    private gradeRepo: Repository<Grade>,
     private encryptionService: EncryptionService,
   ) {}
 
@@ -163,6 +172,17 @@ export class ExportService {
       taskTitle: taskEntity?.title ?? '',
     };
 
+    if (studentId) {
+      const student = await this.studentRepo.findOne({
+        where: { id: studentId },
+        relations: ['class', 'class.grade'],
+      });
+      if (student?.class) {
+        data.className = student.class.name;
+        data.gradeName = student.class.grade?.name ?? '';
+      }
+    }
+
     return new Promise<Buffer>((resolve, reject) => {
       const chunks: Buffer[] = [];
       const PDFDocumentCtor = PDFDocument as unknown as new (
@@ -193,6 +213,8 @@ export class ExportService {
       doc.text(`任务名称：${data.taskTitle}`);
       doc.text(`学生姓名：${data.studentName}`);
       doc.text(`学号：${data.studentNumber}`);
+      if (data.gradeName) doc.text(`年级：${data.gradeName}`);
+      if (data.className) doc.text(`班级：${data.className}`);
       doc.text(
         `测评时间：${data.result.createdAt?.toISOString().slice(0, 19).replace('T', ' ') ?? ''}`,
       );

@@ -10,6 +10,7 @@ import { ResultController } from './result.controller';
 import { ReportExportController } from './report-export.controller';
 import { ConsentModule } from '../consent/consent.module';
 import { CoreModule } from '../core/core.module';
+import { ExportModule } from '../export/export.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { CoreModule } from '../core/core.module';
     ]),
     ConsentModule,
     CoreModule,
+    ExportModule,
   ],
   controllers: [ResultController, ReportExportController],
   providers: [ResultService],
