@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { ProTable, type ActionType } from '@ant-design/pro-components';
 import { Button, Modal, Form, Input, message } from 'antd';
+import { DownloadOutlined } from '@ant-design/icons';
 import request from '../../utils/request';
 
 export default function GradeManage() {
@@ -30,6 +31,10 @@ export default function GradeManage() {
     }
   };
 
+  const handleDownloadTemplate = () => {
+    window.open('/api/admin/students/import/template', '_blank');
+  };
+
   const columns = [
     { title: '名称', dataIndex: 'name', key: 'name' },
     { title: '年份', dataIndex: 'year', key: 'year' },
@@ -37,7 +42,9 @@ export default function GradeManage() {
       title: '操作',
       key: 'action',
       render: (_: any, record: any) => (
-        <Button type="link" danger onClick={() => handleDelete(record.id)}>删除</Button>
+        <Button type="link" danger onClick={() => handleDelete(record.id)}>
+          删除
+        </Button>
       ),
     },
   ];
@@ -49,15 +56,31 @@ export default function GradeManage() {
         actionRef={actionRef}
         columns={columns}
         request={async (params) => {
-          const res: any = await request.get('/admin/grades', { params: { page: params.current, pageSize: params.pageSize } });
+          const res: any = await request.get('/admin/grades', {
+            params: { page: params.current, pageSize: params.pageSize },
+          });
           return { data: res.data || res, total: res.total, success: true };
         }}
         toolBarRender={() => [
-          <Button key="create" type="primary" onClick={() => setOpen(true)}>新建年级</Button>,
+          <Button
+            key="template"
+            icon={<DownloadOutlined />}
+            onClick={handleDownloadTemplate}
+          >
+            下载导入模板
+          </Button>,
+          <Button key="create" type="primary" onClick={() => setOpen(true)}>
+            新建年级
+          </Button>,
         ]}
         search={false}
       />
-      <Modal title="新建年级" open={open} onCancel={() => setOpen(false)} onOk={() => form.submit()}>
+      <Modal
+        title="新建年级"
+        open={open}
+        onCancel={() => setOpen(false)}
+        onOk={() => form.submit()}
+      >
         <Form form={form} layout="vertical" onFinish={handleCreate}>
           <Form.Item name="name" label="名称" rules={[{ required: true }]}>
             <Input />
