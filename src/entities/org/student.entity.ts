@@ -5,10 +5,12 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
+  Index,
 } from 'typeorm';
 import { Class } from './class.entity';
 
 @Entity('students')
+@Index(['studentNumberHash'], { unique: true })
 export class Student {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -17,16 +19,19 @@ export class Student {
   classId: string;
 
   @Column({ type: 'bytea', nullable: true })
-  encryptedName: Buffer;
+  encryptedName: Buffer | null;
 
   @Column({ type: 'bytea', nullable: true })
-  encryptedStudentNumber: Buffer;
+  encryptedStudentNumber: Buffer | null;
 
   @Column({ type: 'bytea', nullable: true })
-  encryptedContact: Buffer;
+  encryptedContact: Buffer | null;
+
+  @Column({ length: 64, nullable: true })
+  studentNumberHash: string | null;
 
   @Column({ length: 10, nullable: true })
-  gender: string;
+  gender: string | null;
 
   @CreateDateColumn()
   createdAt: Date;

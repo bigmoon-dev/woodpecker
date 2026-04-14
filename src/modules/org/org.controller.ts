@@ -8,9 +8,16 @@ import {
   Body,
   Query,
   Req,
+  Res,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import * as express from 'express';
 import { OrgService } from './org.service';
+import { OrgImportService } from './org-import.service';
 import { Grade } from '../../entities/org/grade.entity';
 import { Class } from '../../entities/org/class.entity';
 import { Student } from '../../entities/org/student.entity';
@@ -19,9 +26,8 @@ import { RbacGuard, REQUIRE_PERMISSION } from '../auth/rbac.guard';
 import { CreateGradeDto, CreateClassDto, CreateStudentDto } from './org.dto';
 import { PaginationQueryDto } from '../../common/pagination.dto';
 import { SetMetadata } from '@nestjs/common';
-import { Request } from 'express';
 
-interface AuthenticatedRequest extends Request {
+interface AuthenticatedRequest extends express.Request {
   user: { id: string };
   dataScope: {
     scope: 'own' | 'class' | 'grade' | 'all';
@@ -35,7 +41,10 @@ interface AuthenticatedRequest extends Request {
 @UseGuards(JwtAuthGuard, RbacGuard)
 @SetMetadata(REQUIRE_PERMISSION, ['org:read'])
 export class OrgController {
-  constructor(private orgService: OrgService) {}
+  constructor(
+    private orgService: OrgService,
+    private orgImportService: OrgImportService,
+  ) {}
 
   @Post('grades')
   @SetMetadata(REQUIRE_PERMISSION, ['org:write'])
@@ -153,5 +162,41 @@ export class OrgController {
   @SetMetadata(REQUIRE_PERMISSION, ['org:write'])
   async removeStudent(@Param('id') id: string): Promise<void> {
     return this.orgService.removeStudent(id);
+  }
+
+  @Post('students/import')
+  @SetMetadata(REQUIRE_PERMISSION, ['org:write'])
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }),
+  )
+  async importStudents(@UploadedFile() file: Express.Multer.File | undefined) {
+    if (!file) {
+      throw new BadRequestException('未上传文件');
+    }
+    const { validRows, errors: parseErrors } =
+      await this.orgImportService.parseExcel(file.buffer);
+    const result = await this.orgImportService.importStudents(validRows);
+    const parseErrorCount = parseErrors.filter((e) => e.field !== '_').length;
+    return {
+      total: result.total + parseErrorCount,
+      created: result.created,
+      skipped: result.skipped + parseErrorCount,
+      errors: [...parseErrors, ...result.errors],
+    };
+  }
+
+  @Get('students/import/template')
+  @SetMetadata(REQUIRE_PERMISSION, ['org:read'])
+  async downloadTemplate(@Res() res: express.Response) {
+    const buffer = await this.orgImportService.generateTemplate();
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=student-import-template.xlsx',
+    );
+    res.send(buffer);
   }
 }

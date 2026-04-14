@@ -38,3 +38,10 @@ export class CreateStudentDto {
   @IsString()
   gender?: string;
 }
+
+export class ImportResultDto {
+  total: number;
+  created: number;
+  skipped: number;
+  errors: { row: number; field: string; message: string }[];
+}
