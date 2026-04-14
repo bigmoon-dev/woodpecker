@@ -267,6 +267,10 @@ psych-scale-server/
 - **未成年人保护法** — 知情同意机制，学生答题前必须签署同意书
 - **审计追溯** — 全局操作审计日志，可追溯关键操作
 
+## 功能路线图
+
+详见 [ROADMAP.md](./docs/ROADMAP.md)，包含已实现功能清单和规划中的功能。
+
 ## License
 
 [Apache-2.0](./LICENSE)

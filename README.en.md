@@ -267,6 +267,10 @@ psych-scale-server/
 - **Minors Protection Law** — Informed consent mechanism requires student sign-off before assessment
 - **Audit Trail** — Global operation audit logging for traceability of critical actions
 
+## Roadmap
+
+See [ROADMAP.md](./docs/ROADMAP.md) for implemented features and planned work.
+
 ## License
 
 [Apache-2.0](./LICENSE)
