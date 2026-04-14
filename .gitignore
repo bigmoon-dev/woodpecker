@@ -1,0 +1,8 @@
+node_modules/
+dist/
+coverage/
+public/assets/
+*.js.map
+.env
+.env.*
+!.env.example
