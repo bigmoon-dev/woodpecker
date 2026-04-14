@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Scale } from '../../entities/scale/scale.entity';
+import { ScaleItem } from '../../entities/scale/scale-item.entity';
+import { ScaleOption } from '../../entities/scale/scale-option.entity';
 import { ScoringRule } from '../../entities/scale/scoring-rule.entity';
 import { ScoreRange } from '../../entities/scale/score-range.entity';
 import { CreateScaleDto } from './scale.dto';
@@ -115,45 +117,49 @@ export class ScaleService {
       scale.validationInfo = dto.validationInfo ?? scale.validationInfo;
 
       if (dto.items) {
-        scale.items = dto.items.map((item, idx) => ({
-          id: undefined,
-          scaleId: scale.id,
-          itemText: item.itemText,
-          itemType: item.itemType || 'single_choice',
-          sortOrder: item.sortOrder ?? idx,
-          dimension: item.dimension,
-          reverseScore: item.reverseScore || false,
-          options: (item.options || []).map((opt, oi) => ({
-            id: undefined,
-            optionText: opt.optionText,
-            scoreValue: opt.scoreValue,
-            sortOrder: opt.sortOrder ?? oi,
-          })),
-        })) as any;
+        scale.items = dto.items.map((item, idx) => {
+          const si = new ScaleItem();
+          si.scaleId = scale.id;
+          si.itemText = item.itemText;
+          si.itemType = item.itemType || 'single_choice';
+          si.sortOrder = item.sortOrder ?? idx;
+          si.dimension = item.dimension ?? '';
+          si.reverseScore = item.reverseScore || false;
+          si.options = (item.options || []).map((opt, oi) => {
+            const so = new ScaleOption();
+            so.optionText = opt.optionText;
+            so.scoreValue = opt.scoreValue;
+            so.sortOrder = opt.sortOrder ?? oi;
+            return so;
+          });
+          return si;
+        });
       }
 
       if (dto.scoringRules) {
-        scale.scoringRules = dto.scoringRules.map((r) => ({
-          id: undefined,
-          scaleId: scale.id,
-          dimension: r.dimension,
-          formulaType: r.formulaType,
-          weight: r.weight,
-          config: r.config,
-        })) as any;
+        scale.scoringRules = dto.scoringRules.map((r) => {
+          const rule = new ScoringRule();
+          rule.scaleId = scale.id;
+          rule.dimension = r.dimension ?? '';
+          rule.formulaType = r.formulaType ?? 'sum';
+          rule.weight = r.weight ?? 1;
+          rule.config = r.config ?? {};
+          return rule;
+        });
       }
 
       if (dto.scoreRanges) {
-        scale.scoreRanges = dto.scoreRanges.map((r) => ({
-          id: undefined,
-          scaleId: scale.id,
-          dimension: r.dimension,
-          minScore: r.minScore,
-          maxScore: r.maxScore,
-          level: r.level,
-          color: r.color,
-          suggestion: r.suggestion,
-        })) as any;
+        scale.scoreRanges = dto.scoreRanges.map((r) => {
+          const range = new ScoreRange();
+          range.scaleId = scale.id;
+          range.dimension = r.dimension ?? '';
+          range.minScore = r.minScore;
+          range.maxScore = r.maxScore;
+          range.level = r.level;
+          range.color = r.color;
+          range.suggestion = r.suggestion;
+          return range;
+        });
       }
 
       const saved = await manager.save(Scale, scale);
