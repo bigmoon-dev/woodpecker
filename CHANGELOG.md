@@ -2,6 +2,60 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.3.0] - 2026-04-14
+
+### Added
+
+#### Student Batch Import (P0)
+- `OrgImportService` with `parseExcel()`, `importStudents()`, `generateTemplate()`
+- `POST /api/admin/students/import` — upload `.xlsx` file for batch student creation
+- `GET /api/admin/students/import/template` — download Excel import template
+- Excel parsing via exceljs: validates grade/class/student columns, auto-creates grades & classes
+- Duplicate detection: intra-file duplicate student numbers reported as errors
+- SERIALIZABLE transaction isolation for concurrent import safety
+- 5MB file size limit via Multer `FileInterceptor`
+- 14 unit tests covering all import scenarios
+
+#### Frontend Import UI (DIR-3)
+- StudentManage: "导入学生" button with upload Modal (`.xlsx/.xls`, maxCount=1)
+- StudentManage: import result Modal showing total/created/skipped stats + error detail table
+- StudentManage: "下载模板" button for template download
+- GradeManage: "下载模板" button for student import template download
+
+#### Cross-Phase Audit Fixes
+- Transaction isolation upgraded to `SERIALIZABLE` to prevent UNIQUE constraint violations under concurrency
+- `FileInterceptor` now enforces 5MB `fileSize` limit (previously unbounded)
+- `studentNumberHash` column: removed duplicate `unique: true` from `@Column`, keeping only `@Index` partial unique
+- Error responses changed from `new Error` (500) to `BadRequestException` (400)
+- Intra-file duplicate student numbers now recorded in errors instead of silently discarded
+- Variable shadowing fix: `gradeEntity`/`classEntity` rename to avoid outer scope collision
+
+### Migration
+
+- `AddStudentNumberHashAndUniqueConstraints` — adds `student_number_hash` column with partial unique index
+
+### Test Results
+
+- 21 test suites, 134 test cases, all passing
+- TypeScript 0 errors
+- ESLint 0 errors
+- Frontend Vite build successful
+
+## [0.2.0] - 2026-04-14
+
+### Added
+
+- Scale edit/delete UI in admin panel
+- Admin route enhancement with sidebar menu
+- Dev auto-login for local development
+- Docker deployment support (Dockerfile + docker-compose)
+- SCL-90 scale template (Excel)
+
+### Changed
+
+- ConsentRecord registered in TaskModule/ResultModule for DI resolution
+- ESLint `no-unsafe-assignment` resolved in `scale.service` update
+
 ## [0.1.0] - 2026-04-14
 
 ### Added
