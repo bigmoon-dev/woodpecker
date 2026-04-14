@@ -19,6 +19,7 @@ import { CoreModule } from './modules/core/core.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { ExportModule } from './modules/export/export.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { HealthModule } from './modules/health/health.module';
 import {
   Scale,
   ScaleItem,
@@ -105,6 +106,7 @@ import {
     AdminModule,
     ExportModule,
     DashboardModule,
+    HealthModule,
   ],
 })
 export class AppModule {}
