@@ -31,4 +31,27 @@ export class EncryptionService {
     );
     return result[0].decrypted;
   }
+
+  async batchDecrypt(
+    studentIds: string[],
+  ): Promise<Map<string, { name: string; studentNumber: string }>> {
+    if (studentIds.length === 0) return new Map();
+    const rows: {
+      id: string;
+      name: string;
+      student_number: string;
+    }[] = await this.dataSource.query(
+      `SELECT s.id,
+              convert_from(pgp_sym_decrypt(s.encrypted_name, $1), 'UTF8') AS name,
+              convert_from(pgp_sym_decrypt(s.encrypted_student_number, $1), 'UTF8') AS student_number
+       FROM students s
+       WHERE s.id = ANY($2::uuid[])`,
+      [this.key, studentIds],
+    );
+    const map = new Map<string, { name: string; studentNumber: string }>();
+    for (const row of rows) {
+      map.set(row.id, { name: row.name, studentNumber: row.student_number });
+    }
+    return map;
+  }
 }

@@ -1,9 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { TaskResult } from '../../entities/task/task-result.entity';
 import { TaskAnswer } from '../../entities/task/task-answer.entity';
+import { Student } from '../../entities/org/student.entity';
+import { Class } from '../../entities/org/class.entity';
 import { DataScopeFilter, DataScope } from '../auth/data-scope-filter';
+import { EncryptionService } from '../core/encryption.service';
+
+export interface ResultWithContext {
+  result: TaskResult;
+  studentId: string;
+  studentName: string;
+  studentNumber: string;
+  className: string;
+  gradeName: string;
+  taskTitle: string;
+  scaleName: string;
+}
 
 @Injectable()
 export class ResultService {
@@ -12,7 +26,12 @@ export class ResultService {
     private resultRepo: Repository<TaskResult>,
     @InjectRepository(TaskAnswer)
     private answerRepo: Repository<TaskAnswer>,
+    @InjectRepository(Student)
+    private studentRepo: Repository<Student>,
+    @InjectRepository(Class)
+    private classRepo: Repository<Class>,
     private dataScopeFilter: DataScopeFilter,
+    private encryptionService: EncryptionService,
   ) {}
 
   async findByStudent(studentId: string): Promise<TaskResult[]> {
@@ -38,5 +57,162 @@ export class ResultService {
     return this.resultRepo.find({
       where: answerIds.map((id) => ({ answerId: id })),
     });
+  }
+
+  async findByClass(
+    classId: string,
+    page = 1,
+    pageSize = 20,
+  ): Promise<{ data: ResultWithContext[]; total: number }> {
+    const students = await this.studentRepo.find({
+      where: { classId },
+    });
+    return this.buildResultsWithContext(
+      students.map((s) => s.id),
+      classId,
+      page,
+      pageSize,
+    );
+  }
+
+  async findByGrade(
+    gradeId: string,
+    page = 1,
+    pageSize = 20,
+  ): Promise<{ data: ResultWithContext[]; total: number }> {
+    const classes = await this.classRepo.find({ where: { gradeId } });
+    const classIds = classes.map((c) => c.id);
+    if (classIds.length === 0) return { data: [], total: 0 };
+    const students = await this.studentRepo.find({
+      where: { classId: In(classIds) },
+    });
+    return this.buildResultsWithContext(
+      students.map((s) => s.id),
+      gradeId,
+      page,
+      pageSize,
+    );
+  }
+
+  async findByFilter(filter: {
+    taskId?: string;
+    classId?: string;
+    gradeId?: string;
+    dataScope: DataScope;
+  }): Promise<ResultWithContext[]> {
+    let studentIds: string[] = [];
+
+    if (filter.classId) {
+      const students = await this.studentRepo.find({
+        where: { classId: filter.classId },
+      });
+      studentIds = students.map((s) => s.id);
+    } else if (filter.gradeId) {
+      const classes = await this.classRepo.find({
+        where: { gradeId: filter.gradeId },
+      });
+      const classIds = classes.map((c) => c.id);
+      if (classIds.length > 0) {
+        const students = await this.studentRepo.find({
+          where: { classId: In(classIds) },
+        });
+        studentIds = students.map((s) => s.id);
+      }
+    } else if (filter.dataScope.scope !== 'all') {
+      studentIds = await this.dataScopeFilter.getStudentIds(filter.dataScope);
+    }
+
+    let answerQuery = this.answerRepo
+      .createQueryBuilder('ta')
+      .leftJoinAndSelect('ta.task', 'task')
+      .leftJoinAndSelect('task.scale', 'scale');
+
+    if (filter.taskId) {
+      answerQuery = answerQuery.andWhere('ta.task_id = :taskId', {
+        taskId: filter.taskId,
+      });
+    }
+    if (studentIds.length > 0) {
+      answerQuery = answerQuery.andWhere('ta.student_id IN (:...studentIds)', {
+        studentIds,
+      });
+    }
+
+    const answers = await answerQuery
+      .andWhere('ta.status = :status', { status: 'submitted' })
+      .getMany();
+
+    if (answers.length === 0) return [];
+
+    const answerIds = answers.map((a) => a.id);
+    const results = await this.resultRepo.find({
+      where: answerIds.map((id) => ({ answerId: id })),
+    });
+
+    const uniqueStudentIds = [...new Set(answers.map((a) => a.studentId))];
+    const piiMap = await this.encryptionService.batchDecrypt(uniqueStudentIds);
+
+    const answerMap = new Map(answers.map((a) => [a.id, a]));
+
+    return results.map((r) => {
+      const answer = answerMap.get(r.answerId);
+      const pii = answer ? piiMap.get(answer.studentId) : undefined;
+      const taskEntity = answer?.task;
+      return {
+        result: r,
+        studentId: answer?.studentId ?? '',
+        studentName: pii?.name ?? '',
+        studentNumber: pii?.studentNumber ?? '',
+        className: '',
+        gradeName: '',
+        taskTitle: taskEntity?.title ?? '',
+        scaleName: '',
+      };
+    });
+  }
+
+  private async buildResultsWithContext(
+    studentIds: string[],
+    scopeId: string,
+    page: number,
+    pageSize: number,
+  ): Promise<{ data: ResultWithContext[]; total: number }> {
+    if (studentIds.length === 0) return { data: [], total: 0 };
+
+    const answers = await this.answerRepo.find({
+      where: studentIds.map((id) => ({ studentId: id })),
+      relations: ['task', 'task.scale'],
+    });
+    const answerIds = answers.map((a) => a.id);
+    if (answerIds.length === 0) return { data: [], total: 0 };
+
+    const results = await this.resultRepo.find({
+      where: answerIds.map((id) => ({ answerId: id })),
+      order: { createdAt: 'DESC' },
+    });
+
+    const piiMap = await this.encryptionService.batchDecrypt(studentIds);
+    const answerMap = new Map(answers.map((a) => [a.id, a]));
+
+    const all: ResultWithContext[] = results.map((r) => {
+      const answer = answerMap.get(r.answerId);
+      const pii = answer ? piiMap.get(answer.studentId) : undefined;
+      const taskEntity = answer?.task;
+      return {
+        result: r,
+        studentId: answer?.studentId ?? '',
+        studentName: pii?.name ?? '',
+        studentNumber: pii?.studentNumber ?? '',
+        className: '',
+        gradeName: '',
+        taskTitle: taskEntity?.title ?? '',
+        scaleName: '',
+      };
+    });
+
+    const total = all.length;
+    const start = (page - 1) * pageSize;
+    const data = all.slice(start, start + pageSize);
+    return { data, total };
   }
 }

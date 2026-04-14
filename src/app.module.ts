@@ -17,6 +17,7 @@ import { AlertModule } from './modules/alert/alert.module';
 import { ConsentModule } from './modules/consent/consent.module';
 import { CoreModule } from './modules/core/core.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { ExportModule } from './modules/export/export.module';
 import {
   Scale,
   ScaleItem,
@@ -101,6 +102,7 @@ import {
     AlertModule,
     PluginModule,
     AdminModule,
+    ExportModule,
   ],
 })
 export class AppModule {}
