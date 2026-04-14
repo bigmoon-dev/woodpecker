@@ -4,6 +4,7 @@ import { Task } from '../../entities/task/task.entity';
 import { TaskAnswer } from '../../entities/task/task-answer.entity';
 import { TaskAnswerItem } from '../../entities/task/task-answer-item.entity';
 import { TaskResult } from '../../entities/task/task-result.entity';
+import { ConsentRecord } from '../../entities/consent/consent-record.entity';
 import { TaskService } from './task.service';
 import { TaskController } from './task.controller';
 import { ScoringModule } from '../scoring/scoring.module';
@@ -15,7 +16,13 @@ import { AlertService } from '../alert/alert.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Task, TaskAnswer, TaskAnswerItem, TaskResult]),
+    TypeOrmModule.forFeature([
+      Task,
+      TaskAnswer,
+      TaskAnswerItem,
+      TaskResult,
+      ConsentRecord,
+    ]),
     ScoringModule,
     ScaleModule,
     PluginModule,

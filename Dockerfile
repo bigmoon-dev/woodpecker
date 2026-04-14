@@ -1,0 +1,27 @@
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY client/package.json client/package-lock.json ./client/
+RUN cd client && npm ci
+
+COPY . .
+RUN cd client && npm run build
+RUN npm run build
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/public ./public
+
+EXPOSE 3000
+
+CMD ["node", "dist/main.js"]
