@@ -2,6 +2,53 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.4.0] - 2026-04-14
+
+### Added
+
+#### Scale Library (DIR-3)
+- `Scale.isLibrary` boolean field with migration + index
+- `GET /api/scales/library` — list library scales
+- `POST /api/scales/library/:id/clone` — clone library scale to instance
+- Seed data: SCL-90, SDS, SAS templates (migration-based)
+- `ScaleCacheService` excludes library scales from scoring cache
+- Frontend: `ScaleLibrary.tsx` with ProTable + clone button + route
+
+#### Result Export (DIR-2)
+- `GET /api/results/class/:classId` — class results with pagination (fixes missing endpoint)
+- `GET /api/results/grade/:gradeId` — grade results with pagination (fixes missing endpoint)
+- `EncryptionService.batchDecrypt()` — single SQL query for bulk PII decryption
+- `ExportModule`: Excel generation via ExcelJS with results + alert detail sheets
+- `GET /api/export/excel/task/:taskId` — export by task with DataScope filtering
+- `POST /api/export/excel` — export by filter with 10000 row limit
+- `Cache-Control: no-store` on all export responses
+
+#### Dashboard (DIR-1)
+- `DashboardService`: 5 parameterized SQL aggregation methods
+  - `getOverview()` — total tasks, completion rate, alert counts
+  - `getCompletion()` — completion rate by grade/class
+  - `getAlertDistribution()` — red/yellow alert distribution
+  - `getTrend()` — daily result trend with color breakdown
+  - `getScaleUsage()` — scale usage statistics
+- `DashboardController`: `GET /api/dashboard/*` (5 endpoints)
+- DataScope-aware SQL filtering via parameterized subqueries
+- Frontend: `Dashboard.tsx` with Statistic cards, completion table, alert/trend/scale tables
+- Routes: `/dashboard` in teacher and admin layouts
+
+### Changed
+- `ScaleService.findAll()` now filters `isLibrary: false` (user scales only)
+- `ResultService` expanded with `findByClass()`, `findByGrade()`, `findByFilter()`
+- `ResultModule` imports `CoreModule` for `EncryptionService` access
+
+### Migration
+- `AddScaleLibraryField1700000000004` — `is_library` column + index + seed data
+
+### Test Results
+- 21 test suites, 134 test cases, all passing
+- TypeScript 0 errors
+- ESLint 0 errors
+- Frontend Vite build successful
+
 ## [0.3.0] - 2026-04-14
 
 ### Added
