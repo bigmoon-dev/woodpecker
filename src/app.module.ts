@@ -18,6 +18,7 @@ import { ConsentModule } from './modules/consent/consent.module';
 import { CoreModule } from './modules/core/core.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { ExportModule } from './modules/export/export.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import {
   Scale,
   ScaleItem,
@@ -103,6 +104,7 @@ import {
     PluginModule,
     AdminModule,
     ExportModule,
+    DashboardModule,
   ],
 })
 export class AppModule {}

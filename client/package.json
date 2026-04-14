@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ant-design/charts": "^2.6.7",
     "@ant-design/pro-components": "^2.8.10",
     "antd": "^5.29.3",
     "axios": "^1.15.0",
