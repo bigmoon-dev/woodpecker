@@ -1,0 +1,214 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { of } from 'rxjs';
+import { AuditLog } from '../../entities/audit/audit-log.entity';
+import { AuditInterceptor } from './audit.interceptor';
+
+describe('AuditInterceptor', () => {
+  let interceptor: AuditInterceptor;
+  let auditRepo: any;
+
+  const mockAuditRepo = {
+    create: jest.fn((data: Record<string, unknown>) => data),
+    save: jest.fn(),
+  };
+
+  const mockExecutionContext = (req: Record<string, unknown>) => ({
+    switchToHttp: () => ({ getRequest: () => req }),
+  });
+
+  const mockCallHandler = {
+    handle: jest.fn(() => of(undefined)),
+  };
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        AuditInterceptor,
+        { provide: getRepositoryToken(AuditLog), useValue: mockAuditRepo },
+      ],
+    }).compile();
+
+    interceptor = module.get<AuditInterceptor>(AuditInterceptor);
+    auditRepo = module.get(getRepositoryToken(AuditLog));
+  });
+
+  it('should be defined', () => {
+    expect(interceptor).toBeDefined();
+  });
+
+  it('should create and save audit log on successful request', (done) => {
+    const req = {
+      user: { id: 'user-123' },
+      method: 'POST',
+      url: '/api/admin/scales/12345678-1234-1234-1234-123456789abc',
+      ip: '127.0.0.1',
+      headers: { 'user-agent': 'Jest' },
+    };
+    mockAuditRepo.save.mockResolvedValueOnce({ id: 'log-1' });
+
+    interceptor
+      .intercept(mockExecutionContext(req) as any, mockCallHandler as any)
+      .subscribe({
+        complete: () => {
+          expect(auditRepo.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+              userId: 'user-123',
+              action:
+                'POST /api/admin/scales/12345678-1234-1234-1234-123456789abc',
+              resourceType: 'admin',
+              resourceId: '12345678-1234-1234-1234-123456789abc',
+              ip: '127.0.0.1',
+              userAgent: 'Jest',
+            }),
+          );
+          expect(auditRepo.save).toHaveBeenCalled();
+          done();
+        },
+      });
+  });
+
+  it('should handle request without user (null userId)', (done) => {
+    const req = {
+      method: 'GET',
+      url: '/api/auth/login',
+      ip: '::1',
+      headers: {},
+    };
+    mockAuditRepo.save.mockResolvedValueOnce({});
+
+    interceptor
+      .intercept(mockExecutionContext(req) as any, mockCallHandler as any)
+      .subscribe({
+        complete: () => {
+          expect(auditRepo.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+              userId: null,
+              action: 'GET /api/auth/login',
+              resourceType: 'auth',
+              resourceId: null,
+            }),
+          );
+          done();
+        },
+      });
+  });
+
+  it('should extract resource as second path segment', (done) => {
+    const req = {
+      method: 'DELETE',
+      url: '/api/org/classes/abc',
+      ip: '10.0.0.1',
+      headers: {},
+    };
+    mockAuditRepo.save.mockResolvedValueOnce({});
+
+    interceptor
+      .intercept(mockExecutionContext(req) as any, mockCallHandler as any)
+      .subscribe({
+        complete: () => {
+          expect(auditRepo.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+              resourceType: 'org',
+            }),
+          );
+          done();
+        },
+      });
+  });
+
+  it('should return unknown resource for short URLs', (done) => {
+    const req = {
+      method: 'GET',
+      url: '/',
+      ip: '127.0.0.1',
+      headers: {},
+    };
+    mockAuditRepo.save.mockResolvedValueOnce({});
+
+    interceptor
+      .intercept(mockExecutionContext(req) as any, mockCallHandler as any)
+      .subscribe({
+        complete: () => {
+          expect(auditRepo.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+              resourceType: 'unknown',
+            }),
+          );
+          done();
+        },
+      });
+  });
+
+  it('should extract UUID from URL as resourceId', (done) => {
+    const uuid = '12345678-1234-1234-1234-123456789abc';
+    const req = {
+      method: 'PUT',
+      url: `/api/scales/${uuid}`,
+      ip: '127.0.0.1',
+      headers: {},
+    };
+    mockAuditRepo.save.mockResolvedValueOnce({});
+
+    interceptor
+      .intercept(mockExecutionContext(req) as any, mockCallHandler as any)
+      .subscribe({
+        complete: () => {
+          expect(auditRepo.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+              resourceId: uuid,
+            }),
+          );
+          done();
+        },
+      });
+  });
+
+  it('should return null resourceId when URL has no UUID', (done) => {
+    const req = {
+      method: 'GET',
+      url: '/api/admin/users',
+      ip: '127.0.0.1',
+      headers: {},
+    };
+    mockAuditRepo.save.mockResolvedValueOnce({});
+
+    interceptor
+      .intercept(mockExecutionContext(req) as any, mockCallHandler as any)
+      .subscribe({
+        complete: () => {
+          expect(auditRepo.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+              resourceId: null,
+            }),
+          );
+          done();
+        },
+      });
+  });
+
+  it('should swallow save errors gracefully', (done) => {
+    const req = {
+      user: { id: 'u1' },
+      method: 'POST',
+      url: '/api/test',
+      ip: '127.0.0.1',
+      headers: {},
+    };
+    mockAuditRepo.save.mockRejectedValueOnce(new Error('DB error'));
+
+    interceptor
+      .intercept(mockExecutionContext(req) as any, mockCallHandler as any)
+      .subscribe({
+        complete: () => {
+          expect(auditRepo.save).toHaveBeenCalled();
+          done();
+        },
+        error: () => {
+          fail('Should not propagate save error');
+        },
+      });
+  });
+});

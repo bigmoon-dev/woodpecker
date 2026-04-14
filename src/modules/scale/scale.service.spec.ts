@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -20,6 +20,7 @@ describe('ScaleService', () => {
   const mockEntityManager = {
     create: jest.fn().mockReturnValue({}),
     save: jest.fn().mockResolvedValue({ id: 'scale-1' }),
+    findOne: jest.fn(),
   };
 
   const mockDataSource = {
@@ -37,6 +38,7 @@ describe('ScaleService', () => {
     jest.clearAllMocks();
     mockEntityManager.create.mockReturnValue({});
     mockEntityManager.save.mockResolvedValue({ id: 'scale-1' });
+    mockEntityManager.findOne.mockResolvedValue(undefined);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -183,6 +185,176 @@ describe('ScaleService', () => {
       await service.remove('s1');
       expect(scaleRepo.delete).toHaveBeenCalledWith('s1');
       expect(mockScaleCacheService.invalidate).toHaveBeenCalledWith('s1');
+    });
+  });
+
+  describe('cloneFromLibrary()', () => {
+    const libraryScale = {
+      id: 'lib-1',
+      name: 'PHQ-9',
+      version: '1.0',
+      description: 'Depression scale',
+      items: [
+        {
+          itemText: 'Q1',
+          itemType: 'single_choice',
+          sortOrder: 0,
+          dimension: 'core',
+          reverseScore: false,
+          options: [{ optionText: 'Not at all', scoreValue: 0, sortOrder: 0 }],
+        },
+      ],
+      scoringRules: [
+        { dimension: 'total', formulaType: 'sum', weight: 1, config: {} },
+      ],
+      scoreRanges: [
+        {
+          dimension: 'total',
+          minScore: 0,
+          maxScore: 4,
+          level: 'normal',
+          color: 'green',
+          suggestion: 'OK',
+        },
+      ],
+    };
+
+    it('should clone a library scale into a draft', async () => {
+      scaleRepo.findOne.mockResolvedValueOnce(libraryScale);
+      mockEntityManager.save.mockResolvedValueOnce({
+        id: 'clone-1',
+        name: 'PHQ-9 (副本)',
+      });
+
+      const result = await service.cloneFromLibrary('lib-1');
+
+      expect(scaleRepo.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'lib-1', isLibrary: true },
+        }),
+      );
+      expect(dataSource.transaction).toHaveBeenCalled();
+      expect(mockEntityManager.create).toHaveBeenCalledWith(
+        Scale,
+        expect.objectContaining({
+          status: 'draft',
+          isLibrary: false,
+        }),
+      );
+      expect(mockEntityManager.save).toHaveBeenCalledTimes(3);
+    });
+
+    it('should throw NotFoundException when library scale not found', async () => {
+      scaleRepo.findOne.mockResolvedValueOnce(null);
+      await expect(service.cloneFromLibrary('missing')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should clone without scoring rules and score ranges', async () => {
+      const noRules = {
+        ...libraryScale,
+        scoringRules: [],
+        scoreRanges: [],
+      };
+      scaleRepo.findOne.mockResolvedValueOnce(noRules);
+      mockEntityManager.save.mockResolvedValueOnce({ id: 'clone-2' });
+
+      await service.cloneFromLibrary('lib-1');
+      expect(mockEntityManager.save).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('update()', () => {
+    const existingScale = {
+      id: 'scale-1',
+      name: 'Old',
+      version: '1.0',
+      description: 'desc',
+      source: 'src',
+      validationInfo: null,
+      items: [],
+      scoringRules: [],
+      scoreRanges: [],
+    };
+
+    it('should update name only', async () => {
+      mockEntityManager.findOne.mockResolvedValueOnce(existingScale);
+      mockEntityManager.save.mockResolvedValueOnce({
+        ...existingScale,
+        name: 'New',
+      });
+
+      const result = await service.update('scale-1', { name: 'New' });
+
+      expect(dataSource.transaction).toHaveBeenCalled();
+      expect(mockEntityManager.save).toHaveBeenCalledWith(
+        Scale,
+        expect.objectContaining({ name: 'New' }),
+      );
+    });
+
+    it('should throw NotFoundException when scale not found', async () => {
+      mockEntityManager.findOne.mockResolvedValueOnce(null);
+
+      await expect(service.update('missing', { name: 'New' })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should update with items, scoringRules and scoreRanges', async () => {
+      mockEntityManager.findOne.mockResolvedValueOnce(existingScale);
+      mockEntityManager.save.mockResolvedValueOnce({
+        ...existingScale,
+        name: 'Updated',
+      });
+
+      const dto = {
+        name: 'Updated',
+        items: [
+          {
+            itemText: 'Q1',
+            sortOrder: 0,
+            options: [{ optionText: 'A', scoreValue: 0, sortOrder: 0 }],
+          },
+        ],
+        scoringRules: [{ dimension: 'total', formulaType: 'sum', weight: 1 }],
+        scoreRanges: [
+          {
+            dimension: 'total',
+            minScore: 0,
+            maxScore: 10,
+            level: 'normal',
+            color: 'green',
+            suggestion: 'OK',
+          },
+        ],
+      };
+
+      await service.update('scale-1', dto);
+
+      expect(mockEntityManager.save).toHaveBeenCalled();
+      expect(mockScaleCacheService.refresh).toHaveBeenCalledWith('scale-1');
+    });
+
+    it('should handle cache refresh failure gracefully', async () => {
+      mockEntityManager.findOne.mockResolvedValueOnce(existingScale);
+      mockEntityManager.save.mockResolvedValueOnce(existingScale);
+      mockScaleCacheService.refresh.mockRejectedValueOnce(new Error('cache'));
+
+      const result = await service.update('scale-1', { name: 'X' });
+      expect(result).toBeDefined();
+    });
+
+    it('should update with items having no options', async () => {
+      mockEntityManager.findOne.mockResolvedValueOnce(existingScale);
+      mockEntityManager.save.mockResolvedValueOnce(existingScale);
+
+      await service.update('scale-1', {
+        items: [{ itemText: 'Q2', sortOrder: 1, options: [] }],
+      });
+
+      expect(mockEntityManager.save).toHaveBeenCalled();
     });
   });
 });
