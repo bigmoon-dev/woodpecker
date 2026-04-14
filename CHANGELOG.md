@@ -2,6 +2,47 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.6.0] - 2026-04-14
+
+### Added
+
+#### Test Coverage Boost (34% → 62%)
+
+**DIR-1: Security Critical Tests (40 tests)**
+- `rbac.guard.spec.ts`: 10 tests — scope computation (own/class/grade/all), permission check, no user, empty roles
+- `jwt-auth.guard.spec.ts`: 4 tests — @Public() bypass, protected endpoint delegation
+- `jwt.strategy.spec.ts`: 6 tests — validate() user loading, not found, no roles, multiple roles, null studentId
+- `consent.guard.spec.ts`: 6 tests — consent exists/missing, no user, no studentId, default/custom consent type
+- `consent.service.spec.ts`: 7 tests — create, findByUserId, checkConsent true/false, findOne
+- `encryption.service.spec.ts`: 7 tests — encrypt, decrypt, batchDecrypt happy/empty/partial, error propagation
+
+**DIR-2: Business Critical Tests (54 tests)**
+- `result.service.spec.ts`: 13 tests — findByStudent, findByScope, findByClass, findByGrade, findByFilter, PII decrypt
+- `export.service.spec.ts`: 10 tests — generateExcel happy/empty/alerts, generatePdf happy/notFound/dimensions/suggestion
+- `org.service.spec.ts`: 16 tests — CRUD for grades/classes/students with scope filtering, NotFoundException
+- `task.service.spec.ts`: 12 tests — findAll pagination, update, publish, alert trigger red/yellow/green, no alert service
+
+**DIR-3: Controller + Infrastructure Tests (51 tests)**
+- `result.controller.spec.ts`: 5 tests — findMyResults studentId fallback, findByClass/Grade, findByScope
+- `report-export.controller.spec.ts`: 3 tests — PDF headers, generatePdf delegation, Cache-Control
+- `export.controller.spec.ts`: 8 tests — exportByTask/filter/PDF, 10000-row limit, headers
+- `health.controller.spec.ts`: 3 tests — check, readiness, unhealthy DB
+- `auth.controller.spec.ts`: +2 tests — refresh token valid/invalid
+- `task.controller.spec.ts`: 5 tests — create with deadline, submit, publish, findOne, remove
+- `scale.controller.spec.ts`: 6 tests — CRUD, findLibrary, clone, import
+- `org.controller.spec.ts`: 6 tests — CRUD, import with/without file, download template
+- `dashboard.controller.spec.ts`: 5 tests — 5 endpoint delegations
+- `dashboard.service.spec.ts`: 7 tests — 5 aggregation methods, buildScopeFilter, error handling
+- `scale.service.spec.ts`: +5 tests — findAll, findLibrary, findOne, remove
+- `consent.controller.spec.ts`: 2 tests — create, check
+
+### Changed
+
+- 18 new spec files created, 4 existing specs extended
+- 39 test suites total, 279 test cases (up from 134)
+- Overall coverage: 62.55% (up from 34.67%)
+- Module coverage ≥70%: auth, consent, core, dashboard, export, health, org, result, task, scoring
+
 ## [0.5.1] - 2026-04-14
 
 ### Fixed
