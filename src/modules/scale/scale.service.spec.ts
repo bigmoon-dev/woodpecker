@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import { NotFoundException } from '@nestjs/common';
 import { ScaleService } from './scale.service';
 import { Scale } from '../../entities/scale/scale.entity';
 import { ScoringRule } from '../../entities/scale/scoring-rule.entity';
@@ -13,6 +15,7 @@ import { ScaleCacheService } from '../scoring/scale-cache.service';
 describe('ScaleService', () => {
   let service: ScaleService;
   let dataSource: DataSource;
+  let scaleRepo: any;
 
   const mockEntityManager = {
     create: jest.fn().mockReturnValue({}),
@@ -43,6 +46,7 @@ describe('ScaleService', () => {
           provide: getRepositoryToken(Scale),
           useValue: {
             findAndCount: jest.fn(),
+            find: jest.fn(),
             findOne: jest.fn(),
             delete: jest.fn(),
             save: jest.fn(),
@@ -56,6 +60,7 @@ describe('ScaleService', () => {
 
     service = module.get<ScaleService>(ScaleService);
     dataSource = module.get<DataSource>(DataSource);
+    scaleRepo = module.get(getRepositoryToken(Scale));
   });
 
   describe('create() transaction', () => {
@@ -120,6 +125,64 @@ describe('ScaleService', () => {
       };
 
       await expect(service.create(dto)).rejects.toThrow('DB error');
+    });
+  });
+
+  describe('findAll()', () => {
+    it('returns paginated non-library scales', async () => {
+      scaleRepo.findAndCount.mockResolvedValueOnce([[{ id: 's1' }], 1]);
+      const result = await service.findAll(1, 20);
+      expect(result).toEqual({ data: [{ id: 's1' }], total: 1 });
+      expect(scaleRepo.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { isLibrary: false } }),
+      );
+    });
+  });
+
+  describe('findLibrary()', () => {
+    it('returns only isLibrary=true', async () => {
+      scaleRepo.find.mockResolvedValueOnce([{ id: 'lib1', isLibrary: true }]);
+      const result = await service.findLibrary();
+      expect(result).toEqual([{ id: 'lib1', isLibrary: true }]);
+      expect(scaleRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { isLibrary: true, status: 'active' },
+        }),
+      );
+    });
+  });
+
+  describe('findOne()', () => {
+    it('returns full scale', async () => {
+      scaleRepo.findOne.mockResolvedValueOnce({
+        id: 's1',
+        items: [],
+        scoringRules: [],
+        scoreRanges: [],
+      });
+      const result = await service.findOne('s1');
+      expect(result).toEqual({
+        id: 's1',
+        items: [],
+        scoringRules: [],
+        scoreRanges: [],
+      });
+    });
+
+    it('throws NotFoundException when not found', async () => {
+      scaleRepo.findOne.mockResolvedValueOnce(null);
+      await expect(service.findOne('missing')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('remove()', () => {
+    it('calls delete + cache invalidate', async () => {
+      scaleRepo.delete.mockResolvedValueOnce(undefined);
+      await service.remove('s1');
+      expect(scaleRepo.delete).toHaveBeenCalledWith('s1');
+      expect(mockScaleCacheService.invalidate).toHaveBeenCalledWith('s1');
     });
   });
 });
