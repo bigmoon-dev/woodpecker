@@ -16,6 +16,7 @@ describe('AuthController Hook emit', () => {
   };
   const mockJwtService = {
     sign: jest.fn().mockReturnValue('token'),
+    verify: jest.fn(),
   };
   const mockHookBus = { emit: jest.fn().mockResolvedValue(undefined) };
 
@@ -87,5 +88,36 @@ describe('AuthController Hook emit', () => {
 
     expect(result).toBeDefined();
     expect(result.accessToken).toBe('token');
+  });
+
+  describe('refresh()', () => {
+    it('valid refresh token returns new accessToken', () => {
+      const decoded = {
+        sub: 'u1',
+        username: 'testuser',
+        roles: ['admin'],
+      };
+      mockJwtService.verify.mockReturnValueOnce(decoded);
+      mockJwtService.sign.mockReturnValueOnce('new-access-token');
+
+      const result = controller.refresh({ refreshToken: 'valid-token' });
+
+      expect(mockJwtService.verify).toHaveBeenCalledWith('valid-token');
+      expect(mockJwtService.sign).toHaveBeenCalledWith(
+        { sub: 'u1', username: 'testuser', roles: ['admin'] },
+        { expiresIn: '15m' },
+      );
+      expect(result).toEqual({ accessToken: 'new-access-token' });
+    });
+
+    it('invalid refresh token throws UnauthorizedException', () => {
+      mockJwtService.verify.mockImplementationOnce(() => {
+        throw new Error('invalid');
+      });
+
+      expect(() => controller.refresh({ refreshToken: 'bad-token' })).toThrow(
+        UnauthorizedException,
+      );
+    });
   });
 });
