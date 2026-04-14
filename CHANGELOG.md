@@ -2,6 +2,48 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.5.0] - 2026-04-14
+
+### Added
+
+#### Health Check (DIR-1)
+- `@nestjs/terminus` integration with TypeOrmHealthIndicator
+- `GET /health` and `GET /health/ready` — no authentication required
+- `@Public()` decorator on HealthController to bypass global JwtAuthGuard
+- HealthModule registered in AppModule
+
+#### Frontend Enhancements (DIR-2)
+- Dashboard.tsx: replaced 4 HTML tables with @ant-design/charts components
+  - Column chart (completion rate by class, stacked)
+  - Pie chart (alert distribution)
+  - Area chart (30-day trend, stacked by color)
+  - Column chart (scale usage)
+- ClassResults.tsx: added Excel export button + pagination + student info columns
+- GradeResults.tsx: added Excel export button + pagination + student info columns
+- TaskList.tsx: added per-task export button in action column
+- MHT (心理健康测试) template: 100 items across 8 dimensions added to scale library seed
+- Scale library seed now uses upsert logic (per-template check by source field)
+
+#### PDF Personal Report (DIR-3)
+- `pdfkit` integration with registered Noto Sans SC font (Apache 2.0, 11MB)
+- `ExportService.generatePdf()`: structured PDF with header, student info, scores,
+  dimension breakdown, suggestion, and disclaimer
+- `GET /api/export/pdf/:resultId` — single-result PDF download
+- PII batch decrypt for student name and student number in PDF
+
+### Changed
+- ExportModule now imports TaskResult, TaskAnswer repositories and CoreModule
+- ClassResults/GradeResults now display studentName, studentNumber, scaleName columns
+
+### Dependencies
+- `@nestjs/terminus` (health checks)
+- `pdfkit` (PDF generation)
+- NotoSansSC-Regular.ttf (Google Fonts, Apache 2.0)
+
+### Test Results
+- 21 test suites, 134 test cases, all passing
+- TypeScript 0 errors, ESLint 0 errors, Vite build successful
+
 ## [0.4.0] - 2026-04-14
 
 ### Added
