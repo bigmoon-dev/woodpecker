@@ -9,9 +9,6 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: .
 
     steps:
       - uses: actions/checkout@v4
@@ -33,16 +30,31 @@ jobs:
 
       - name: Unit tests with coverage
         run: |
-          npx jest --coverage --coverageReporters text-summary
-          COVERAGE=$(cat coverage/coverage-summary.json 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('total',{}).get('lines',{}).get('pct',0))" 2>/dev/null || echo "0")
+          npx jest --coverage --coverageReporters json-summary text-summary
+          COVERAGE=$(python3 -c "import json; d=json.load(open('coverage/coverage-summary.json')); print(d['total']['lines']['pct'])")
           echo "### Coverage: ${COVERAGE}%" >> $GITHUB_STEP_SUMMARY
           echo "COVERAGE_PCT=${COVERAGE}" >> $GITHUB_ENV
 
+      - name: Update coverage badge
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          PCT=${COVERAGE_PCT%.*}
+          if [ "$PCT" -ge 90 ]; then COLOR=brightgreen; elif [ "$PCT" -ge 70 ]; then COLOR=yellowgreen; elif [ "$PCT" -ge 50 ]; then COLOR=yellow; else COLOR=red; fi
+          BADGE_URL="https://img.shields.io/badge/coverage-${COVERAGE_PCT}%25-${COLOR}"
+          sed -i "s|coverage-[0-9.]*%25-[a-z]*|coverage-${COVERAGE_PCT}%25-${COLOR}|g" README.md README.en.md
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git diff --quiet README.md README.en.md || (git add README.md README.en.md && git commit -m "ci: update coverage badge to ${COVERAGE_PCT}%")
+
+      - name: Push badge update
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: main
+
   frontend:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: client
 
     steps:
       - uses: actions/checkout@v4
