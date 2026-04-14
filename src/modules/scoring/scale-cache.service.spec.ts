@@ -3,15 +3,20 @@ import { ScaleDefinition } from './scoring.types';
 
 describe('ScaleCacheService', () => {
   let service: ScaleCacheService;
-
-  const mockScaleRepo = {
-    find: jest.fn().mockResolvedValue([]),
-    findOne: jest.fn().mockResolvedValue(null),
-  };
+  let mockFind: jest.Mock;
+  let mockFindOne: jest.Mock;
 
   beforeEach(() => {
+    mockFind = jest.fn().mockResolvedValue([]);
+    mockFindOne = jest.fn().mockResolvedValue(null);
+    const mockScaleRepo = {
+      find: mockFind,
+      findOne: mockFindOne,
+    } as unknown as Parameters<
+      typeof ScaleCacheService.prototype.constructor
+    >[0];
     jest.clearAllMocks();
-    service = new ScaleCacheService(mockScaleRepo as any);
+    service = new ScaleCacheService(mockScaleRepo);
   });
 
   it('should return undefined for missing key', () => {
@@ -93,7 +98,7 @@ describe('ScaleCacheService', () => {
         ],
       },
     ];
-    mockScaleRepo.find.mockResolvedValueOnce(mockScales);
+    mockFind.mockResolvedValueOnce(mockScales);
     await service.onModuleInit();
     expect(service.get('scale-1')).toBeDefined();
     expect(service.get('scale-1')!.items).toHaveLength(1);

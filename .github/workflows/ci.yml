@@ -32,14 +32,11 @@ jobs:
         run: npx eslint src/ --max-warnings 0
 
       - name: Unit tests with coverage
-        run: npx jest --coverage --coverageReporters text-summary lcov
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/lcov.info
-          fail_ci_if_error: false
+        run: |
+          npx jest --coverage --coverageReporters text-summary
+          COVERAGE=$(cat coverage/coverage-summary.json 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('total',{}).get('lines',{}).get('pct',0))" 2>/dev/null || echo "0")
+          echo "### Coverage: ${COVERAGE}%" >> $GITHUB_STEP_SUMMARY
+          echo "COVERAGE_PCT=${COVERAGE}" >> $GITHUB_ENV
 
   frontend:
     runs-on: ubuntu-latest
