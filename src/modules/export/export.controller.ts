@@ -102,4 +102,19 @@ export class ExportController {
     res.setHeader('Cache-Control', 'no-store');
     res.send(buffer);
   }
+
+  @Get('pdf/:resultId')
+  async exportPdf(
+    @Param('resultId') resultId: string,
+    @Res() res: express.Response,
+  ) {
+    const buffer = await this.exportService.generatePdf(resultId);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=report-${resultId}.pdf`,
+    );
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(buffer);
+  }
 }
