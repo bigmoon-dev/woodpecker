@@ -1,20 +1,21 @@
 import { ScaleCacheService } from './scale-cache.service';
 import { ScaleDefinition } from './scoring.types';
+import { Repository } from 'typeorm';
+import { Scale } from '../../entities/scale/scale.entity';
 
 describe('ScaleCacheService', () => {
   let service: ScaleCacheService;
   let mockFind: jest.Mock;
   let mockFindOne: jest.Mock;
+  let mockScaleRepo: Repository<Scale>;
 
   beforeEach(() => {
     mockFind = jest.fn().mockResolvedValue([]);
     mockFindOne = jest.fn().mockResolvedValue(null);
-    const mockScaleRepo = {
+    mockScaleRepo = {
       find: mockFind,
       findOne: mockFindOne,
-    } as unknown as Parameters<
-      typeof ScaleCacheService.prototype.constructor
-    >[0];
+    } as unknown as Repository<Scale>;
     jest.clearAllMocks();
     service = new ScaleCacheService(mockScaleRepo);
   });
