@@ -86,11 +86,86 @@ export class ScaleService {
     pageSize = 20,
   ): Promise<{ data: Scale[]; total: number }> {
     const [data, total] = await this.scaleRepo.findAndCount({
+      where: { isLibrary: false },
       skip: (page - 1) * pageSize,
       take: pageSize,
       order: { createdAt: 'DESC' },
     });
     return { data, total };
+  }
+
+  async findLibrary(): Promise<Scale[]> {
+    return this.scaleRepo.find({
+      where: { isLibrary: true, status: 'active' },
+      relations: ['items'],
+      order: { name: 'ASC' },
+    });
+  }
+
+  async cloneFromLibrary(id: string): Promise<Scale> {
+    const source = await this.scaleRepo.findOne({
+      where: { id, isLibrary: true },
+      relations: ['items', 'items.options', 'scoringRules', 'scoreRanges'],
+    });
+    if (!source) {
+      throw new NotFoundException(`Library scale ${id} not found`);
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const scale = manager.create(Scale, {
+        name: source.name + ' (副本)',
+        version: source.version,
+        description: source.description,
+        source: `library:${source.id}`,
+        status: 'draft',
+        isLibrary: false,
+        items: source.items.map((item) => ({
+          itemText: item.itemText,
+          itemType: item.itemType,
+          sortOrder: item.sortOrder,
+          dimension: item.dimension,
+          reverseScore: item.reverseScore,
+          options: item.options.map((opt) => ({
+            optionText: opt.optionText,
+            scoreValue: opt.scoreValue,
+            sortOrder: opt.sortOrder,
+          })),
+        })),
+      });
+      const saved = await manager.save(Scale, scale);
+
+      if (source.scoringRules?.length) {
+        const rules = manager.create(
+          ScoringRule,
+          source.scoringRules.map((r) => ({
+            scaleId: saved.id,
+            dimension: r.dimension,
+            formulaType: r.formulaType,
+            weight: r.weight,
+            config: r.config,
+          })),
+        );
+        await manager.save(ScoringRule, rules);
+      }
+
+      if (source.scoreRanges?.length) {
+        const ranges = manager.create(
+          ScoreRange,
+          source.scoreRanges.map((r) => ({
+            scaleId: saved.id,
+            dimension: r.dimension,
+            minScore: r.minScore,
+            maxScore: r.maxScore,
+            level: r.level,
+            color: r.color,
+            suggestion: r.suggestion,
+          })),
+        );
+        await manager.save(ScoreRange, ranges);
+      }
+
+      return saved;
+    });
   }
 
   async findOne(id: string): Promise<Scale> {

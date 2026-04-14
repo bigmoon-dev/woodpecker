@@ -18,6 +18,7 @@ import RoleManage from '../pages/admin/RoleManage';
 import UserManage from '../pages/admin/UserManage';
 import PluginManage from '../pages/admin/PluginManage';
 import ConsentPage from '../pages/consent/ConsentPage';
+import ScaleLibrary from '../pages/scale/ScaleLibrary';
 
 export const routeConfigs: RouteConfig[] = [
   { path: '/login', component: Login, public: true },
@@ -38,6 +39,7 @@ export const routeConfigs: RouteConfig[] = [
     roles: ['psychologist', 'teacher'],
     children: [
       { path: 'scales', component: ScaleList },
+      { path: 'scales/library', component: ScaleLibrary },
       { path: 'scales/:id', component: ScaleDetail },
       { path: 'tasks', component: TaskList },
       { path: 'assessment/:id', component: Assessment },
@@ -53,6 +55,7 @@ export const routeConfigs: RouteConfig[] = [
     roles: ['admin'],
     children: [
       { path: 'scales', component: ScaleList },
+      { path: 'scales/library', component: ScaleLibrary },
       { path: 'scales/:id', component: ScaleDetail },
       { path: 'tasks', component: TaskList },
       { path: 'alerts', component: AlertList },

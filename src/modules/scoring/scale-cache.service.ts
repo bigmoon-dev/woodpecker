@@ -19,7 +19,7 @@ export class ScaleCacheService implements OnModuleInit {
 
   private async loadAll() {
     const scales = await this.scaleRepo.find({
-      where: { status: 'active' },
+      where: { status: 'active', isLibrary: false },
       relations: ['items', 'items.options', 'scoringRules', 'scoreRanges'],
     });
     for (const scale of scales) {

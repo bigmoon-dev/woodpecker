@@ -33,6 +33,9 @@ export class Scale {
   @Column({ length: 500, nullable: true })
   validationInfo: string;
 
+  @Column({ default: false })
+  isLibrary: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

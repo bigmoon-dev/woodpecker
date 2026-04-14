@@ -41,6 +41,17 @@ export class ScaleController {
     return this.scaleService.findAll(query.page, query.pageSize);
   }
 
+  @Get('library')
+  async findLibrary(): Promise<Scale[]> {
+    return this.scaleService.findLibrary();
+  }
+
+  @Post('library/:id/clone')
+  @SetMetadata(REQUIRE_PERMISSION, ['scale:write'])
+  async cloneFromLibrary(@Param('id') id: string): Promise<Scale> {
+    return this.scaleService.cloneFromLibrary(id);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<Scale> {
     return this.scaleService.findOne(id);
