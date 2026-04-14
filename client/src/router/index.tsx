@@ -52,6 +52,13 @@ export const routeConfigs: RouteConfig[] = [
     layout: AdminLayout,
     roles: ['admin'],
     children: [
+      { path: 'scales', component: ScaleList },
+      { path: 'scales/:id', component: ScaleDetail },
+      { path: 'tasks', component: TaskList },
+      { path: 'alerts', component: AlertList },
+      { path: 'results', component: MyResults },
+      { path: 'results/class/:classId', component: ClassResults },
+      { path: 'results/grade/:gradeId', component: GradeResults },
       { path: 'roles', component: RoleManage },
       { path: 'users', component: UserManage },
       { path: 'plugins', component: PluginManage },

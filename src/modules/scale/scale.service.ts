@@ -101,18 +101,65 @@ export class ScaleService {
   }
 
   async update(id: string, dto: Partial<CreateScaleDto>): Promise<Scale> {
-    const scale = await this.scaleRepo.findOne({ where: { id } });
-    if (!scale) throw new NotFoundException(`Scale ${id} not found`);
-    Object.assign(scale, {
-      name: dto.name,
-      version: dto.version,
-      description: dto.description,
-      source: dto.source,
-      validationInfo: dto.validationInfo,
+    return this.dataSource.transaction(async (manager) => {
+      const scale = await manager.findOne(Scale, {
+        where: { id },
+        relations: ['items', 'items.options', 'scoringRules', 'scoreRanges'],
+      });
+      if (!scale) throw new NotFoundException(`Scale ${id} not found`);
+
+      scale.name = dto.name ?? scale.name;
+      scale.version = dto.version ?? scale.version;
+      scale.description = dto.description ?? scale.description;
+      scale.source = dto.source ?? scale.source;
+      scale.validationInfo = dto.validationInfo ?? scale.validationInfo;
+
+      if (dto.items) {
+        scale.items = dto.items.map((item, idx) => ({
+          id: undefined,
+          scaleId: scale.id,
+          itemText: item.itemText,
+          itemType: item.itemType || 'single_choice',
+          sortOrder: item.sortOrder ?? idx,
+          dimension: item.dimension,
+          reverseScore: item.reverseScore || false,
+          options: (item.options || []).map((opt, oi) => ({
+            id: undefined,
+            optionText: opt.optionText,
+            scoreValue: opt.scoreValue,
+            sortOrder: opt.sortOrder ?? oi,
+          })),
+        })) as any;
+      }
+
+      if (dto.scoringRules) {
+        scale.scoringRules = dto.scoringRules.map((r) => ({
+          id: undefined,
+          scaleId: scale.id,
+          dimension: r.dimension,
+          formulaType: r.formulaType,
+          weight: r.weight,
+          config: r.config,
+        })) as any;
+      }
+
+      if (dto.scoreRanges) {
+        scale.scoreRanges = dto.scoreRanges.map((r) => ({
+          id: undefined,
+          scaleId: scale.id,
+          dimension: r.dimension,
+          minScore: r.minScore,
+          maxScore: r.maxScore,
+          level: r.level,
+          color: r.color,
+          suggestion: r.suggestion,
+        })) as any;
+      }
+
+      const saved = await manager.save(Scale, scale);
+      await this.scaleCacheService.refresh(saved.id).catch(() => {});
+      return saved;
     });
-    const saved = await this.scaleRepo.save(scale);
-    await this.scaleCacheService.refresh(saved.id).catch(() => {});
-    return saved;
   }
 
   async remove(id: string): Promise<void> {

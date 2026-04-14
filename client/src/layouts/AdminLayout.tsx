@@ -4,6 +4,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { clearToken } from '../utils/auth';
 
 const menuRoutes = [
+  { path: '/admin/scales', name: '量表管理' },
+  { path: '/admin/tasks', name: '任务管理' },
+  { path: '/admin/alerts', name: '预警管理' },
+  { path: '/admin/results', name: '测评结果' },
   { path: '/admin/roles', name: '角色管理' },
   { path: '/admin/users', name: '用户管理' },
   { path: '/admin/plugins', name: '插件管理' },
@@ -18,7 +22,7 @@ export default function AdminLayout() {
 
   return (
     <ProLayout
-      title="心理健康量表系统"
+      title="啄木鸟心理预警辅助系统"
       layout="mix"
       location={{ pathname: location.pathname }}
       menu={{ request: async () => menuRoutes }}

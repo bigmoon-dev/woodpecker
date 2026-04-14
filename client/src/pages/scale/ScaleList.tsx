@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
-import { ProTable, type ActionType } from '@ant-design/pro-components';
-import { Button, Upload, Modal, Form, Input, message } from 'antd';
+import { ProTable, type ActionType, type ProColumns } from '@ant-design/pro-components';
+import { Button, Upload, Modal, Popconfirm, message } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import request from '../../utils/request';
 
 export default function ScaleList() {
@@ -10,36 +10,59 @@ export default function ScaleList() {
   const [importOpen, setImportOpen] = useState(false);
   const [fileList, setFileList] = useState<any[]>([]);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const columns = [
-    { title: '名称', dataIndex: 'name', key: 'name' },
-    { title: '版本', dataIndex: 'version', key: 'version' },
-    { title: '描述', dataIndex: 'description', key: 'description', ellipsis: true },
-    {
-      title: '操作',
-      key: 'action',
-      render: (_: any, record: any) => (
-        <Button type="link" onClick={() => navigate(`/teacher/scales/${record.id}`)}>
-          详情
-        </Button>
-      ),
-    },
-  ];
+  const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/teacher';
+
+  const handleDelete = async (id: string) => {
+    try {
+      await request.delete(`/scales/${id}`);
+      message.success('删除成功');
+      actionRef.current?.reload();
+    } catch {
+      message.error('删除失败');
+    }
+  };
 
   const handleImport = async () => {
     if (!fileList.length) return message.warning('请选择文件');
     const formData = new FormData();
-    formData.append('file', fileList[0]);
+    const file = fileList[0].originFileObj || fileList[0];
+    formData.append('file', file);
     try {
-      await request.post('/scales/import', formData);
+      await request.post('/scales/import', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       message.success('导入成功');
       setImportOpen(false);
       setFileList([]);
       actionRef.current?.reload();
-    } catch {
-      message.error('导入失败');
+    } catch (err: any) {
+      const msg = err.response?.data?.message || '导入失败';
+      message.error(msg);
     }
   };
+
+  const columns: ProColumns[] = [
+    { title: '名称', dataIndex: 'name', key: 'name' },
+    { title: '版本', dataIndex: 'version', key: 'version', width: 80 },
+    { title: '描述', dataIndex: 'description', key: 'description', ellipsis: true },
+    {
+      title: '操作',
+      key: 'action',
+      width: 180,
+      render: (_: any, record: any) => (
+        <>
+          <Button type="link" onClick={() => navigate(`${basePath}/scales/${record.id}`)}>
+            编辑
+          </Button>
+          <Popconfirm title="确定删除此量表？" onConfirm={() => handleDelete(record.id)} okText="删除" cancelText="取消">
+            <Button type="link" danger>删除</Button>
+          </Popconfirm>
+        </>
+      ),
+    },
+  ];
 
   return (
     <>
