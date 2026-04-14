@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Row, Col, Card, Statistic, Spin } from 'antd';
+import { Column, Pie, Area } from '@ant-design/charts';
 import {
   BarChartOutlined,
   AlertOutlined,
@@ -90,6 +91,39 @@ export default function Dashboard() {
   const yellowAlerts = Number(overview?.yellow_alerts || 0);
   const pendingAlerts = Number(overview?.pending_alerts || 0);
 
+  const completionData = completion.flatMap((c) => [
+    {
+      label: `${c.grade_name} ${c.class_name}`,
+      type: '已完成',
+      value: Number(c.completed),
+    },
+    {
+      label: `${c.grade_name} ${c.class_name}`,
+      type: '未完成',
+      value: Number(c.total_students) - Number(c.completed),
+    },
+  ]);
+
+  const pieData = alertDist.map((a) => ({
+    type: a.level === 'red' ? '红色预警' : '黄色预警',
+    value: Number(a.count),
+  }));
+
+  const trendData = trend.flatMap((t) => [
+    { date: String(t.date).slice(0, 10), type: '正常', value: Number(t.green) },
+    {
+      date: String(t.date).slice(0, 10),
+      type: '黄色',
+      value: Number(t.yellow),
+    },
+    { date: String(t.date).slice(0, 10), type: '红色', value: Number(t.red) },
+  ]);
+
+  const scaleData = scaleUsage.map((s) => ({
+    name: s.scale_name,
+    value: Number(s.answer_count),
+  }));
+
   return (
     <div style={{ padding: 24 }}>
       <Row gutter={[16, 16]}>
@@ -138,41 +172,29 @@ export default function Dashboard() {
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col span={12}>
           <Card title="完成率（按班级）">
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: 'left', padding: 8 }}>年级</th>
-                  <th style={{ textAlign: 'left', padding: 8 }}>班级</th>
-                  <th style={{ textAlign: 'right', padding: 8 }}>应完成</th>
-                  <th style={{ textAlign: 'right', padding: 8 }}>已完成</th>
-                  <th style={{ textAlign: 'right', padding: 8 }}>完成率</th>
-                </tr>
-              </thead>
-              <tbody>
-                {completion.map((c, i) => {
-                  const totalS = Number(c.total_students);
-                  const comp = Number(c.completed);
-                  const pct = totalS > 0 ? Math.round((comp / totalS) * 100) : 0;
-                  return (
-                    <tr key={i} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                      <td style={{ padding: 8 }}>{c.grade_name}</td>
-                      <td style={{ padding: 8 }}>{c.class_name}</td>
-                      <td style={{ textAlign: 'right', padding: 8 }}>{totalS}</td>
-                      <td style={{ textAlign: 'right', padding: 8 }}>{comp}</td>
-                      <td style={{ textAlign: 'right', padding: 8 }}>{pct}%</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <Column
+              data={completionData}
+              xField="label"
+              yField="value"
+              colorField="type"
+              stack
+              height={300}
+              color={['#52c41a', '#d9d9d9']}
+              legend={{ position: 'top-right' as const }}
+            />
           </Card>
         </Col>
         <Col span={12}>
           <Card title="预警分布">
-            <div style={{ display: 'flex', justifyContent: 'space-around', padding: 24 }}>
-              <Statistic title="红色预警" value={redAlerts} valueStyle={{ color: '#cf1322' }} />
-              <Statistic title="黄色预警" value={yellowAlerts} valueStyle={{ color: '#faad14' }} />
-            </div>
+            <Pie
+              data={pieData}
+              angleField="value"
+              colorField="type"
+              height={300}
+              color={['#cf1322', '#faad14']}
+              label={{ text: 'type', position: 'outside' as const }}
+              legend={{ position: 'top-right' as const }}
+            />
           </Card>
         </Col>
       </Row>
@@ -180,50 +202,31 @@ export default function Dashboard() {
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col span={12}>
           <Card title="趋势（近30天）">
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: 'left', padding: 8 }}>日期</th>
-                  <th style={{ textAlign: 'right', padding: 8 }}>总计</th>
-                  <th style={{ textAlign: 'right', padding: 8 }}>正常</th>
-                  <th style={{ textAlign: 'right', padding: 8 }}>黄色</th>
-                  <th style={{ textAlign: 'right', padding: 8 }}>红色</th>
-                </tr>
-              </thead>
-              <tbody>
-                {trend.slice(-14).map((t, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ padding: 8 }}>{String(t.date).slice(0, 10)}</td>
-                    <td style={{ textAlign: 'right', padding: 8 }}>{t.total}</td>
-                    <td style={{ textAlign: 'right', padding: 8, color: '#52c41a' }}>{t.green}</td>
-                    <td style={{ textAlign: 'right', padding: 8, color: '#faad14' }}>{t.yellow}</td>
-                    <td style={{ textAlign: 'right', padding: 8, color: '#cf1322' }}>{t.red}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <Area
+              data={trendData}
+              xField="date"
+              yField="value"
+              colorField="type"
+              stack
+              height={300}
+              color={['#52c41a', '#faad14', '#cf1322']}
+              legend={{ position: 'top-right' as const }}
+            />
           </Card>
         </Col>
         <Col span={12}>
           <Card title="量表使用统计">
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: 'left', padding: 8 }}>量表</th>
-                  <th style={{ textAlign: 'right', padding: 8 }}>任务数</th>
-                  <th style={{ textAlign: 'right', padding: 8 }}>完成数</th>
-                </tr>
-              </thead>
-              <tbody>
-                {scaleUsage.map((s, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ padding: 8 }}>{s.scale_name}</td>
-                    <td style={{ textAlign: 'right', padding: 8 }}>{s.task_count}</td>
-                    <td style={{ textAlign: 'right', padding: 8 }}>{s.answer_count}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <Column
+              data={scaleData}
+              xField="name"
+              yField="value"
+              height={300}
+              color="#1890ff"
+              label={{
+                text: (d: any) => d.value,
+                position: 'outside' as const,
+              }}
+            />
           </Card>
         </Col>
       </Row>
