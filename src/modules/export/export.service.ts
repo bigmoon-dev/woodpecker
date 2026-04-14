@@ -1,15 +1,51 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
+import * as PDFDocument from 'pdfkit';
+import * as path from 'path';
 import { ResultWithContext } from '../result/result.service';
 import { AlertRecord } from '../../entities/audit/alert-record.entity';
+import { TaskResult } from '../../entities/task/task-result.entity';
+import { TaskAnswer } from '../../entities/task/task-answer.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { EncryptionService } from '../core/encryption.service';
+
+const FONT_PATH = path.resolve(
+  __dirname,
+  '../../assets/fonts/NotoSansSC-Regular.ttf',
+);
+
+interface PDFDoc {
+  registerFont(name: string, path: string): PDFDoc;
+  font(name: string, size?: number): PDFDoc;
+  fontSize(size: number): PDFDoc;
+  fillColor(color: string): PDFDoc;
+  text(text: string, options?: Record<string, unknown>): PDFDoc;
+  moveDown(lines?: number): PDFDoc;
+  on(event: string, handler: (chunk: Buffer) => void): PDFDoc;
+  end(): void;
+}
+
+interface PdfReportData {
+  result: TaskResult;
+  studentName: string;
+  studentNumber: string;
+  gradeName: string;
+  className: string;
+  scaleName: string;
+  taskTitle: string;
+}
 
 @Injectable()
 export class ExportService {
   constructor(
     @InjectRepository(AlertRecord)
     private alertRepo: Repository<AlertRecord>,
+    @InjectRepository(TaskResult)
+    private resultRepo: Repository<TaskResult>,
+    @InjectRepository(TaskAnswer)
+    private answerRepo: Repository<TaskAnswer>,
+    private encryptionService: EncryptionService,
   ) {}
 
   async generateExcel(results: ResultWithContext[]): Promise<Buffer> {
@@ -93,5 +129,119 @@ export class ExportService {
 
     const buf = await workbook.xlsx.writeBuffer();
     return Buffer.from(buf);
+  }
+
+  async generatePdf(resultId: string): Promise<Buffer> {
+    const result = await this.resultRepo.findOne({ where: { id: resultId } });
+    if (!result) throw new NotFoundException(`Result ${resultId} not found`);
+
+    const answer = await this.answerRepo.findOne({
+      where: { id: result.answerId },
+      relations: ['task', 'task.scale'],
+    });
+
+    const studentId = answer?.studentId ?? '';
+    const pii = studentId
+      ? await this.encryptionService.batchDecrypt([studentId])
+      : new Map<string, { name: string; studentNumber: string }>();
+    const studentInfo = pii.get(studentId);
+    const taskEntity: {
+      title?: string;
+      scale?: { name?: string };
+    } = (answer?.task ?? {}) as {
+      title?: string;
+      scale?: { name?: string };
+    };
+
+    const data: PdfReportData = {
+      result,
+      studentName: studentInfo?.name ?? '',
+      studentNumber: studentInfo?.studentNumber ?? '',
+      gradeName: '',
+      className: '',
+      scaleName: taskEntity?.scale?.name ?? '',
+      taskTitle: taskEntity?.title ?? '',
+    };
+
+    return new Promise<Buffer>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      const PDFDocumentCtor = PDFDocument as unknown as new (
+        opts: Record<string, unknown>,
+      ) => PDFDoc;
+      const doc = new PDFDocumentCtor({
+        size: 'A4',
+        margin: 50,
+      }) as unknown as PDFDoc;
+
+      doc.registerFont('NotoSansSC', FONT_PATH);
+      doc.font('NotoSansSC');
+
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      doc.fontSize(20).text('心理测评报告', { align: 'center' });
+      doc.moveDown(0.5);
+      doc
+        .fontSize(10)
+        .fillColor('#999')
+        .text('Psychological Assessment Report', { align: 'center' });
+      doc.fillColor('#000');
+      doc.moveDown(1.5);
+
+      doc.fontSize(12).text(`量表名称：${data.scaleName}`);
+      doc.text(`任务名称：${data.taskTitle}`);
+      doc.text(`学生姓名：${data.studentName}`);
+      doc.text(`学号：${data.studentNumber}`);
+      doc.text(
+        `测评时间：${data.result.createdAt?.toISOString().slice(0, 19).replace('T', ' ') ?? ''}`,
+      );
+      doc.moveDown(1);
+
+      doc.fontSize(14).text('测评结果', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(12);
+
+      const colorLabel =
+        data.result.color === 'red'
+          ? '红色（需重点关注）'
+          : data.result.color === 'yellow'
+            ? '黄色（需关注）'
+            : '绿色（正常）';
+      doc.text(`总分：${data.result.totalScore}`);
+      doc.text(`等级：${data.result.level}`);
+      doc.text(`预警等级：${colorLabel}`);
+      doc.moveDown(0.5);
+
+      if (data.result.dimensionScores) {
+        doc.fontSize(14).text('维度得分', { underline: true });
+        doc.moveDown(0.5);
+        doc.fontSize(11);
+
+        const dimensions = Object.entries(data.result.dimensionScores);
+        for (const [dim, score] of dimensions) {
+          doc.text(`${dim}：${score}`);
+        }
+        doc.moveDown(0.5);
+      }
+
+      if (data.result.suggestion) {
+        doc.fontSize(14).text('评估建议', { underline: true });
+        doc.moveDown(0.5);
+        doc.fontSize(11).text(data.result.suggestion, { width: 450 });
+        doc.moveDown(0.5);
+      }
+
+      doc.moveDown(2);
+      doc
+        .fontSize(8)
+        .fillColor('#999')
+        .text(
+          `报告生成时间：${new Date().toISOString().slice(0, 19).replace('T', ' ')}`,
+        )
+        .text('本报告仅供参考，不作为临床诊断依据。', { align: 'center' });
+
+      doc.end();
+    });
   }
 }
