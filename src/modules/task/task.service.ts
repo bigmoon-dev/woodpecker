@@ -81,6 +81,12 @@ export class TaskService {
     return this.taskRepo.save(task);
   }
 
+  async complete(id: string): Promise<Task> {
+    const task = await this.findOne(id);
+    task.status = 'completed';
+    return this.taskRepo.save(task);
+  }
+
   async submitAnswers(
     taskId: string,
     studentId: string,

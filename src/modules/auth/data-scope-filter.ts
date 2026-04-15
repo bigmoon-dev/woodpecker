@@ -50,7 +50,9 @@ export class DataScopeFilter {
         ).map((s) => s.id);
       }
       case 'all':
-        return [];
+        return (
+          await this.studentRepo.find({ select: ['id'] })
+        ).map((s) => s.id);
     }
   }
 }

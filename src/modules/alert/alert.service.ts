@@ -74,7 +74,16 @@ export class AlertService {
     alert.handledById = handledById;
     alert.handleNote = handleNote;
     alert.handledAt = new Date();
-    return this.alertRepo.save(alert);
+    const saved = await this.alertRepo.save(alert);
+    await this.hookBus
+      .emit('on:alert.resolved', {
+        alertId: saved.id,
+        status: saved.status,
+        handledById: saved.handledById,
+        handleNote: saved.handleNote,
+      })
+      .catch(() => {});
+    return saved;
   }
 
   async followup(
@@ -87,7 +96,16 @@ export class AlertService {
     alert.handledById = handledById;
     alert.handleNote = handleNote;
     alert.handledAt = new Date();
-    return this.alertRepo.save(alert);
+    const saved = await this.alertRepo.save(alert);
+    await this.hookBus
+      .emit('on:alert.resolved', {
+        alertId: saved.id,
+        status: saved.status,
+        handledById: saved.handledById,
+        handleNote: saved.handleNote,
+      })
+      .catch(() => {});
+    return saved;
   }
 
   async triggerAlert(

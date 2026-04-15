@@ -76,4 +76,10 @@ export class TaskController {
   async publish(@Param('id') id: string): Promise<Task> {
     return this.taskService.publish(id);
   }
+
+  @Post(':id/complete')
+  @SetMetadata(REQUIRE_PERMISSION, ['task:write'])
+  async complete(@Param('id') id: string): Promise<Task> {
+    return this.taskService.complete(id);
+  }
 }

@@ -9,9 +9,14 @@ import {
 import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { JwtService } from '@nestjs/jwt';
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, MinLength, MaxLength } from 'class-validator';
 import { Public } from './public.decorator';
 import { HookBus } from '../plugin/hook-bus';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, LessThan } from 'typeorm';
+import { RefreshToken } from '../../entities/auth/refresh-token.entity';
+import { LogoutDto } from './logout.dto';
+import * as crypto from 'crypto';
 
 interface AuthedRequest extends Request {
   user: {
@@ -35,6 +40,8 @@ class LoginDto {
 
   @IsString()
   @IsNotEmpty()
+  @MinLength(1)
+  @MaxLength(128)
   password: string;
 }
 
@@ -50,6 +57,8 @@ export class AuthController {
     private authService: AuthService,
     private jwtService: JwtService,
     private hookBus: HookBus,
+    @InjectRepository(RefreshToken)
+    private refreshTokenRepo: Repository<RefreshToken>,
   ) {}
 
   @Get('me')
@@ -78,6 +87,16 @@ export class AuthController {
     });
     const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
 
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(refreshToken)
+      .digest('hex');
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+    await this.refreshTokenRepo.save(
+      this.refreshTokenRepo.create({ userId: user.id, tokenHash, expiresAt }),
+    );
+
     await this.hookBus
       .emit('on:user.login', {
         userId: user.id,
@@ -99,20 +118,78 @@ export class AuthController {
 
   @Post('refresh')
   @Public()
-  refresh(@Body() dto: RefreshDto) {
+  async refresh(@Body() dto: RefreshDto) {
+    let payload: JwtPayload;
     try {
-      const payload = this.jwtService.verify<JwtPayload>(dto.refreshToken);
-      const newPayload = {
-        sub: payload.sub,
-        username: payload.username,
-        roles: payload.roles,
-      };
-      const accessToken = this.jwtService.sign(newPayload, {
-        expiresIn: '15m',
-      });
-      return { accessToken };
+      payload = this.jwtService.verify<JwtPayload>(dto.refreshToken);
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
+
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(dto.refreshToken)
+      .digest('hex');
+
+    const stored = await this.refreshTokenRepo.findOne({
+      where: { tokenHash, revokedAt: null as any },
+    });
+    if (!stored || stored.expiresAt < new Date()) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    await this.refreshTokenRepo.update(stored.id, {
+      revokedAt: new Date(),
+    });
+
+    const newPayload = {
+      sub: payload.sub,
+      username: payload.username,
+      roles: payload.roles,
+    };
+    const isStudent = payload.roles.includes('student');
+    const accessToken = this.jwtService.sign(newPayload, {
+      expiresIn: isStudent ? '30m' : '15m',
+    });
+    const newRefreshToken = this.jwtService.sign(newPayload, {
+      expiresIn: '7d',
+    });
+
+    const newHash = crypto
+      .createHash('sha256')
+      .update(newRefreshToken)
+      .digest('hex');
+    const newExpires = new Date();
+    newExpires.setDate(newExpires.getDate() + 7);
+    await this.refreshTokenRepo.save(
+      this.refreshTokenRepo.create({
+        userId: payload.sub,
+        tokenHash: newHash,
+        expiresAt: newExpires,
+      }),
+    );
+
+    return { accessToken, refreshToken: newRefreshToken };
+  }
+
+  @Post('logout')
+  @Public()
+  async logout(@Body() dto: LogoutDto) {
+    let payload: JwtPayload;
+    try {
+      payload = this.jwtService.verify<JwtPayload>(dto.refreshToken);
+    } catch {
+      return { success: true };
+    }
+
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(dto.refreshToken)
+      .digest('hex');
+    await this.refreshTokenRepo.update(
+      { tokenHash, revokedAt: null as any },
+      { revokedAt: new Date() },
+    );
+    return { success: true };
   }
 }

@@ -21,12 +21,16 @@ import { PaginationQueryDto } from '../../common/pagination.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RbacGuard, REQUIRE_PERMISSION } from '../auth/rbac.guard';
 import { SetMetadata } from '@nestjs/common';
+import { PluginManager } from '../plugin/plugin-manager';
 
 @Controller('api/admin')
 @UseGuards(JwtAuthGuard, RbacGuard)
 @SetMetadata(REQUIRE_PERMISSION, ['admin:all'])
 export class AdminController {
-  constructor(private adminService: AdminService) {}
+  constructor(
+    private adminService: AdminService,
+    private pluginManager: PluginManager,
+  ) {}
 
   @Get('roles')
   async findAllRoles(@Query() pagination: PaginationQueryDto) {
@@ -90,5 +94,18 @@ export class AdminController {
   @Delete('users/:id')
   async deleteUser(@Param('id') id: string) {
     return this.adminService.deleteUser(id);
+  }
+
+  @Get('plugins/:name/settings')
+  async getPluginSettings(@Param('name') name: string) {
+    return this.pluginManager.getPluginSettings(name);
+  }
+
+  @Put('plugins/:name/settings')
+  async updatePluginSettings(
+    @Param('name') name: string,
+    @Body() body: Record<string, any>,
+  ) {
+    return this.pluginManager.updatePluginSettings(name, body);
   }
 }

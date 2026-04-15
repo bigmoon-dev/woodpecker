@@ -7,6 +7,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { User } from '../../entities/auth/user.entity';
 import { Role } from '../../entities/auth/role.entity';
 import { Permission } from '../../entities/auth/permission.entity';
+import { RefreshToken } from '../../entities/auth/refresh-token.entity';
 import { Student } from '../../entities/org/student.entity';
 import { Class } from '../../entities/org/class.entity';
 import { AuthService } from './auth.service';
@@ -19,14 +20,19 @@ import { DataScopeFilter } from './data-scope-filter';
 @Global()
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Role, Permission, Student, Class]),
+    TypeOrmModule.forFeature([User, Role, Permission, Student, Class, RefreshToken]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET', 'dev-secret-change-in-prod'),
-        signOptions: { expiresIn: '15m' },
-      }),
+      useFactory: (config: ConfigService) => {
+        const secret = config.get<string>('JWT_SECRET');
+        if (!secret) {
+          throw new Error(
+            'JWT_SECRET environment variable is required. Set it before starting the application.',
+          );
+        }
+        return { secret, signOptions: { expiresIn: '15m' } };
+      },
       inject: [ConfigService],
     }),
   ],

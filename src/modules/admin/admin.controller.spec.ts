@@ -4,6 +4,7 @@ import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RbacGuard } from '../auth/rbac.guard';
+import { PluginManager } from '../plugin/plugin-manager';
 
 describe('AdminController', () => {
   let controller: AdminController;
@@ -23,11 +24,19 @@ describe('AdminController', () => {
     deleteUser: jest.fn(),
   };
 
+  const mockPluginManager = {
+    getPluginSettings: jest.fn(),
+    updatePluginSettings: jest.fn(),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AdminController],
-      providers: [{ provide: AdminService, useValue: mockAdminService }],
+      providers: [
+        { provide: AdminService, useValue: mockAdminService },
+        { provide: PluginManager, useValue: mockPluginManager },
+      ],
     })
       .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: () => true })

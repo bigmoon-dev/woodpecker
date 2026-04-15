@@ -4,6 +4,8 @@ import {
   IsOptional,
   IsArray,
   IsUUID,
+  MinLength,
+  MaxLength,
 } from 'class-validator';
 
 export class CreateRoleDto {
@@ -33,6 +35,8 @@ export class CreateUserDto {
 
   @IsString()
   @IsNotEmpty()
+  @MinLength(8)
+  @MaxLength(72)
   password: string;
 
   @IsString()

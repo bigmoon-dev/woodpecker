@@ -69,12 +69,14 @@ describe('DataScopeFilter', () => {
       expect(ids).toEqual([]);
     });
 
-    it('should return empty array for all scope (no filter)', async () => {
+    it('should return all student IDs for all scope', async () => {
+      studentRepo.find.mockResolvedValueOnce([{ id: 's1' }, { id: 's2' }]);
       const ids = await filter.getStudentIds({
         scope: 'all',
         userId: 'u1',
       });
-      expect(ids).toEqual([]);
+      expect(ids).toEqual(['s1', 's2']);
+      expect(studentRepo.find).toHaveBeenCalledWith({ select: ['id'] });
     });
 
     it('should return empty for own scope when no student found', async () => {

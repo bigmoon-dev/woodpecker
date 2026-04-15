@@ -10,10 +10,15 @@ export class EncryptionService {
     private configService: ConfigService,
     private dataSource: DataSource,
   ) {
-    this.key = this.configService.get<string>(
-      'ENCRYPTION_KEY',
-      'default-dev-key-change-in-prod',
-    );
+    this.key = (() => {
+      const key = this.configService.get<string>('ENCRYPTION_KEY');
+      if (!key) {
+        throw new Error(
+          'ENCRYPTION_KEY environment variable is required. Set it before starting the application.',
+        );
+      }
+      return key;
+    })();
   }
 
   async encrypt(plaintext: string): Promise<Buffer> {

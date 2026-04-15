@@ -5,8 +5,10 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtService } from '@nestjs/jwt';
 import { HookBus } from '../plugin/hook-bus';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { RefreshToken } from '../../entities/auth/refresh-token.entity';
 
-describe('AuthController Hook emit', () => {
+describe('AuthController', () => {
   let controller: AuthController;
   let hookBus: any;
   let authService: any;
@@ -19,6 +21,12 @@ describe('AuthController Hook emit', () => {
     verify: jest.fn(),
   };
   const mockHookBus = { emit: jest.fn().mockResolvedValue(undefined) };
+  const mockRefreshTokenRepo = {
+    save: jest.fn().mockResolvedValue({}),
+    findOne: jest.fn(),
+    update: jest.fn().mockResolvedValue({}),
+    create: jest.fn((data) => data),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -28,6 +36,7 @@ describe('AuthController Hook emit', () => {
         { provide: AuthService, useValue: mockAuthService },
         { provide: JwtService, useValue: mockJwtService },
         { provide: HookBus, useValue: mockHookBus },
+        { provide: getRepositoryToken(RefreshToken), useValue: mockRefreshTokenRepo },
       ],
     }).compile();
 
@@ -91,33 +100,82 @@ describe('AuthController Hook emit', () => {
   });
 
   describe('refresh()', () => {
-    it('valid refresh token returns new accessToken', () => {
+    it('valid refresh token returns new tokens (rotation)', async () => {
       const decoded = {
         sub: 'u1',
         username: 'testuser',
         roles: ['admin'],
       };
       mockJwtService.verify.mockReturnValueOnce(decoded);
-      mockJwtService.sign.mockReturnValueOnce('new-access-token');
+      mockJwtService.sign
+        .mockReturnValueOnce('new-access-token')
+        .mockReturnValueOnce('new-refresh-token');
+      mockRefreshTokenRepo.findOne.mockResolvedValueOnce({
+        id: 'rt1',
+        expiresAt: new Date(Date.now() + 86400000),
+      });
 
-      const result = controller.refresh({ refreshToken: 'valid-token' });
+      const result = await controller.refresh({ refreshToken: 'valid-token' });
 
       expect(mockJwtService.verify).toHaveBeenCalledWith('valid-token');
-      expect(mockJwtService.sign).toHaveBeenCalledWith(
-        { sub: 'u1', username: 'testuser', roles: ['admin'] },
-        { expiresIn: '15m' },
+      expect(result).toHaveProperty('accessToken', 'new-access-token');
+      expect(result).toHaveProperty('refreshToken', 'new-refresh-token');
+      expect(mockRefreshTokenRepo.update).toHaveBeenCalledWith(
+        'rt1',
+        expect.objectContaining({ revokedAt: expect.any(Date) }),
       );
-      expect(result).toEqual({ accessToken: 'new-access-token' });
+      expect(mockRefreshTokenRepo.save).toHaveBeenCalled();
     });
 
-    it('invalid refresh token throws UnauthorizedException', () => {
+    it('invalid refresh token throws UnauthorizedException', async () => {
       mockJwtService.verify.mockImplementationOnce(() => {
         throw new Error('invalid');
       });
 
-      expect(() => controller.refresh({ refreshToken: 'bad-token' })).toThrow(
-        UnauthorizedException,
+      await expect(
+        controller.refresh({ refreshToken: 'bad-token' }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('revoked refresh token throws UnauthorizedException', async () => {
+      const decoded = {
+        sub: 'u1',
+        username: 'testuser',
+        roles: ['admin'],
+      };
+      mockJwtService.verify.mockReturnValueOnce(decoded);
+      mockRefreshTokenRepo.findOne.mockResolvedValueOnce(null);
+
+      await expect(
+        controller.refresh({ refreshToken: 'revoked-token' }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('logout()', () => {
+    it('should revoke refresh token', async () => {
+      mockJwtService.verify.mockReturnValueOnce({
+        sub: 'u1',
+        username: 'testuser',
+        roles: ['admin'],
+      });
+
+      const result = await controller.logout({ refreshToken: 'valid-token' });
+
+      expect(result).toEqual({ success: true });
+      expect(mockRefreshTokenRepo.update).toHaveBeenCalledWith(
+        { tokenHash: expect.any(String), revokedAt: null },
+        { revokedAt: expect.any(Date) },
       );
+    });
+
+    it('should return success even for invalid token', async () => {
+      mockJwtService.verify.mockImplementationOnce(() => {
+        throw new Error('invalid');
+      });
+
+      const result = await controller.logout({ refreshToken: 'bad-token' });
+      expect(result).toEqual({ success: true });
     });
   });
 });

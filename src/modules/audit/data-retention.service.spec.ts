@@ -4,6 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Student } from '../../entities/org/student.entity';
 import { DataRetentionService } from './data-retention.service';
+import { EncryptionService } from '../core/encryption.service';
 
 describe('DataRetentionService', () => {
   let service: DataRetentionService;
@@ -19,6 +20,11 @@ describe('DataRetentionService', () => {
     get: jest.fn(),
   };
 
+  const mockEncryptionService = {
+    decrypt: jest.fn(),
+    encrypt: jest.fn(),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
@@ -29,6 +35,7 @@ describe('DataRetentionService', () => {
           useValue: mockStudentRepo,
         },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: EncryptionService, useValue: mockEncryptionService },
       ],
     }).compile();
 
@@ -51,43 +58,37 @@ describe('DataRetentionService', () => {
     expect(studentRepo.save).not.toHaveBeenCalled();
   });
 
-  it('should hash PII fields and save expired students', async () => {
+  it('should mask PII fields and save expired students', async () => {
     mockConfigService.get.mockReturnValue(30);
     const students = [
       {
         id: 's1',
-        encryptedName: Buffer.from('Alice'),
-        encryptedStudentNumber: Buffer.from('2024001'),
-        encryptedContact: Buffer.from('13800000001'),
-      },
-      {
-        id: 's2',
-        encryptedName: Buffer.from('Bob'),
-        encryptedStudentNumber: Buffer.from('2024002'),
-        encryptedContact: Buffer.from('13800000002'),
+        encryptedName: Buffer.from('encrypted-name-1'),
+        encryptedStudentNumber: Buffer.from('encrypted-num-1'),
+        encryptedContact: Buffer.from('encrypted-contact-1'),
       },
     ];
     mockStudentRepo.find.mockResolvedValueOnce(students);
+    mockEncryptionService.decrypt
+      .mockResolvedValueOnce('张三')
+      .mockResolvedValueOnce('2023010001')
+      .mockResolvedValueOnce('13812345678');
+    mockEncryptionService.encrypt.mockImplementation((v: string) =>
+      Promise.resolve(Buffer.from('masked:' + v)),
+    );
     mockStudentRepo.save.mockImplementationOnce((s: any[]) =>
       Promise.resolve(s),
     );
 
     const result = await service.desensitizeExpired();
 
-    expect(result).toBe(2);
-    expect(studentRepo.save).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ id: 's1' }),
-        expect.objectContaining({ id: 's2' }),
-      ]),
-    );
-
+    expect(result).toBe(1);
+    expect(mockEncryptionService.decrypt).toHaveBeenCalledTimes(3);
+    expect(mockEncryptionService.encrypt).toHaveBeenCalledTimes(3);
     const saved = mockStudentRepo.save.mock.calls[0][0] as any[];
-    for (const s of saved) {
-      expect(s.encryptedName).toBeInstanceOf(Buffer);
-      expect(s.encryptedStudentNumber).toBeInstanceOf(Buffer);
-      expect(s.encryptedContact).toBeInstanceOf(Buffer);
-    }
+    expect(saved[0].encryptedName.toString()).toContain('masked:张**');
+    expect(saved[0].encryptedStudentNumber.toString()).toContain('masked:2023****0001');
+    expect(saved[0].encryptedContact.toString()).toContain('masked:138****5678');
   });
 
   it('should skip null PII fields without error', async () => {
@@ -119,12 +120,18 @@ describe('DataRetentionService', () => {
     const students = [
       {
         id: 's4',
-        encryptedName: Buffer.from('Charlie'),
+        encryptedName: Buffer.from('encrypted-name-4'),
         encryptedStudentNumber: null,
-        encryptedContact: Buffer.from('13900001111'),
+        encryptedContact: Buffer.from('encrypted-contact-4'),
       },
     ];
     mockStudentRepo.find.mockResolvedValueOnce(students);
+    mockEncryptionService.decrypt
+      .mockResolvedValueOnce('Charlie')
+      .mockResolvedValueOnce('13900001111');
+    mockEncryptionService.encrypt.mockImplementation((v: string) =>
+      Promise.resolve(Buffer.from('masked:' + v)),
+    );
     mockStudentRepo.save.mockImplementationOnce((s: any[]) =>
       Promise.resolve(s),
     );
