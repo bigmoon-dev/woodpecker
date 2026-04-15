@@ -147,6 +147,93 @@ export class DashboardService {
     return this.dataSource.query(sql, params);
   }
 
+  async getAlertTrendByMonth(
+    dataScope: DataScope,
+    startDate: string,
+    endDate?: string,
+    period: 'month' | 'semester' = 'month',
+  ): Promise<Record<string, string>[]> {
+    const { filterSql, params } = this.buildScopeFilter(
+      dataScope,
+      'ar.student_id',
+    );
+    const startIdx = params.push(startDate);
+
+    let endFilter = '';
+    let periodExpr: string;
+    if (period === 'semester') {
+      periodExpr = `CASE 
+        WHEN EXTRACT(MONTH FROM ar.created_at) <= 6 
+        THEN TO_CHAR(ar.created_at, 'YYYY') || '-S1'
+        ELSE TO_CHAR(ar.created_at, 'YYYY') || '-S2'
+      END`;
+    } else {
+      periodExpr = `TO_CHAR(ar.created_at, 'YYYY-MM')`;
+    }
+
+    if (endDate) {
+      const endIdx = params.push(endDate);
+      endFilter = `AND ar.created_at <= $${endIdx}`;
+    }
+
+    const sql = `
+      SELECT
+        ${periodExpr} AS period,
+        COUNT(*) FILTER (WHERE ar.level = 'red') AS red_count,
+        COUNT(*) FILTER (WHERE ar.level = 'yellow') AS yellow_count,
+        COUNT(*) AS total_count
+      FROM alert_records ar
+      WHERE ar.created_at >= $${startIdx}
+        ${endFilter}
+        ${filterSql}
+      GROUP BY ${periodExpr}
+      ORDER BY period
+    `;
+
+    return this.dataSource.query(sql, params);
+  }
+
+  async getRiskHeatmap(
+    dataScope: DataScope,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<Record<string, string>[]> {
+    const { filterSql, params } = this.buildScopeFilter(
+      dataScope,
+      'ar.student_id',
+    );
+
+    let dateFilter = '';
+    if (startDate) {
+      const idx = params.push(startDate);
+      dateFilter += `AND ar.created_at >= $${idx}`;
+    }
+    if (endDate) {
+      const idx = params.push(endDate);
+      dateFilter += `AND ar.created_at <= $${idx}`;
+    }
+
+    const sql = `
+      SELECT
+        g.name AS grade_name,
+        c.name AS class_name,
+        COUNT(DISTINCT ar.student_id) FILTER (WHERE ar.level = 'red') AS red_students,
+        COUNT(DISTINCT ar.student_id) FILTER (WHERE ar.level = 'yellow') AS yellow_students,
+        COUNT(DISTINCT ar.student_id) AS total_alert_students
+      FROM alert_records ar
+      JOIN students s ON s.id = ar.student_id
+      JOIN classes c ON c.id = s.class_id
+      JOIN grades g ON g.id = c.grade_id
+      WHERE 1=1
+        ${dateFilter}
+        ${filterSql}
+      GROUP BY g.name, c.name, g.sort_order, c.sort_order
+      ORDER BY g.sort_order, c.sort_order
+    `;
+
+    return this.dataSource.query(sql, params);
+  }
+
   private buildScopeFilter(
     dataScope: DataScope,
     studentIdCol: string,

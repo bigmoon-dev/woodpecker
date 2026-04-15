@@ -2,6 +2,42 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.10.0] - 2026-04-15
+
+### Added
+
+#### 数据看板增强 — 预警趋势图表 + 高风险学生热力图
+
+**DashboardService 新增方法**
+- `getAlertTrendByMonth(dataScope, startDate, endDate?, period?)` — 按月或学期聚合预警趋势
+  - `period=month`: `YYYY-MM` 粒度聚合 red/yellow/total
+  - `period=semester`: 基于 createdAt 月份映射 `YYYY-S1`(1-6月)/`YYYY-S2`(7-12月)
+  - 支持 startDate/endDate 范围过滤
+  - 复用 buildScopeFilter (own/class/grade/all)
+
+- `getRiskHeatmap(dataScope, startDate?, endDate?)` — 年级×班级高风险学生分布热力图
+  - 聚合维度: grade_name × class_name
+  - 指标: red_students, yellow_students, total_alert_students (DISTINCT student_id)
+  - 按 g.sort_order, c.sort_order 排序
+
+**Dashboard Controller 新增端点**
+- `GET /api/dashboard/alert-trend?startDate=&endDate=&period=month|semester`
+- `GET /api/dashboard/risk-heatmap?startDate=&endDate=`
+
+**Tests**
+- `dashboard.service.spec.ts`: +10 tests (月度/学期聚合、scope=all/own/class/grade、日期范围、空结果)
+- `dashboard.controller.spec.ts`: +3 tests (alert-trend 默认/semester、risk-heatmap 日期参数)
+
+### Changed
+
+- Version bumped to `0.10.0`
+- Dashboard 模块覆盖率: Stmts 100%, Branch 89.18%, Lines 100%
+
+### Test Results
+
+- 56 test suites, 471 test cases, all passing
+- ESLint 0 warnings, TypeScript 0 errors
+
 ## [0.9.0] - 2026-04-15
 
 ### Added
