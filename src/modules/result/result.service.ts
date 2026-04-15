@@ -19,6 +19,23 @@ export interface ResultWithContext {
   scaleName: string;
 }
 
+export interface RetestComparison {
+  studentId: string;
+  scaleId: string;
+  scaleName: string;
+  history: {
+    date: Date;
+    totalScore: number;
+    dimensionScores: Record<string, number> | null;
+    level: string;
+    color: string;
+  }[];
+  delta: number | null;
+  dimensionDeltas: Record<string, number> | null;
+  trend: 'rising' | 'declining' | 'stable' | 'insufficient';
+  levelTransition: string | null;
+}
+
 @Injectable()
 export class ResultService {
   constructor(
@@ -33,6 +50,89 @@ export class ResultService {
     private dataScopeFilter: DataScopeFilter,
     private encryptionService: EncryptionService,
   ) {}
+
+  async compareResults(
+    studentId: string,
+    scaleId: string,
+  ): Promise<RetestComparison> {
+    const answers = await this.answerRepo
+      .createQueryBuilder('ta')
+      .innerJoinAndSelect('ta.task', 'task')
+      .where('ta.student_id = :studentId', { studentId })
+      .andWhere('task.scale_id = :scaleId', { scaleId })
+      .andWhere('ta.status = :status', { status: 'submitted' })
+      .orderBy('ta.submitted_at', 'ASC')
+      .getMany();
+
+    if (answers.length === 0) {
+      return {
+        studentId,
+        scaleId,
+        scaleName: '',
+        history: [],
+        delta: null,
+        dimensionDeltas: null,
+        trend: 'insufficient',
+        levelTransition: null,
+      };
+    }
+
+    const answerIds = answers.map((a) => a.id);
+    const results = await this.resultRepo.find({
+      where: answerIds.map((id) => ({ answerId: id })),
+      order: { createdAt: 'ASC' },
+    });
+
+    const history = results.map((r) => ({
+      date: r.createdAt,
+      totalScore: r.totalScore,
+      dimensionScores: r.dimensionScores,
+      level: r.level,
+      color: r.color,
+    }));
+
+    const delta =
+      results.length >= 2
+        ? results[results.length - 1].totalScore - results[0].totalScore
+        : null;
+
+    let dimensionDeltas: Record<string, number> | null = null;
+    if (results.length >= 2) {
+      const first = results[0].dimensionScores || {};
+      const last = results[results.length - 1].dimensionScores || {};
+      const keys = new Set([...Object.keys(first), ...Object.keys(last)]);
+      dimensionDeltas = {};
+      for (const key of keys) {
+        dimensionDeltas[key] = (last[key] || 0) - (first[key] || 0);
+      }
+    }
+
+    let trend: RetestComparison['trend'] = 'insufficient';
+    if (delta !== null) {
+      if (delta > 0) trend = 'rising';
+      else if (delta < 0) trend = 'declining';
+      else trend = 'stable';
+    }
+
+    const levelTransition =
+      results.length >= 2
+        ? `${results[0].level} → ${results[results.length - 1].level}`
+        : null;
+
+    const firstAnswer = answers[0];
+    const scaleName = firstAnswer?.task?.scale?.name ?? '';
+
+    return {
+      studentId,
+      scaleId,
+      scaleName,
+      history,
+      delta,
+      dimensionDeltas,
+      trend,
+      levelTransition,
+    };
+  }
 
   async findByStudent(studentId: string): Promise<TaskResult[]> {
     const answers = await this.answerRepo.find({ where: { studentId } });

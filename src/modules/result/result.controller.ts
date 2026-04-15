@@ -49,6 +49,14 @@ export class ResultController {
     return this.resultService.findByGrade(gradeId, query.page, query.pageSize);
   }
 
+  @Get('compare')
+  async compareResults(
+    @Query('studentId') studentId: string,
+    @Query('scaleId') scaleId: string,
+  ) {
+    return this.resultService.compareResults(studentId, scaleId);
+  }
+
   @Get()
   async findByScope(@Req() req: AuthenticatedRequest) {
     return this.resultService.findByScope(req.dataScope);
