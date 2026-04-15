@@ -15,6 +15,8 @@ describe('DashboardController', () => {
     getAlertDistribution: jest.fn(),
     getTrend: jest.fn(),
     getScaleUsage: jest.fn(),
+    getAlertTrendByMonth: jest.fn(),
+    getRiskHeatmap: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -86,5 +88,40 @@ describe('DashboardController', () => {
       scope: 'all',
       userId: 'u1',
     });
+  });
+
+  it('getAlertTrend delegates with default period=month', async () => {
+    dashboardService.getAlertTrendByMonth.mockResolvedValueOnce([]);
+    const req = { dataScope: { scope: 'all', userId: 'u1' } } as any;
+    await controller.getAlertTrend(req, undefined, undefined, undefined);
+    expect(dashboardService.getAlertTrendByMonth).toHaveBeenCalledWith(
+      { scope: 'all', userId: 'u1' },
+      expect.any(String),
+      undefined,
+      'month',
+    );
+  });
+
+  it('getAlertTrend passes period=semester and dates', async () => {
+    dashboardService.getAlertTrendByMonth.mockResolvedValueOnce([]);
+    const req = { dataScope: { scope: 'all', userId: 'u1' } } as any;
+    await controller.getAlertTrend(req, '2025-01-01', '2025-06-30', 'semester');
+    expect(dashboardService.getAlertTrendByMonth).toHaveBeenCalledWith(
+      { scope: 'all', userId: 'u1' },
+      '2025-01-01',
+      '2025-06-30',
+      'semester',
+    );
+  });
+
+  it('getRiskHeatmap delegates with date parameters', async () => {
+    dashboardService.getRiskHeatmap.mockResolvedValueOnce([]);
+    const req = { dataScope: { scope: 'all', userId: 'u1' } } as any;
+    await controller.getRiskHeatmap(req, '2025-01-01', '2025-12-31');
+    expect(dashboardService.getRiskHeatmap).toHaveBeenCalledWith(
+      { scope: 'all', userId: 'u1' },
+      '2025-01-01',
+      '2025-12-31',
+    );
   });
 });

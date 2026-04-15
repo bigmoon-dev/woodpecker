@@ -58,6 +58,35 @@ export class DashboardController {
     return this.dashboardService.getScaleUsage(req.dataScope);
   }
 
+  @Get('alert-trend')
+  async getAlertTrend(
+    @Req() req: AuthenticatedRequest,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('period') period?: 'month' | 'semester',
+  ) {
+    const from = startDate || this.defaultStartDate();
+    return this.dashboardService.getAlertTrendByMonth(
+      req.dataScope,
+      from,
+      endDate,
+      period || 'month',
+    );
+  }
+
+  @Get('risk-heatmap')
+  async getRiskHeatmap(
+    @Req() req: AuthenticatedRequest,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.dashboardService.getRiskHeatmap(
+      req.dataScope,
+      startDate,
+      endDate,
+    );
+  }
+
   private defaultStartDate(): string {
     const d = new Date();
     d.setDate(d.getDate() - 30);
