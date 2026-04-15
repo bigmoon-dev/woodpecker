@@ -2,6 +2,44 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.7.0] - 2026-04-15
+
+### Added
+
+#### P0/P1 Security Hardening + Test Coverage (5 Directions)
+
+**DIR-1: Consent Expiry Enforcement**
+- `consent-record.entity.ts`: Added `expiresAt: Date | null` column — consent records can now have an optional expiry date
+- `consent.guard.ts`: Added expiry check after consent lookup — distinguishes unsigned (未签署) vs expired (已过期) with separate error messages
+- `consent-security.spec.ts`: 3 new tests — expired consent blocked, non-expiring (null expiresAt) allowed, future-dated consent allowed
+
+**DIR-2: Audit Log Integrity (HMAC)**
+- `audit-log.entity.ts`: Added `integrityHash: string | null` column — each audit entry is cryptographically signed
+- `audit-integrity.service.ts` (new): `computeHash()` generates HMAC-SHA256 over log fields; `verify()` uses `timingSafeEqual` for tamper detection; `verifyChain()` detects first tampered entry in a sorted log sequence
+- `audit.interceptor.ts`: Injected `ConfigService` + `AuditIntegrityService`; computes and attaches `integrityHash` on every audit log creation; `createdAt` set explicitly for deterministic signing
+- `audit.module.ts`: Registered `AuditIntegrityService` as provider + export
+- `audit.interceptor.spec.ts`: Updated test module to mock `ConfigService` + `AuditIntegrityService`
+- `audit-security.spec.ts`: 3 new integrity tests — signature attached on creation, tamper detection via verify, chain verification identifies tampered index
+
+**DIR-3: Timing-Safe Token Comparison**
+- `auth.controller.ts` refresh flow: Added `crypto.timingSafeEqual` buffer comparison between stored and computed token hashes, preventing timing side-channel attacks on refresh token validation
+- `auth-security.spec.ts`: Updated timing test — verifies mismatched token hashes cause `UnauthorizedException` rejection
+
+**DIR-4: Result Service Coverage**
+- `result-filter.spec.ts` (new): 9 tests covering `findByFilter` — classId branch, gradeId branch, empty grade, dataScope delegation, no-filter (scope=all) path, taskId filtering, empty answers, batchDecrypt with unique student IDs, ResultWithContext fallback for missing PII
+
+**DIR-5: Alert Error Path Coverage**
+- `alert.service.spec.ts`: 2 new tests — `followup` returns null `retestComparisonUrl` when answer query throws, `triggerAlert` does not throw when `notifyRelevantUsers` fails (studentRepo rejection)
+
+### Changed
+
+- Version bumped from `0.1.0` to `0.7.0` in `package.json` (aligned with CHANGELOG history)
+
+### Test Results
+
+- 54 test suites, 423 test cases, all passing
+- ESLint 0 warnings, TypeScript 0 errors
+
 ## [0.6.1] - 2026-04-14
 
 ### Added
