@@ -3,7 +3,7 @@
 面向 K-12 学校场景的心理健康量表在线测评平台，支持 Excel 导入量表、学生在线答题、自动计分与分级预警。
 
 [![CI](https://github.com/bigmoon-dev/woodpecker/actions/workflows/ci.yml/badge.svg)](https://github.com/bigmoon-dev/woodpecker/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-89.11%25-yellowgreen)](./src/modules/scoring/)
+[![Coverage](https://img.shields.io/badge/coverage-89.21%25-yellowgreen)](./src/modules/scoring/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
 > 啄木鸟是"森林医生"，以早发现、早干预为寓意，守护学生心理健康。
