@@ -49,6 +49,7 @@ describe('ResultService.compareResults', () => {
   function mockQueryBuilder(results: any[]) {
     const qb: any = {
       innerJoinAndSelect: jest.fn().mockReturnThis(),
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
@@ -268,5 +269,33 @@ describe('ResultService.compareResults', () => {
 
     const result = await service.compareResults('s1', 'scale1');
     expect(result.dimensionDeltas).toEqual({ anxiety: 10 });
+  });
+
+  it('returns correct scaleName from joined scale relation', async () => {
+    mockQueryBuilder([
+      { id: 'a1', task: { scale: { name: 'PHQ-9 抑郁量表' } } },
+      { id: 'a2', task: { scale: { name: 'PHQ-9 抑郁量表' } } },
+    ]);
+    mockResultRepo.find.mockResolvedValue([
+      {
+        answerId: 'a1',
+        totalScore: 5,
+        dimensionScores: { q1: 2, q2: 3 },
+        level: '正常',
+        color: 'green',
+        createdAt: new Date(),
+      },
+      {
+        answerId: 'a2',
+        totalScore: 15,
+        dimensionScores: { q1: 8, q2: 7 },
+        level: '中度',
+        color: 'red',
+        createdAt: new Date(),
+      },
+    ]);
+
+    const result = await service.compareResults('s1', 'scale1');
+    expect(result.scaleName).toBe('PHQ-9 抑郁量表');
   });
 });

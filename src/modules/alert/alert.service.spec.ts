@@ -9,8 +9,11 @@ import { Student } from '../../entities/org/student.entity';
 import { Class } from '../../entities/org/class.entity';
 import { User } from '../../entities/auth/user.entity';
 import { Role } from '../../entities/auth/role.entity';
+import { TaskResult } from '../../entities/task/task-result.entity';
+import { TaskAnswer } from '../../entities/task/task-answer.entity';
 import { HookBus } from '../plugin/hook-bus';
 import { DataScopeFilter } from '../auth/data-scope-filter';
+import { ResultService } from '../result/result.service';
 
 describe('AlertService', () => {
   let service: AlertService;
@@ -39,6 +42,9 @@ describe('AlertService', () => {
   const mockDataScopeFilter = {
     getStudentIds: jest.fn().mockResolvedValue([]),
   };
+  const mockResultRepo = { findOne: jest.fn() };
+  const mockAnswerRepo = { createQueryBuilder: jest.fn() };
+  const mockResultService = { compareResults: jest.fn() };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -57,8 +63,11 @@ describe('AlertService', () => {
         { provide: getRepositoryToken(Class), useValue: mockClassRepo },
         { provide: getRepositoryToken(User), useValue: mockUserRepo },
         { provide: getRepositoryToken(Role), useValue: mockRoleRepo },
+        { provide: getRepositoryToken(TaskResult), useValue: mockResultRepo },
+        { provide: getRepositoryToken(TaskAnswer), useValue: mockAnswerRepo },
         { provide: HookBus, useValue: mockHookBus },
         { provide: DataScopeFilter, useValue: mockDataScopeFilter },
+        { provide: ResultService, useValue: mockResultService },
       ],
     }).compile();
 
@@ -217,10 +226,13 @@ describe('AlertService', () => {
     it('should followup an alert', async () => {
       mockAlertRepo.findOne.mockResolvedValue({
         id: 'a1',
+        resultId: 'r1',
+        studentId: 's1',
         status: 'handled',
       });
+      mockResultRepo.findOne.mockResolvedValue(null);
 
-      await service.followup('a1', 'u1', 'followup note');
+      const result = await service.followup('a1', 'u1', 'followup note');
 
       expect(alertRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -229,19 +241,25 @@ describe('AlertService', () => {
           handleNote: 'followup note',
         }),
       );
+      expect(result.retestComparisonUrl).toBeNull();
     });
 
     it('should emit on:alert.resolved after followup', async () => {
       mockAlertRepo.findOne.mockResolvedValue({
         id: 'a1',
+        resultId: 'r1',
+        studentId: 's1',
         status: 'handled',
       });
       mockAlertRepo.save.mockResolvedValue({
         id: 'a1',
+        resultId: 'r1',
+        studentId: 's1',
         status: 'followup',
         handledById: 'u1',
         handleNote: 'followup note',
       });
+      mockResultRepo.findOne.mockResolvedValue(null);
 
       await service.followup('a1', 'u1', 'followup note');
 

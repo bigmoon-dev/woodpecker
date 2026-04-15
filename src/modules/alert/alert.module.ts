@@ -6,9 +6,12 @@ import { Student } from '../../entities/org/student.entity';
 import { Class } from '../../entities/org/class.entity';
 import { User } from '../../entities/auth/user.entity';
 import { Role } from '../../entities/auth/role.entity';
+import { TaskResult } from '../../entities/task/task-result.entity';
+import { TaskAnswer } from '../../entities/task/task-answer.entity';
 import { AlertService } from './alert.service';
 import { AlertController } from './alert.controller';
 import { PluginModule } from '../plugin/plugin.module';
+import { ResultModule } from '../result/result.module';
 
 @Module({
   imports: [
@@ -19,8 +22,11 @@ import { PluginModule } from '../plugin/plugin.module';
       Class,
       User,
       Role,
+      TaskResult,
+      TaskAnswer,
     ]),
     PluginModule,
+    ResultModule,
   ],
   controllers: [AlertController],
   providers: [AlertService],

@@ -58,6 +58,7 @@ export class ResultService {
     const answers = await this.answerRepo
       .createQueryBuilder('ta')
       .innerJoinAndSelect('ta.task', 'task')
+      .leftJoinAndSelect('task.scale', 'scale')
       .where('ta.student_id = :studentId', { studentId })
       .andWhere('task.scale_id = :scaleId', { scaleId })
       .andWhere('ta.status = :status', { status: 'submitted' })

@@ -9,6 +9,14 @@ import { User } from '../../entities/auth/user.entity';
 import { Role } from '../../entities/auth/role.entity';
 import { HookBus } from '../plugin/hook-bus';
 import { DataScopeFilter, DataScope } from '../auth/data-scope-filter';
+import { ResultService } from '../result/result.service';
+import { TaskResult } from '../../entities/task/task-result.entity';
+import { TaskAnswer } from '../../entities/task/task-answer.entity';
+
+export interface FollowupResponse {
+  alert: AlertRecord;
+  retestComparisonUrl: string | null;
+}
 
 @Injectable()
 export class AlertService {
@@ -25,8 +33,13 @@ export class AlertService {
     private userRepo: Repository<User>,
     @InjectRepository(Role)
     private roleRepo: Repository<Role>,
+    @InjectRepository(TaskResult)
+    private resultRepo: Repository<TaskResult>,
+    @InjectRepository(TaskAnswer)
+    private answerRepo: Repository<TaskAnswer>,
     private hookBus: HookBus,
     private dataScopeFilter: DataScopeFilter,
+    private resultService: ResultService,
   ) {}
 
   async findAll(
@@ -90,7 +103,7 @@ export class AlertService {
     id: string,
     handledById: string,
     handleNote: string,
-  ): Promise<AlertRecord> {
+  ): Promise<FollowupResponse> {
     const alert = await this.findOne(id);
     alert.status = 'followup';
     alert.handledById = handledById;
@@ -105,7 +118,27 @@ export class AlertService {
         handleNote: saved.handleNote,
       })
       .catch(() => {});
-    return saved;
+
+    let retestComparisonUrl: string | null = null;
+    try {
+      const result = await this.resultRepo.findOne({
+        where: { id: saved.resultId },
+      });
+      if (result) {
+        const answer = await this.answerRepo
+          .createQueryBuilder('ta')
+          .innerJoin('ta.task', 'task')
+          .where('ta.id = :answerId', { answerId: result.answerId })
+          .getOne();
+        if (answer) {
+          retestComparisonUrl = `/api/results/compare?studentId=${saved.studentId}&scaleId=${answer.taskId}`;
+        }
+      }
+    } catch {
+      retestComparisonUrl = null;
+    }
+
+    return { alert: saved, retestComparisonUrl };
   }
 
   async triggerAlert(

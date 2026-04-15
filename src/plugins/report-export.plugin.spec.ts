@@ -19,17 +19,72 @@ describe('ReportExportPlugin', () => {
     expect(hooks[0].priority).toBe(10);
   });
 
-  it('hook handler logs result id without throwing', () => {
+  it('hook handler calls generatePdf when format is pdf', async () => {
+    const mockExportService = {
+      generatePdf: jest.fn().mockResolvedValue(Buffer.from('pdf')),
+      generateExcel: jest.fn(),
+    };
+    plugin.setExportService(mockExportService);
+    plugin.onEnable({
+      config: { format: 'pdf' },
+      logger: { info: jest.fn(), error: jest.fn() },
+    });
+
     const hooks = plugin.getHooks();
-    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-    expect(() => hooks[0].handler({ id: 'test-id' })).not.toThrow();
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('test-id'));
-    consoleSpy.mockRestore();
+    await hooks[0].handler({ id: 'result-123' });
+
+    expect(mockExportService.generatePdf).toHaveBeenCalledWith('result-123');
   });
 
-  it('hook handler handles null result gracefully', () => {
+  it('hook handler logs queued message when format is excel', async () => {
+    const mockExportService = {
+      generateExcel: jest.fn(),
+      generatePdf: jest.fn(),
+    };
+    plugin.setExportService(mockExportService);
+    const infoSpy = jest.fn();
+    plugin.onEnable({
+      config: { format: 'excel' },
+      logger: { info: infoSpy, error: jest.fn() },
+    });
+
     const hooks = plugin.getHooks();
-    expect(() => hooks[0].handler(null)).not.toThrow();
+    await hooks[0].handler({ id: 'result-456' });
+
+    expect(mockExportService.generateExcel).not.toHaveBeenCalled();
+    expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining('result-456'));
+  });
+
+  it('hook handler handles null result gracefully', async () => {
+    const mockExportService = {
+      generatePdf: jest.fn(),
+      generateExcel: jest.fn(),
+    };
+    plugin.setExportService(mockExportService);
+
+    const hooks = plugin.getHooks();
+    await expect(hooks[0].handler(null)).resolves.toBeUndefined();
+    expect(mockExportService.generatePdf).not.toHaveBeenCalled();
+  });
+
+  it('hook handler handles export service error gracefully', async () => {
+    const mockExportService = {
+      generatePdf: jest.fn().mockRejectedValue(new Error('DB down')),
+      generateExcel: jest.fn(),
+    };
+    plugin.setExportService(mockExportService);
+    const errorSpy = jest.fn();
+    plugin.onEnable({
+      config: { format: 'pdf' },
+      logger: { info: jest.fn(), error: errorSpy },
+    });
+
+    const hooks = plugin.getHooks();
+    await hooks[0].handler({ id: 'result-789' });
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Auto-export failed'),
+    );
   });
 
   it('returns export routes', () => {
@@ -56,8 +111,18 @@ describe('ReportExportPlugin', () => {
   });
 
   it('lifecycle hooks do not throw', () => {
-    expect(() => plugin.onInstall()).not.toThrow();
-    expect(() => plugin.onEnable()).not.toThrow();
+    expect(() =>
+      plugin.onInstall({
+        config: {},
+        logger: { info: jest.fn(), error: jest.fn() },
+      }),
+    ).not.toThrow();
+    expect(() =>
+      plugin.onEnable({
+        config: {},
+        logger: { info: jest.fn(), error: jest.fn() },
+      }),
+    ).not.toThrow();
     expect(() => plugin.onDisable()).not.toThrow();
     expect(() => plugin.onUninstall()).not.toThrow();
   });

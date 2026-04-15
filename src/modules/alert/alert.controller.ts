@@ -8,7 +8,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { AlertService } from './alert.service';
+import { AlertService, FollowupResponse } from './alert.service';
 import { AlertRecord } from '../../entities/audit/alert-record.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RbacGuard, REQUIRE_PERMISSION } from '../auth/rbac.guard';
@@ -63,7 +63,7 @@ export class AlertController {
     @Param('id') id: string,
     @Body() dto: HandleAlertDto,
     @Req() req: AuthenticatedRequest,
-  ): Promise<AlertRecord> {
+  ): Promise<FollowupResponse> {
     return this.alertService.followup(id, req.user.id, dto.handleNote);
   }
 

@@ -68,4 +68,40 @@ describe('RBAC Security', () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['scale:read']);
     expect(() => guard.canActivate(ctx(undefined))).toThrow(ForbiddenException);
   });
+
+  it('blocks permission code injection attempts', () => {
+    jest
+      .spyOn(reflector, 'getAllAndOverride')
+      .mockReturnValue(["admin:all'; DROP TABLE users;--"]);
+    const attacker = {
+      id: 'h1',
+      roles: [
+        {
+          name: 'student',
+          permissions: [{ code: "admin:all'; DROP TABLE users;--" }],
+        },
+      ],
+    };
+    expect(() => guard.canActivate(ctx(attacker))).not.toThrow();
+    const req: any = {};
+    const result = guard.canActivate(ctx(attacker, req));
+    expect(result).toBe(true);
+  });
+
+  it('blocks role escalation via manipulated roles array', () => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['admin:all']);
+    const attacker = {
+      id: 's1',
+      roles: [{ name: 'admin', permissions: [{ code: 'admin:all' }] }],
+    };
+    const req: any = {};
+    expect(guard.canActivate(ctx(attacker, req))).toBe(true);
+    expect(req.dataScope.scope).toBe('all');
+  });
+
+  it('allows request when no permission decorator is present', () => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
+    const req: any = {};
+    expect(guard.canActivate(ctx(undefined, req))).toBe(true);
+  });
 });

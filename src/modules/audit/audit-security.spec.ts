@@ -120,4 +120,27 @@ describe('Audit Security', () => {
       },
     });
   });
+
+  it('handles concurrent audit writes without data loss', (done) => {
+    const req = {
+      user: { id: 'u1' },
+      method: 'GET',
+      url: '/api/scales',
+      ip: '127.0.0.1',
+      headers: {},
+    };
+    const concurrent = 5;
+    let completed = 0;
+    for (let i = 0; i < concurrent; i++) {
+      interceptor.intercept(ctx(req), handler(of('ok'))).subscribe({
+        complete: () => {
+          completed++;
+          if (completed === concurrent) {
+            expect(auditRepo.save).toHaveBeenCalledTimes(concurrent);
+            done();
+          }
+        },
+      });
+    }
+  });
 });

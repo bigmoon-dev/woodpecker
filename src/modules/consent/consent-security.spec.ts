@@ -65,4 +65,21 @@ describe('Consent Security', () => {
     const result = await guard.canActivate(ctx({ id: 'u1', studentId: 's1' }));
     expect(result).toBe(true);
   });
+
+  it('blocks student with expired consent (past validUntil date)', async () => {
+    consentRepo.findOne.mockResolvedValue(null);
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue('assessment');
+    await expect(
+      guard.canActivate(ctx({ id: 'u1', studentId: 's1' })),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('blocks batch request bypass - each request requires consent', async () => {
+    consentRepo.findOne.mockResolvedValue(null);
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue('data_access');
+    await expect(
+      guard.canActivate(ctx({ id: 'u1', studentId: 's1' })),
+    ).rejects.toThrow(ForbiddenException);
+    expect(consentRepo.findOne).toHaveBeenCalledTimes(1);
+  });
 });

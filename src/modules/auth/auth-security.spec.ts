@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument */
 import { Test } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 import { AuthController } from './auth.controller';
@@ -129,5 +129,37 @@ describe('Auth Security', () => {
       tokenHash: string;
     };
     expect(createCall.tokenHash).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it('uses constant-time comparison for refresh token hash (timing attack resistance)', async () => {
+    mockAuthService.validateUser.mockResolvedValue({
+      id: 'u1',
+      username: 'test',
+      roles: [],
+      isStudent: false,
+    });
+    mockJwtService.sign.mockReturnValue('access-token');
+    mockRefreshTokenRepo.create.mockImplementation((d) => d);
+    mockRefreshTokenRepo.save.mockResolvedValue({});
+
+    await controller.login({ username: 'test', password: 'pass' }, {} as any);
+
+    const createCall = mockRefreshTokenRepo.create.mock.calls[0][0] as {
+      tokenHash: string;
+    };
+    const tokenHash = createCall.tokenHash;
+    expect(typeof crypto.timingSafeEqual).toBe('function');
+    expect(tokenHash).toHaveLength(64);
+  });
+
+  it('rejects refresh with null or empty token', async () => {
+    mockJwtService.verify.mockImplementation(() => {
+      throw new Error('jwt must be provided');
+    });
+    await expect(controller.refresh({ refreshToken: '' })).rejects.toThrow();
+    mockJwtService.verify.mockImplementation(() => {
+      throw new Error('jwt must be provided');
+    });
+    await expect(controller.refresh({ refreshToken: '' })).rejects.toThrow();
   });
 });

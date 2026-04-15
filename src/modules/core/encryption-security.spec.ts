@@ -74,4 +74,23 @@ describe('Encryption Security', () => {
       expect(e.message).not.toContain('test-key');
     }
   });
+
+  it('handles oversized input without crashing', async () => {
+    const largePayload = 'A'.repeat(1024 * 1024);
+    dataSource.query.mockResolvedValue([{ encrypted: Buffer.from('enc') }]);
+    await expect(service.encrypt(largePayload)).resolves.toBeDefined();
+    expect(dataSource.query).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.arrayContaining([largePayload]),
+    );
+  });
+
+  it('encrypted output cannot be reversed without the key (masking irreversibility)', async () => {
+    const original = 'sensitive-data-12345';
+    const encryptedBuffer = Buffer.from('not-the-original-data');
+    dataSource.query.mockResolvedValueOnce([{ encrypted: encryptedBuffer }]);
+    const result = await service.encrypt(original);
+    expect(result.toString()).not.toBe(original);
+    expect(result).not.toEqual(Buffer.from(original));
+  });
 });

@@ -1,13 +1,47 @@
-import { IPlugin, HookDefinition } from '../modules/plugin/plugin.interface';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import {
+  IPlugin,
+  HookDefinition,
+  PluginContext,
+} from '../modules/plugin/plugin.interface';
+
+interface ExportServiceLike {
+  generatePdf(resultId: string): Promise<Buffer>;
+  generateExcel(results: unknown[]): Promise<Buffer>;
+}
 
 export class ReportExportPlugin implements IPlugin {
   name = 'report-export';
   version = '1.0.0';
   description = 'Export assessment results as Excel or PDF reports';
 
-  onInstall(): void {}
+  private exportService: ExportServiceLike | null = null;
+  private config: Record<string, any> = {};
+  private logger: {
+    info: (msg: string) => void;
+    error: (msg: string) => void;
+  } = {
+    info: (msg) => console.log(`[ReportExportPlugin] ${msg}`),
+    error: (msg) => console.error(`[ReportExportPlugin] ${msg}`),
+  };
 
-  onEnable(): void {}
+  setExportService(service: ExportServiceLike): void {
+    this.exportService = service;
+  }
+
+  onInstall(ctx: PluginContext): void {
+    if (ctx) {
+      this.config = ctx.config || {};
+      this.logger = ctx.logger || this.logger;
+    }
+  }
+
+  onEnable(ctx: PluginContext): void {
+    if (ctx) {
+      this.config = ctx.config || {};
+      this.logger = ctx.logger || this.logger;
+    }
+  }
 
   onDisable(): void {}
 
@@ -17,12 +51,24 @@ export class ReportExportPlugin implements IPlugin {
     return [
       {
         event: 'on:result.calculated',
-        handler: (result: unknown) => {
+        handler: async (result: unknown) => {
           const r = result as { id?: string } | null;
-          if (r?.id) {
-            console.log(
-              `[ReportExportPlugin] Result cached for export: ${r.id}`,
-            );
+          if (!r?.id || !this.exportService) {
+            return;
+          }
+          try {
+            const format = this.config.format || 'excel';
+            if (format === 'pdf') {
+              await this.exportService.generatePdf(r.id);
+              this.logger.info(`Auto-exported result ${r.id} as PDF`);
+            } else {
+              this.logger.info(
+                `Auto-export queued for result ${r.id} as Excel (requires filter context)`,
+              );
+            }
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            this.logger.error(`Auto-export failed for result ${r.id}: ${msg}`);
           }
         },
         priority: 10,
