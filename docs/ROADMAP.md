@@ -52,6 +52,12 @@
 - 全局操作审计日志（HMAC-SHA256 完整性签名，防篡改验证，链式校验）
 - Refresh Token 时序安全比较（crypto.timingSafeEqual，防时序攻击）
 
+### 测试与质量
+- 自动计分引擎单元测试覆盖率 >95%
+- AuditIntegrityService 分支覆盖率 100%（computeHash/verify/verifyChain 全路径）
+- 全局 Statements 89.85%、Lines 90.96%
+- Audit 模块 Branch 覆盖率 91.86%
+
 ### 插件系统
 - 插件生命周期（安装/启用/禁用/卸载）
 - HookBus 事件总线（on:user.login 等）
