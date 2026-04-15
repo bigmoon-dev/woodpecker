@@ -13,7 +13,7 @@ import { IsString, IsNotEmpty, MinLength, MaxLength } from 'class-validator';
 import { Public } from './public.decorator';
 import { HookBus } from '../plugin/hook-bus';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { RefreshToken } from '../../entities/auth/refresh-token.entity';
 import { LogoutDto } from './logout.dto';
 import * as crypto from 'crypto';
@@ -132,7 +132,7 @@ export class AuthController {
       .digest('hex');
 
     const stored = await this.refreshTokenRepo.findOne({
-      where: { tokenHash, revokedAt: null as any },
+      where: { tokenHash, revokedAt: IsNull() },
     });
     if (!stored || stored.expiresAt < new Date()) {
       throw new UnauthorizedException('Invalid refresh token');
@@ -175,9 +175,8 @@ export class AuthController {
   @Post('logout')
   @Public()
   async logout(@Body() dto: LogoutDto) {
-    let payload: JwtPayload;
     try {
-      payload = this.jwtService.verify<JwtPayload>(dto.refreshToken);
+      this.jwtService.verify<JwtPayload>(dto.refreshToken);
     } catch {
       return { success: true };
     }
@@ -187,7 +186,7 @@ export class AuthController {
       .update(dto.refreshToken)
       .digest('hex');
     await this.refreshTokenRepo.update(
-      { tokenHash, revokedAt: null as any },
+      { tokenHash, revokedAt: IsNull() },
       { revokedAt: new Date() },
     );
     return { success: true };

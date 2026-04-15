@@ -59,24 +59,32 @@ export class DataRetentionService {
 
     for (const student of expired) {
       if (student.encryptedName) {
-        const plain = await this.encryptionService.decrypt(student.encryptedName);
+        const plain = await this.encryptionService.decrypt(
+          student.encryptedName,
+        );
         if (!isAlreadyMaskedName(plain)) {
           const masked = maskName(plain);
           student.encryptedName = await this.encryptionService.encrypt(masked);
         }
       }
       if (student.encryptedStudentNumber) {
-        const plain = await this.encryptionService.decrypt(student.encryptedStudentNumber);
+        const plain = await this.encryptionService.decrypt(
+          student.encryptedStudentNumber,
+        );
         if (!isAlreadyMaskedStudentNumber(plain)) {
           const masked = maskStudentNumber(plain);
-          student.encryptedStudentNumber = await this.encryptionService.encrypt(masked);
+          student.encryptedStudentNumber =
+            await this.encryptionService.encrypt(masked);
         }
       }
       if (student.encryptedContact) {
-        const plain = await this.encryptionService.decrypt(student.encryptedContact);
+        const plain = await this.encryptionService.decrypt(
+          student.encryptedContact,
+        );
         if (!isAlreadyMaskedContact(plain)) {
           const masked = maskContact(plain);
-          student.encryptedContact = await this.encryptionService.encrypt(masked);
+          student.encryptedContact =
+            await this.encryptionService.encrypt(masked);
         }
       }
     }

@@ -20,7 +20,14 @@ import { DataScopeFilter } from './data-scope-filter';
 @Global()
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Role, Permission, Student, Class, RefreshToken]),
+    TypeOrmModule.forFeature([
+      User,
+      Role,
+      Permission,
+      Student,
+      Class,
+      RefreshToken,
+    ]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

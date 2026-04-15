@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ResultService } from './result.service';
@@ -14,16 +14,17 @@ describe('ResultService', () => {
   let resultRepo: any;
   let answerRepo: any;
   let dataScopeFilter: any;
-  let studentRepo: any;
-  let classRepo: any;
-  let encryptionService: any;
 
   const mockResultRepo = { find: jest.fn() };
   const mockAnswerRepo = { find: jest.fn(), createQueryBuilder: jest.fn() };
   const mockStudentRepo = { find: jest.fn() };
   const mockClassRepo = { find: jest.fn() };
-  const mockDataScopeFilter = { getStudentIds: jest.fn().mockResolvedValue([]) };
-  const mockEncryptionService = { batchDecrypt: jest.fn().mockResolvedValue(new Map()) };
+  const mockDataScopeFilter = {
+    getStudentIds: jest.fn().mockResolvedValue([]),
+  };
+  const mockEncryptionService = {
+    batchDecrypt: jest.fn().mockResolvedValue(new Map()),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -57,7 +58,9 @@ describe('ResultService', () => {
 
       const actual = await service.findByStudent('student1');
 
-      expect(answerRepo.find).toHaveBeenCalledWith({ where: { studentId: 'student1' } });
+      expect(answerRepo.find).toHaveBeenCalledWith({
+        where: { studentId: 'student1' },
+      });
       expect(resultRepo.find).toHaveBeenCalledWith({
         where: [{ answerId: 'a1' }, { answerId: 'a2' }],
       });
@@ -77,12 +80,18 @@ describe('ResultService', () => {
       const results = [{ id: 'r1' }];
       mockResultRepo.find.mockResolvedValue(results);
       const actual = await service.findByScope({ scope: 'all', userId: 'u1' });
-      expect(resultRepo.find).toHaveBeenCalledWith({ order: { createdAt: 'DESC' } });
+      expect(resultRepo.find).toHaveBeenCalledWith({
+        order: { createdAt: 'DESC' },
+      });
       expect(actual).toEqual(results);
     });
 
     it('should filter by dataScope when scope is not all', async () => {
-      const dataScope = { scope: 'class' as const, userId: 'u1', classId: 'c1' };
+      const dataScope = {
+        scope: 'class' as const,
+        userId: 'u1',
+        classId: 'c1',
+      };
       mockDataScopeFilter.getStudentIds.mockResolvedValue(['s1']);
       mockAnswerRepo.find.mockResolvedValue([{ id: 'a1' }]);
       mockResultRepo.find.mockResolvedValue([{ id: 'r1' }]);
@@ -95,7 +104,10 @@ describe('ResultService', () => {
 
     it('should return empty array when no students in scope', async () => {
       mockDataScopeFilter.getStudentIds.mockResolvedValue([]);
-      const actual = await service.findByScope({ scope: 'class' as const, userId: 'u1' });
+      const actual = await service.findByScope({
+        scope: 'class' as const,
+        userId: 'u1',
+      });
       expect(actual).toEqual([]);
     });
   });

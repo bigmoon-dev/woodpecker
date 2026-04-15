@@ -25,7 +25,7 @@ describe('AuthController', () => {
     save: jest.fn().mockResolvedValue({}),
     findOne: jest.fn(),
     update: jest.fn().mockResolvedValue({}),
-    create: jest.fn((data) => data),
+    create: jest.fn((data: unknown) => data),
   };
 
   beforeEach(async () => {
@@ -36,7 +36,10 @@ describe('AuthController', () => {
         { provide: AuthService, useValue: mockAuthService },
         { provide: JwtService, useValue: mockJwtService },
         { provide: HookBus, useValue: mockHookBus },
-        { provide: getRepositoryToken(RefreshToken), useValue: mockRefreshTokenRepo },
+        {
+          provide: getRepositoryToken(RefreshToken),
+          useValue: mockRefreshTokenRepo,
+        },
       ],
     }).compile();
 
@@ -164,7 +167,7 @@ describe('AuthController', () => {
 
       expect(result).toEqual({ success: true });
       expect(mockRefreshTokenRepo.update).toHaveBeenCalledWith(
-        { tokenHash: expect.any(String), revokedAt: null },
+        { tokenHash: expect.any(String), revokedAt: expect.anything() },
         { revokedAt: expect.any(Date) },
       );
     });

@@ -16,8 +16,6 @@ describe('AlertService', () => {
   let service: AlertService;
   let alertRepo: any;
   let notificationRepo: any;
-  let studentRepo: any;
-  let userRepo: any;
   let hookBus: any;
   let dataScopeFilter: any;
 
@@ -213,9 +211,7 @@ describe('AlertService', () => {
       });
       mockHookBus.emit.mockRejectedValueOnce(new Error('hook failed'));
 
-      await expect(
-        service.handle('a1', 'u1', 'note'),
-      ).resolves.toBeDefined();
+      await expect(service.handle('a1', 'u1', 'note')).resolves.toBeDefined();
     });
   });
 

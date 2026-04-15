@@ -147,13 +147,19 @@ export class PluginManager implements OnModuleInit {
     return new Map(this.registeredRoutes);
   }
 
-  async getPluginSettings(name: string): Promise<{ schema: Record<string, any> | null; config: Record<string, any> | null }> {
+  async getPluginSettings(name: string): Promise<{
+    schema: Record<string, any> | null;
+    config: Record<string, any> | null;
+  }> {
     const entity = await this.pluginRepo.findOne({ where: { name } });
     if (!entity) throw new Error(`Plugin ${name} not found`);
     return { schema: entity.settingsSchema, config: entity.config };
   }
 
-  async updatePluginSettings(name: string, config: Record<string, any>): Promise<Plugin> {
+  async updatePluginSettings(
+    name: string,
+    config: Record<string, any>,
+  ): Promise<Plugin> {
     const entity = await this.pluginRepo.findOne({ where: { name } });
     if (!entity) throw new Error(`Plugin ${name} not found`);
     entity.config = config;

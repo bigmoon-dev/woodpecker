@@ -86,9 +86,16 @@ describe('DataRetentionService', () => {
     expect(mockEncryptionService.decrypt).toHaveBeenCalledTimes(3);
     expect(mockEncryptionService.encrypt).toHaveBeenCalledTimes(3);
     const saved = mockStudentRepo.save.mock.calls[0][0] as any[];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     expect(saved[0].encryptedName.toString()).toContain('masked:张**');
-    expect(saved[0].encryptedStudentNumber.toString()).toContain('masked:2023****0001');
-    expect(saved[0].encryptedContact.toString()).toContain('masked:138****5678');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    expect(saved[0].encryptedStudentNumber.toString()).toContain(
+      'masked:2023****0001',
+    );
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    expect(saved[0].encryptedContact.toString()).toContain(
+      'masked:138****5678',
+    );
   });
 
   it('should skip null PII fields without error', async () => {

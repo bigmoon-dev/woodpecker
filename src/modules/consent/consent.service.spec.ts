@@ -33,7 +33,11 @@ describe('ConsentService', () => {
 
   describe('create', () => {
     it('should create a consent record', async () => {
-      const data = { userId: 'u1', consentType: 'assessment', signedAt: new Date() };
+      const data = {
+        userId: 'u1',
+        consentType: 'assessment',
+        signedAt: new Date(),
+      };
       mockConsentRepo.save.mockResolvedValue({ ...data, id: 'cr1' });
 
       const result = await service.create(data);
