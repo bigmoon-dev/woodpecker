@@ -65,8 +65,6 @@ describe('AlertService', () => {
     service = module.get<AlertService>(AlertService);
     alertRepo = module.get(getRepositoryToken(AlertRecord));
     notificationRepo = module.get(getRepositoryToken(AlertNotification));
-    studentRepo = module.get(getRepositoryToken(Student));
-    userRepo = module.get(getRepositoryToken(User));
     hookBus = module.get(HookBus);
     dataScopeFilter = module.get(DataScopeFilter);
   });

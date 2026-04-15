@@ -44,9 +44,6 @@ describe('ResultService', () => {
     resultRepo = module.get(getRepositoryToken(TaskResult));
     answerRepo = module.get(getRepositoryToken(TaskAnswer));
     dataScopeFilter = module.get(DataScopeFilter);
-    studentRepo = module.get(getRepositoryToken(Student));
-    classRepo = module.get(getRepositoryToken(Class));
-    encryptionService = module.get(EncryptionService);
   });
 
   describe('findByStudent', () => {
