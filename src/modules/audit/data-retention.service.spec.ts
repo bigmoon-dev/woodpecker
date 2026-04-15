@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -86,13 +86,10 @@ describe('DataRetentionService', () => {
     expect(mockEncryptionService.decrypt).toHaveBeenCalledTimes(3);
     expect(mockEncryptionService.encrypt).toHaveBeenCalledTimes(3);
     const saved = mockStudentRepo.save.mock.calls[0][0] as any[];
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     expect(saved[0].encryptedName.toString()).toContain('masked:张**');
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     expect(saved[0].encryptedStudentNumber.toString()).toContain(
       'masked:2023****0001',
     );
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     expect(saved[0].encryptedContact.toString()).toContain(
       'masked:138****5678',
     );
@@ -170,5 +167,156 @@ describe('DataRetentionService', () => {
     const findArg = mockStudentRepo.find.mock.calls[0][0];
     expect(findArg.where).toBeDefined();
     expect(findArg.where.createdAt).toBeDefined();
+  });
+
+  it('should skip masking when encryptedName decrypts to already-masked value', async () => {
+    mockConfigService.get.mockReturnValue(365);
+    const students = [
+      {
+        id: 's5',
+        encryptedName: Buffer.from('enc'),
+        encryptedStudentNumber: null,
+        encryptedContact: null,
+      },
+    ];
+    mockStudentRepo.find.mockResolvedValueOnce(students);
+    mockEncryptionService.decrypt.mockResolvedValueOnce('张**');
+    mockStudentRepo.save.mockImplementation((s: any[]) => Promise.resolve(s));
+
+    await service.desensitizeExpired();
+
+    expect(mockEncryptionService.encrypt).not.toHaveBeenCalled();
+    expect(studentRepo.save).toHaveBeenCalled();
+  });
+
+  it('should mask short student numbers (length <= 8) as ****', async () => {
+    mockConfigService.get.mockReturnValue(365);
+    const students = [
+      {
+        id: 's6',
+        encryptedName: null,
+        encryptedStudentNumber: Buffer.from('enc'),
+        encryptedContact: null,
+      },
+    ];
+    mockStudentRepo.find.mockResolvedValueOnce(students);
+    mockEncryptionService.decrypt.mockResolvedValueOnce('12345678');
+    mockEncryptionService.encrypt.mockImplementation((v: string) =>
+      Promise.resolve(Buffer.from('masked:' + v)),
+    );
+    mockStudentRepo.save.mockImplementation((s: any[]) => Promise.resolve(s));
+
+    await service.desensitizeExpired();
+
+    const saved = mockStudentRepo.save.mock.calls[0][0] as any[];
+    expect(saved[0].encryptedStudentNumber.toString()).toContain('masked:****');
+  });
+
+  it('should skip masking when student number is already masked', async () => {
+    mockConfigService.get.mockReturnValue(365);
+    const students = [
+      {
+        id: 's7',
+        encryptedName: null,
+        encryptedStudentNumber: Buffer.from('enc'),
+        encryptedContact: null,
+      },
+    ];
+    mockStudentRepo.find.mockResolvedValueOnce(students);
+    mockEncryptionService.decrypt.mockResolvedValueOnce('2023****0001');
+    mockStudentRepo.save.mockImplementation((s: any[]) => Promise.resolve(s));
+
+    await service.desensitizeExpired();
+
+    expect(mockEncryptionService.encrypt).not.toHaveBeenCalled();
+    expect(studentRepo.save).toHaveBeenCalled();
+  });
+
+  it('should mask short contacts (length <= 7) as ****', async () => {
+    mockConfigService.get.mockReturnValue(365);
+    const students = [
+      {
+        id: 's8',
+        encryptedName: null,
+        encryptedStudentNumber: null,
+        encryptedContact: Buffer.from('enc'),
+      },
+    ];
+    mockStudentRepo.find.mockResolvedValueOnce(students);
+    mockEncryptionService.decrypt.mockResolvedValueOnce('1234567');
+    mockEncryptionService.encrypt.mockImplementation((v: string) =>
+      Promise.resolve(Buffer.from('masked:' + v)),
+    );
+    mockStudentRepo.save.mockImplementation((s: any[]) => Promise.resolve(s));
+
+    await service.desensitizeExpired();
+
+    const saved = mockStudentRepo.save.mock.calls[0][0] as any[];
+    expect(saved[0].encryptedContact.toString()).toContain('masked:****');
+  });
+
+  it('should skip masking when contact is already masked', async () => {
+    mockConfigService.get.mockReturnValue(365);
+    const students = [
+      {
+        id: 's9',
+        encryptedName: null,
+        encryptedStudentNumber: null,
+        encryptedContact: Buffer.from('enc'),
+      },
+    ];
+    mockStudentRepo.find.mockResolvedValueOnce(students);
+    mockEncryptionService.decrypt.mockResolvedValueOnce('138****5678');
+    mockStudentRepo.save.mockImplementation((s: any[]) => Promise.resolve(s));
+
+    await service.desensitizeExpired();
+
+    expect(mockEncryptionService.encrypt).not.toHaveBeenCalled();
+    expect(studentRepo.save).toHaveBeenCalled();
+  });
+
+  it('should handle empty decrypted name by masking it (empty → empty)', async () => {
+    mockConfigService.get.mockReturnValue(365);
+    const students = [
+      {
+        id: 's10',
+        encryptedName: Buffer.from('enc'),
+        encryptedStudentNumber: null,
+        encryptedContact: null,
+      },
+    ];
+    mockStudentRepo.find.mockResolvedValueOnce(students);
+    mockEncryptionService.decrypt.mockResolvedValueOnce('');
+    mockEncryptionService.encrypt.mockImplementation((v: string) =>
+      Promise.resolve(Buffer.from('masked:' + v)),
+    );
+    mockStudentRepo.save.mockImplementation((s: any[]) => Promise.resolve(s));
+
+    await service.desensitizeExpired();
+
+    expect(mockEncryptionService.encrypt).toHaveBeenCalledTimes(1);
+  });
+
+  it('should save students with all fields already masked without re-encrypting', async () => {
+    mockConfigService.get.mockReturnValue(365);
+    const students = [
+      {
+        id: 's11',
+        encryptedName: Buffer.from('enc'),
+        encryptedStudentNumber: Buffer.from('enc2'),
+        encryptedContact: Buffer.from('enc3'),
+      },
+    ];
+    mockStudentRepo.find.mockResolvedValueOnce(students);
+    mockEncryptionService.decrypt
+      .mockResolvedValueOnce('张**')
+      .mockResolvedValueOnce('2023****0001')
+      .mockResolvedValueOnce('138****5678');
+    mockStudentRepo.save.mockImplementation((s: any[]) => Promise.resolve(s));
+
+    await service.desensitizeExpired();
+
+    expect(mockEncryptionService.encrypt).not.toHaveBeenCalled();
+    expect(studentRepo.save).toHaveBeenCalledTimes(1);
   });
 });

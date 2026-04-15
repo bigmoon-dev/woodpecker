@@ -227,4 +227,39 @@ describe('AuditInterceptor', () => {
         },
       });
   });
+
+  it('should throw when AUDIT_HMAC_SECRET is not set (undefined)', async () => {
+    const undefinedMockConfig = {
+      get: jest.fn().mockReturnValue(undefined),
+    };
+    await expect(
+      Test.createTestingModule({
+        providers: [
+          AuditInterceptor,
+          { provide: getRepositoryToken(AuditLog), useValue: mockAuditRepo },
+          { provide: ConfigService, useValue: undefinedMockConfig },
+          { provide: AuditIntegrityService, useValue: mockIntegrityService },
+        ],
+      }).compile(),
+    ).rejects.toThrow('AUDIT_HMAC_SECRET');
+  });
+
+  it('should throw when AUDIT_HMAC_SECRET is empty string', async () => {
+    const emptyMockConfig = {
+      get: jest.fn((key: string) => {
+        if (key === 'AUDIT_HMAC_SECRET') return '';
+        return undefined;
+      }),
+    };
+    await expect(
+      Test.createTestingModule({
+        providers: [
+          AuditInterceptor,
+          { provide: getRepositoryToken(AuditLog), useValue: mockAuditRepo },
+          { provide: ConfigService, useValue: emptyMockConfig },
+          { provide: AuditIntegrityService, useValue: mockIntegrityService },
+        ],
+      }).compile(),
+    ).rejects.toThrow('AUDIT_HMAC_SECRET');
+  });
 });
