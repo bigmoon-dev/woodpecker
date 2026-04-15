@@ -61,6 +61,19 @@ describe('Auth Security', () => {
     ).rejects.toThrow(UnauthorizedException);
   });
 
+  it('demonstrates brute force risk — no rate limiting on login attempts', async () => {
+    mockAuthService.validateUser.mockResolvedValue(null);
+    for (let i = 0; i < 10; i++) {
+      await expect(
+        controller.login(
+          { username: 'attacker', password: `guess${i}` },
+          {} as any,
+        ),
+      ).rejects.toThrow(UnauthorizedException);
+    }
+    expect(mockAuthService.validateUser).toHaveBeenCalledTimes(10);
+  });
+
   it('rejects refresh with expired/malformed token', async () => {
     mockJwtService.verify.mockImplementation(() => {
       throw new Error('jwt expired');

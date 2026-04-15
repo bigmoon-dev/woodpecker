@@ -72,6 +72,26 @@ describe('Audit Security', () => {
     });
   });
 
+  it('safely handles path traversal and injection payloads in URL', (done) => {
+    const maliciousUrl = '/api/scales/../../../etc/passwd';
+    const req = {
+      user: { id: 'u1' },
+      method: 'GET',
+      url: maliciousUrl,
+      ip: '127.0.0.1',
+      headers: {},
+    };
+    interceptor.intercept(ctx(req), handler(of('ok'))).subscribe({
+      complete: () => {
+        const logged = auditRepo.create.mock.calls[0][0];
+        expect(logged.action).toBe(`GET ${maliciousUrl}`);
+        expect(logged.resourceId).toBeNull();
+        expect(auditRepo.save).toHaveBeenCalledTimes(1);
+        done();
+      },
+    });
+  });
+
   it('does not throw when save fails (audit does not block request)', (done) => {
     auditRepo.save.mockRejectedValue(new Error('DB down'));
     const req = {

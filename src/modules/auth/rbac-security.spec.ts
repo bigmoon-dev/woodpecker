@@ -88,7 +88,7 @@ describe('RBAC Security', () => {
     expect(result).toBe(true);
   });
 
-  it('blocks role escalation via manipulated roles array', () => {
+  it('demonstrates role escalation risk — guard trusts JWT payload roles', () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['admin:all']);
     const attacker = {
       id: 's1',
@@ -97,6 +97,15 @@ describe('RBAC Security', () => {
     const req: any = {};
     expect(guard.canActivate(ctx(attacker, req))).toBe(true);
     expect(req.dataScope.scope).toBe('all');
+  });
+
+  it('blocks student with student permissions from admin endpoint', () => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['admin:all']);
+    const student = {
+      id: 's1',
+      roles: [{ name: 'student', permissions: [{ code: 'task:submit' }] }],
+    };
+    expect(() => guard.canActivate(ctx(student))).toThrow(ForbiddenException);
   });
 
   it('allows request when no permission decorator is present', () => {

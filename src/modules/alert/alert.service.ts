@@ -127,11 +127,11 @@ export class AlertService {
       if (result) {
         const answer = await this.answerRepo
           .createQueryBuilder('ta')
-          .innerJoin('ta.task', 'task')
+          .innerJoinAndSelect('ta.task', 'task')
           .where('ta.id = :answerId', { answerId: result.answerId })
           .getOne();
-        if (answer) {
-          retestComparisonUrl = `/api/results/compare?studentId=${saved.studentId}&scaleId=${answer.taskId}`;
+        if (answer?.task?.scaleId) {
+          retestComparisonUrl = `/api/results/compare?studentId=${saved.studentId}&scaleId=${answer.task.scaleId}`;
         }
       }
     } catch {

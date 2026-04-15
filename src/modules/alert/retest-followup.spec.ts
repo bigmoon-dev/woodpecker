@@ -78,9 +78,12 @@ describe('Alert Followup Retest Comparison', () => {
     resultRepo.findOne.mockResolvedValue({ id: 'r1', answerId: 'ans1' });
 
     const qb = {
-      innerJoin: jest.fn().mockReturnThis(),
+      innerJoinAndSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
-      getOne: jest.fn().mockResolvedValue({ id: 'ans1', taskId: 'scale-123' }),
+      getOne: jest.fn().mockResolvedValue({
+        id: 'ans1',
+        task: { scaleId: 'scale-123' },
+      }),
     };
     answerRepo.createQueryBuilder.mockReturnValue(qb);
 
@@ -94,6 +97,35 @@ describe('Alert Followup Retest Comparison', () => {
       '/api/results/compare?studentId=s1&scaleId=scale-123',
     );
     expect(result.alert.status).toBe('followup');
+  });
+
+  it('returns null retestComparisonUrl when task has no scaleId', async () => {
+    const alert = {
+      id: 'a3',
+      resultId: 'r3',
+      studentId: 's1',
+      level: 'yellow',
+      status: 'pending',
+    };
+    alertRepo.findOne.mockResolvedValue(alert);
+    resultRepo.findOne.mockResolvedValue({ id: 'r3', answerId: 'ans3' });
+
+    const qb = {
+      innerJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getOne: jest
+        .fn()
+        .mockResolvedValue({ id: 'ans3', task: { scaleId: null } }),
+    };
+    answerRepo.createQueryBuilder.mockReturnValue(qb);
+
+    const result = await controller.followup(
+      'a3',
+      { handleNote: '跟进中' } as any,
+      { user: { id: 'u1' } } as any,
+    );
+
+    expect(result.retestComparisonUrl).toBeNull();
   });
 
   it('returns null retestComparisonUrl when result not found', async () => {
