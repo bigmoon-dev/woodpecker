@@ -272,6 +272,26 @@ describe('AlertService', () => {
         }),
       );
     });
+
+    it('should return null retestComparisonUrl when answer query throws', async () => {
+      mockAlertRepo.findOne.mockResolvedValue({
+        id: 'a1',
+        resultId: 'r1',
+        studentId: 's1',
+        status: 'handled',
+      });
+      mockResultRepo.findOne.mockResolvedValue({ id: 'r1', answerId: 'a1' });
+      const mockQb = {
+        innerJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockRejectedValue(new Error('DB error')),
+      };
+      mockAnswerRepo.createQueryBuilder.mockReturnValue(mockQb);
+
+      const result = await service.followup('a1', 'u1', 'note');
+
+      expect(result.retestComparisonUrl).toBeNull();
+    });
   });
 
   describe('triggerAlert', () => {
@@ -365,6 +385,21 @@ describe('AlertService', () => {
       const saved = notificationRepo.save.mock.calls[0][0];
       expect(saved).toHaveLength(1);
       expect(saved[0].targetRole).toBe('心理老师');
+    });
+
+    it('should not throw when notifyRelevantUsers fails', async () => {
+      mockAlertRepo.save.mockResolvedValue({
+        id: 'alert1',
+        resultId: 'r1',
+        studentId: 's1',
+        level: 'red',
+        status: 'pending',
+      });
+      mockStudentRepo.findOne.mockRejectedValue(new Error('DB down'));
+
+      await expect(
+        service.triggerAlert('r1', 's1', 'red'),
+      ).resolves.toBeDefined();
     });
   });
 

@@ -66,12 +66,40 @@ describe('Consent Security', () => {
     expect(result).toBe(true);
   });
 
-  it('blocks student with expired consent (past validUntil date)', async () => {
-    consentRepo.findOne.mockResolvedValue(null);
+  it('blocks student with expired consent', async () => {
+    const pastDate = new Date(Date.now() - 86400000);
+    consentRepo.findOne.mockResolvedValue({
+      id: 'c1',
+      consentType: 'assessment',
+      expiresAt: pastDate,
+    });
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue('assessment');
     await expect(
       guard.canActivate(ctx({ id: 'u1', studentId: 's1' })),
-    ).rejects.toThrow(ForbiddenException);
+    ).rejects.toThrow('已过期');
+  });
+
+  it('allows student with non-expiring consent (expiresAt is null)', async () => {
+    consentRepo.findOne.mockResolvedValue({
+      id: 'c2',
+      consentType: 'assessment',
+      expiresAt: null,
+    });
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue('assessment');
+    const result = await guard.canActivate(ctx({ id: 'u1', studentId: 's1' }));
+    expect(result).toBe(true);
+  });
+
+  it('allows student with future-dated consent', async () => {
+    const futureDate = new Date(Date.now() + 365 * 86400000);
+    consentRepo.findOne.mockResolvedValue({
+      id: 'c3',
+      consentType: 'assessment',
+      expiresAt: futureDate,
+    });
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue('assessment');
+    const result = await guard.canActivate(ctx({ id: 'u1', studentId: 's1' }));
+    expect(result).toBe(true);
   });
 
   it('blocks batch request bypass - each request requires consent', async () => {

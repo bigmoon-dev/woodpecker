@@ -98,6 +98,7 @@ describe('Auth Security', () => {
 
   it('rotates refresh token on valid refresh', async () => {
     const oldToken = 'valid-refresh-token';
+    const oldHash = crypto.createHash('sha256').update(oldToken).digest('hex');
     mockJwtService.verify.mockReturnValue({
       sub: 'u1',
       username: 'test',
@@ -105,6 +106,7 @@ describe('Auth Security', () => {
     });
     mockRefreshTokenRepo.findOne.mockResolvedValue({
       id: 'rt1',
+      tokenHash: oldHash,
       expiresAt: new Date(Date.now() + 86400000),
       revokedAt: null,
     });
@@ -144,25 +146,22 @@ describe('Auth Security', () => {
     expect(createCall.tokenHash).toMatch(/^[a-f0-9]{64}$/);
   });
 
-  it('uses constant-time comparison for refresh token hash (timing attack resistance)', async () => {
-    mockAuthService.validateUser.mockResolvedValue({
-      id: 'u1',
+  it('rejects refresh when token hash comparison fails (timing-safe)', async () => {
+    mockJwtService.verify.mockReturnValue({
+      sub: 'u1',
       username: 'test',
       roles: [],
-      isStudent: false,
     });
-    mockJwtService.sign.mockReturnValue('access-token');
-    mockRefreshTokenRepo.create.mockImplementation((d) => d);
-    mockRefreshTokenRepo.save.mockResolvedValue({});
+    mockRefreshTokenRepo.findOne.mockResolvedValue({
+      id: 'rt1',
+      tokenHash: 'b'.repeat(64),
+      expiresAt: new Date(Date.now() + 86400000),
+      revokedAt: null,
+    });
 
-    await controller.login({ username: 'test', password: 'pass' }, {} as any);
-
-    const createCall = mockRefreshTokenRepo.create.mock.calls[0][0] as {
-      tokenHash: string;
-    };
-    const tokenHash = createCall.tokenHash;
-    expect(typeof crypto.timingSafeEqual).toBe('function');
-    expect(tokenHash).toHaveLength(64);
+    await expect(controller.refresh({ refreshToken: 'old' })).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('rejects refresh with null or empty token', async () => {

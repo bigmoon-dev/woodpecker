@@ -5,6 +5,7 @@ import { AuditLog } from '../../entities/audit/audit-log.entity';
 import { Student } from '../../entities/org/student.entity';
 import { AuditInterceptor } from './audit.interceptor';
 import { DataRetentionService } from './data-retention.service';
+import { AuditIntegrityService } from './audit-integrity.service';
 
 @Global()
 @Module({
@@ -12,11 +13,12 @@ import { DataRetentionService } from './data-retention.service';
   providers: [
     AuditInterceptor,
     DataRetentionService,
+    AuditIntegrityService,
     {
       provide: APP_INTERCEPTOR,
       useClass: AuditInterceptor,
     },
   ],
-  exports: [AuditInterceptor, DataRetentionService],
+  exports: [AuditInterceptor, DataRetentionService, AuditIntegrityService],
 })
 export class AuditModule {}

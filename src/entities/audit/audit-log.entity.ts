@@ -31,6 +31,9 @@ export class AuditLog {
   @Column({ length: 500, nullable: true })
   userAgent: string;
 
+  @Column({ length: 128, nullable: true })
+  integrityHash: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 }

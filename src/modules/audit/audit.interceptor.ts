@@ -6,7 +6,9 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 import { AuditLog } from '../../entities/audit/audit-log.entity';
+import { AuditIntegrityService } from './audit-integrity.service';
 import { Observable, tap } from 'rxjs';
 import { Request } from 'express';
 
@@ -16,10 +18,22 @@ interface AuthenticatedRequest extends Request {
 
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
+  private readonly hmacSecret: string;
+
   constructor(
     @InjectRepository(AuditLog)
     private auditRepo: Repository<AuditLog>,
-  ) {}
+    private configService: ConfigService,
+    private integrityService: AuditIntegrityService,
+  ) {
+    const secret = this.configService.get<string>('AUDIT_HMAC_SECRET');
+    if (!secret) {
+      throw new Error(
+        'AUDIT_HMAC_SECRET environment variable is required. Set it before starting the application.',
+      );
+    }
+    this.hmacSecret = secret;
+  }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
@@ -36,7 +50,12 @@ export class AuditInterceptor implements NestInterceptor {
           resourceId: this.extractId(url),
           ip: request.ip,
           userAgent: request.headers['user-agent'],
+          createdAt: new Date(),
         });
+        log.integrityHash = this.integrityService.computeHash(
+          log,
+          this.hmacSecret,
+        );
         this.auditRepo.save(log).catch(() => {});
       }),
     );

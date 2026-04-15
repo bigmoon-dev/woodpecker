@@ -115,6 +115,8 @@ describe('AuthController', () => {
         .mockReturnValueOnce('new-refresh-token');
       mockRefreshTokenRepo.findOne.mockResolvedValueOnce({
         id: 'rt1',
+        tokenHash:
+          '397a2a9c5bf5e2ccec38c2596b682bb1bd05fe6e4ecea6c10cf42755ff225403',
         expiresAt: new Date(Date.now() + 86400000),
       });
 

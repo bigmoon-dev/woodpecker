@@ -138,6 +138,15 @@ export class AuthController {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
+    const storedBuf = Buffer.from(stored.tokenHash, 'hex');
+    const computedBuf = Buffer.from(tokenHash, 'hex');
+    if (
+      storedBuf.length !== computedBuf.length ||
+      !crypto.timingSafeEqual(storedBuf, computedBuf)
+    ) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
     await this.refreshTokenRepo.update(stored.id, {
       revokedAt: new Date(),
     });

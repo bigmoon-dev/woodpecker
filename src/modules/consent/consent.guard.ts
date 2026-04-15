@@ -44,6 +44,10 @@ export class ConsentGuard implements CanActivate {
       throw new ForbiddenException(
         `知情同意(${consentType})未签署，请先完成知情同意`,
       );
+    if (consent.expiresAt && new Date(consent.expiresAt).getTime() < Date.now())
+      throw new ForbiddenException(
+        `知情同意(${consentType})已过期，请重新签署`,
+      );
     return true;
   }
 }

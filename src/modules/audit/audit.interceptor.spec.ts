@@ -2,8 +2,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { of } from 'rxjs';
+import { ConfigService } from '@nestjs/config';
 import { AuditLog } from '../../entities/audit/audit-log.entity';
 import { AuditInterceptor } from './audit.interceptor';
+import { AuditIntegrityService } from './audit-integrity.service';
 
 describe('AuditInterceptor', () => {
   let interceptor: AuditInterceptor;
@@ -12,6 +14,17 @@ describe('AuditInterceptor', () => {
   const mockAuditRepo = {
     create: jest.fn((data: Record<string, unknown>) => data),
     save: jest.fn(),
+  };
+
+  const mockConfigService = {
+    get: jest.fn((key: string) => {
+      if (key === 'AUDIT_HMAC_SECRET') return 'test-hmac-secret';
+      return undefined;
+    }),
+  };
+
+  const mockIntegrityService = {
+    computeHash: jest.fn().mockReturnValue('fake-integrity-hash'),
   };
 
   const mockExecutionContext = (req: Record<string, unknown>) => ({
@@ -24,10 +37,13 @@ describe('AuditInterceptor', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    mockIntegrityService.computeHash.mockReturnValue('fake-integrity-hash');
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuditInterceptor,
         { provide: getRepositoryToken(AuditLog), useValue: mockAuditRepo },
+        { provide: ConfigService, useValue: mockConfigService },
+        { provide: AuditIntegrityService, useValue: mockIntegrityService },
       ],
     }).compile();
 

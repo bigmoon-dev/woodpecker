@@ -30,6 +30,9 @@ export class ConsentRecord {
   @Column({ length: 45, nullable: true })
   ip: string;
 
+  @Column({ type: 'timestamptz', nullable: true })
+  expiresAt: Date | null;
+
   @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })
   user: User;
