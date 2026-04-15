@@ -116,8 +116,8 @@
 
 ### 系统运维
 - ~~Docker 镜像 + docker-compose 一键部署~~（v0.2.0 已实现）
-- 数据库备份与恢复策略
-- 运行时配置热更新（无需重启）
+- ~~数据库备份与恢复策略~~（v0.9.0 已实现：backup sidecar + WAL archiving + restore/verify/drill 脚本）
+- ~~运行时配置热更新（无需重启）~~（v0.9.0 已实现：SystemConfig DB 表 + ConfigReloadService + Admin API）
 - ~~健康检查端点（/health）~~（v0.5.0 已实现）
 
 ### 安全增强

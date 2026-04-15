@@ -5,6 +5,7 @@ import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RbacGuard } from '../auth/rbac.guard';
 import { PluginManager } from '../plugin/plugin-manager';
+import { ConfigReloadService } from '../core/config-reload.service';
 
 describe('AdminController', () => {
   let controller: AdminController;
@@ -29,6 +30,13 @@ describe('AdminController', () => {
     updatePluginSettings: jest.fn(),
   };
 
+  const mockConfigReloadService = {
+    findAll: jest.fn(),
+    set: jest.fn(),
+    reload: jest.fn(),
+    maskValue: jest.fn((key: string, value: string) => value),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
@@ -36,6 +44,7 @@ describe('AdminController', () => {
       providers: [
         { provide: AdminService, useValue: mockAdminService },
         { provide: PluginManager, useValue: mockPluginManager },
+        { provide: ConfigReloadService, useValue: mockConfigReloadService },
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -146,5 +155,38 @@ describe('AdminController', () => {
     adminService.deleteUser.mockResolvedValueOnce(undefined);
     await controller.deleteUser('u1');
     expect(adminService.deleteUser).toHaveBeenCalledWith('u1');
+  });
+
+  it('GET /config delegates to configReloadService.findAll with masking', async () => {
+    mockConfigReloadService.findAll.mockResolvedValueOnce([
+      { key: 'DATA_RETENTION_DAYS', value: '365', category: 'retention' },
+    ]);
+    mockConfigReloadService.maskValue.mockReturnValue('365');
+    const result = await controller.listConfig();
+    expect(mockConfigReloadService.findAll).toHaveBeenCalled();
+    expect(result).toHaveLength(1);
+  });
+
+  it('PUT /config/:key delegates to configReloadService.set', async () => {
+    mockConfigReloadService.set.mockResolvedValueOnce({
+      key: 'DATA_RETENTION_DAYS',
+      value: '180',
+    });
+    const result = await controller.updateConfig('DATA_RETENTION_DAYS', {
+      value: '180',
+      updatedBy: 'admin',
+    });
+    expect(mockConfigReloadService.set).toHaveBeenCalledWith(
+      'DATA_RETENTION_DAYS',
+      '180',
+      'admin',
+    );
+    expect(result.value).toBe('180');
+  });
+
+  it('POST /config/reload triggers reload', async () => {
+    const result = await controller.reloadConfig();
+    expect(mockConfigReloadService.reload).toHaveBeenCalled();
+    expect(result.status).toBe('ok');
   });
 });

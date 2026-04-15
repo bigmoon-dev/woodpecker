@@ -20,3 +20,4 @@ export { AlertRecord } from './audit/alert-record.entity';
 export { AlertNotification } from './audit/alert-notification.entity';
 export { PluginHook } from './plugin/plugin-hook.entity';
 export { PluginLog } from './plugin/plugin-log.entity';
+export { SystemConfig } from './config/system-config.entity';

@@ -43,6 +43,7 @@ import {
   AuditLog,
   AlertRecord,
   AlertNotification,
+  SystemConfig,
 } from './entities';
 
 @Module({
@@ -84,6 +85,7 @@ import {
           AuditLog,
           AlertRecord,
           AlertNotification,
+          SystemConfig,
         ],
         synchronize: config.get('DB_SYNC', 'false') === 'true',
         logging: config.get('DB_LOGGING', 'false') === 'true',

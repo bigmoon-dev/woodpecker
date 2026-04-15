@@ -22,6 +22,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RbacGuard, REQUIRE_PERMISSION } from '../auth/rbac.guard';
 import { SetMetadata } from '@nestjs/common';
 import { PluginManager } from '../plugin/plugin-manager';
+import { ConfigReloadService } from '../core/config-reload.service';
 
 @Controller('api/admin')
 @UseGuards(JwtAuthGuard, RbacGuard)
@@ -30,6 +31,7 @@ export class AdminController {
   constructor(
     private adminService: AdminService,
     private pluginManager: PluginManager,
+    private configReloadService: ConfigReloadService,
   ) {}
 
   @Get('roles')
@@ -107,5 +109,28 @@ export class AdminController {
     @Body() body: Record<string, any>,
   ) {
     return this.pluginManager.updatePluginSettings(name, body);
+  }
+
+  @Get('config')
+  async listConfig() {
+    const configs = await this.configReloadService.findAll();
+    return configs.map((c) => ({
+      ...c,
+      value: this.configReloadService.maskValue(c.key, c.value),
+    }));
+  }
+
+  @Put('config/:key')
+  async updateConfig(
+    @Param('key') key: string,
+    @Body() body: { value: string; updatedBy: string },
+  ) {
+    return this.configReloadService.set(key, body.value, body.updatedBy);
+  }
+
+  @Post('config/reload')
+  async reloadConfig() {
+    await this.configReloadService.reload();
+    return { status: 'ok' };
   }
 }

@@ -4,17 +4,42 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DB: psych_scale
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./backups:/backups
+    command: >
+      postgres
+      -c archive_mode=on
+      -c archive_command='cp %p /backups/wal/%f'
+      -c wal_level=replica
+      -c max_wal_senders=3
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGUSER: postgres
+      PGPASSWORD: ${DB_PASSWORD:-postgres}
+      PGDATABASE: psych_scale
+      BACKUP_DIR: /backups
+    volumes:
+      - ./backups:/backups
+      - ./scripts/backup-script.sh:/usr/local/bin/backup-script.sh:ro
+      - ./scripts/backup-entrypoint.sh:/usr/local/bin/backup-entrypoint.sh:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/backup-entrypoint.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
 
   app:
     build: .
@@ -25,10 +50,10 @@ services:
       DB_HOST: db
       DB_PORT: 5432
       DB_USERNAME: postgres
-      DB_PASSWORD: postgres
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_DATABASE: psych_scale
       DB_SYNC: "true"
-      JWT_SECRET: change-me-in-production
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       DATA_RETENTION_DAYS: 365
     depends_on:
       db:

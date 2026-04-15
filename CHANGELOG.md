@@ -2,6 +2,67 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.9.0] - 2026-04-15
+
+### Added
+
+#### 运行时配置热更新 (DIR-1)
+
+**SystemConfig Entity + Migration**
+- `system-config.entity.ts`: SystemConfig entity (key/value/category/description/valueType/updatedAt/updatedBy)
+- `1700000000005-AddSystemConfig.ts`: migration 创建 system_config 表
+
+**ConfigReloadService** (`@Global` provider)
+- `get<T>(key, defaultValue)`: 优先 DB 缓存 → process.env → defaultValue，支持 number/boolean/string 类型自动转换
+- `reload()`: 从 DB 重新加载全部热配置到内存缓存
+- `set(key, value, updatedBy)`: 写入 DB 并立即更新缓存
+- `findAll()`: 列出全部配置（按 category+key 排序）
+- `remove(key)`: 删除配置并清除缓存
+- `maskValue(key, value)`: 脱敏敏感配置（AUDIT_HMAC_SECRET/ENCRYPTION_KEY/JWT_SECRET）
+- `@Cron('*/5 * * * *') periodicSync()`: 每 5 分钟自动同步 DB 配置（多实例一致性）
+- `OnModuleInit`: 启动时自动加载 DB 配置
+
+**Admin Config API**
+- `GET /api/admin/config` — 列出所有配置（脱敏密钥值）
+- `PUT /api/admin/config/:key` — 更新配置值
+- `POST /api/admin/config/reload` — 手动触发全局刷新
+
+**Tests**
+- `config-reload.service.spec.ts`: 12 tests (DB 加载、env fallback、coerce number/boolean、set/update cache、delete、reload、maskValue、findAll)
+- `admin.controller.spec.ts`: +3 tests (listConfig、updateConfig、reloadConfig)
+
+#### 数据库备份恢复策略 (DIR-2)
+
+**Docker Compose**
+- `db` service: WAL archiving 配置 (archive_mode=on, wal_level=replica, max_wal_senders=3)
+- `backup` sidecar: postgres:16-alpine + cron 定时备份 + 初始备份
+- 敏感配置通过 `${DB_PASSWORD}` 环境变量注入
+
+**Backup Scripts**
+- `scripts/backup-script.sh`: pg_dump -Fc 全量备份 + SHA256 校验 + pg_restore --list 验证 + 7d/4w/12m 轮转
+- `scripts/backup-entrypoint.sh`: sidecar 入口 (初始备份 + crond 调度)
+- `scripts/restore.sh`: 交互式一键恢复 (checksum 验证 + drop/create DB + pg_restore + app restart)
+- `scripts/verify-backup.sh`: 备份完整性检查 (SHA256 + pg_restore --list)，支持 --all 批量验证
+- `scripts/drill-restore.sh`: 隔离容器恢复演练 (临时 postgres + 完整恢复 + 表数据验证 + 清理)
+
+**RPO/RTO**
+| 场景 | RPO | RTO |
+|------|-----|-----|
+| 全量恢复 | ≤ 1h (WAL) | ≤ 30min |
+| 时间点恢复 | ≤ 1min | ≤ 45min |
+
+### Changed
+
+- Version bumped to `0.9.0`
+- `CoreModule` 注册 SystemConfig repo + ConfigReloadService (global)
+- `AppModule` 注册 SystemConfig entity
+- `AdminController` 注入 ConfigReloadService
+
+### Test Results
+
+- 56 test suites, 458 test cases, all passing (+14 tests, +2 suites)
+- ESLint 0 warnings, TypeScript 0 errors
+
 ## [0.8.0] - 2026-04-15
 
 ### Added
