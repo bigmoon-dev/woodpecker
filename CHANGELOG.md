@@ -2,6 +2,35 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.8.0] - 2026-04-15
+
+### Added
+
+#### Audit Module Test Coverage (Branch 59.3% → 91.86%)
+
+**DIR-1: AuditIntegrityService 单元测试** (11 tests)
+- `audit-integrity.service.spec.ts` (new): 完整覆盖 computeHash (null 处理、完整 log、createdAt 分支)、verify (null hash/length mismatch/密钥匹配/错误密钥)、verifyChain (空数组/全合法/中间篡改/乱序排序)
+- Branch: 0% → 100%
+
+**DIR-2: AuditInterceptor 构造函数分支** (+2 tests)
+- `audit.interceptor.spec.ts`: AUDIT_HMAC_SECRET 未设置 (undefined) 和空字符串时构造函数 throw Error
+- Branch: 80% → 85%
+
+**DIR-3: DataRetentionService 脱敏边界** (+8 tests)
+- `data-retention.service.spec.ts`: 已脱敏值跳过加密 (name/studentNumber/contact)、短值 mask 边界 (≤8/≤7)、空字符串处理、全 null 字段、全已脱敏不重加密
+- Branch: 76.08% → 91.3%
+
+### Changed
+
+- Version bumped to `0.8.0`
+
+### Test Results
+
+- 55 test suites, 444 test cases, all passing (+21 tests, +1 suite)
+- Audit module Branch: 59.3% → 91.86% (target: ≥85%)
+- Global Branch: 72.61% → 74.45%
+- ESLint 0 warnings, TypeScript 0 errors
+
 ## [0.7.0] - 2026-04-15
 
 ### Added
