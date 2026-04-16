@@ -2,6 +2,38 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.17.0] - 2026-04-16
+
+### Added
+
+#### 前端UI系统化美化 (DIR-1/DIR-2/DIR-3)
+
+**登录页品牌化 (DIR-1)**
+- 双栏布局：左侧品牌展示区(啄木鸟图标+系统标语+心理学说明+浮动光斑CSS动画)，右侧登录表单
+- 品牌区3个浮动半透明圆形光斑(keyframe动画，8s/10s/12s周期)
+- 登录按钮渐变色 + hover scale + 活跃缩放效果
+- fade-in 入场动画
+
+**Layout品牌化 + 主题色板升级 (DIR-2)**
+- AdminLayout/TeacherLayout/StudentLayout: 添加🪶 logo、品牌色渐变侧边栏
+- 侧边栏菜单项：白色文字 + 选中态半透明高亮背景 + hover效果
+- 四套主题色板重新设计：
+  - forest: 主色#3A7D5C(更亮绿)，渐变#3A7D5C→#5BA88C，背景#F7F4EE
+  - spectrum: 主色#5B7FBF(更柔和蓝)，渐变#5B7FBF→#8B6AAF，背景#F2F5FA
+  - ink: 主色#5A6577(更暖灰)，渐变#5A6577→#8899AA，背景#FAFAF8
+  - warm: 主色#D4915C(更柔和橙)，渐变#D4915C→#E8B88A，背景#FFFAF5
+- 新增 token: colorPrimaryHover, colorPrimaryActive, colorBorderSecondary, siderBg, gradientPrimary
+- ConfigProvider components 级定制: Button渐变阴影、Card微阴影、Table行hover、Menu选中态
+
+**ThemePicker可视化 + 组件统一样式 (DIR-3)**
+- ThemePicker 重构为 Popover 弹出卡片矩阵(2x2 grid)
+- 每张卡片展示：主题色渐变条 + 名称 + 描述 + 选中勾选角标
+- hover 卡片微上浮(scale 1.03) + 阴影效果
+
+### Fixed
+
+- prettier formatting in auth.controller.spec.ts (CI failure)
+
 ## [0.16.0] - 2026-04-16
 
 ### Added

@@ -21,12 +21,30 @@ function ThemedApp() {
           colorText: theme.tokens.colorText,
           colorTextSecondary: theme.tokens.colorTextSecondary,
           colorBorder: theme.tokens.colorBorder,
+          colorBorderSecondary: theme.tokens.colorBorderSecondary,
           colorSuccess: theme.tokens.colorSuccess,
           colorWarning: theme.tokens.colorWarning,
           colorError: theme.tokens.colorError,
           colorInfo: theme.tokens.colorInfo,
           borderRadius: theme.tokens.borderRadius,
           fontFamily: theme.tokens.fontFamily,
+        },
+        components: {
+          Button: {
+            primaryShadow: `0 2px 8px ${theme.tokens.colorPrimary}40`,
+          },
+          Card: {
+            boxShadowTertiary: '0 1px 4px rgba(0,0,0,0.06)',
+          },
+          Table: {
+            headerBg: theme.tokens.colorBgLayout,
+            rowHoverBg: `${theme.tokens.colorPrimary}08`,
+          },
+          Menu: {
+            itemSelectedBg: `${theme.tokens.colorPrimary}15`,
+            itemSelectedColor: '#fff',
+            itemHoverBg: `${theme.tokens.colorPrimary}10`,
+          },
         },
       }}
     >

@@ -7,11 +7,14 @@ export interface ThemeDefinition {
   psychologyNote: string;
   tokens: {
     colorPrimary: string;
+    colorPrimaryHover: string;
+    colorPrimaryActive: string;
     colorBgContainer: string;
     colorBgLayout: string;
     colorText: string;
     colorTextSecondary: string;
     colorBorder: string;
+    colorBorderSecondary: string;
     colorSuccess: string;
     colorWarning: string;
     colorError: string;
@@ -20,6 +23,8 @@ export interface ThemeDefinition {
     fontFamily: string;
   };
   loginBg: string;
+  siderBg: string;
+  gradientPrimary: string;
 }
 
 export const themes: Record<ThemeKey, ThemeDefinition> = {
@@ -29,12 +34,15 @@ export const themes: Record<ThemeKey, ThemeDefinition> = {
     description: '自然绿意，平静安全感',
     psychologyNote: '生态心理学(Biophilia) — 自然元素降低焦虑、增加安全感',
     tokens: {
-      colorPrimary: '#2D6A4F',
-      colorBgContainer: '#F5F0E8',
-      colorBgLayout: '#E8E0D0',
+      colorPrimary: '#3A7D5C',
+      colorPrimaryHover: '#2D6A4F',
+      colorPrimaryActive: '#245740',
+      colorBgContainer: '#F7F4EE',
+      colorBgLayout: '#EDE8DF',
       colorText: '#1B4332',
       colorTextSecondary: '#52796F',
-      colorBorder: '#B7D1C3',
+      colorBorder: '#C8D9CE',
+      colorBorderSecondary: '#DDE6DF',
       colorSuccess: '#40916C',
       colorWarning: '#D4A373',
       colorError: '#BC4749',
@@ -43,8 +51,9 @@ export const themes: Record<ThemeKey, ThemeDefinition> = {
       fontFamily:
         "'PingFang SC', 'Microsoft YaHei', -apple-system, sans-serif",
     },
-    loginBg:
-      'linear-gradient(135deg, #2D6A4F 0%, #40916C 40%, #74C69D 100%)',
+    loginBg: 'linear-gradient(135deg, #2D6A4F 0%, #5BA88C 100%)',
+    siderBg: 'linear-gradient(180deg, #2D6A4F 0%, #245740 100%)',
+    gradientPrimary: 'linear-gradient(135deg, #3A7D5C 0%, #5BA88C 100%)',
   },
   spectrum: {
     key: 'spectrum',
@@ -53,12 +62,15 @@ export const themes: Record<ThemeKey, ThemeDefinition> = {
     psychologyNote:
       'Plutchik情绪轮 — 色彩编码映射心理状态，蓝色=平静/信任',
     tokens: {
-      colorPrimary: '#4A6FA5',
-      colorBgContainer: '#F0F4F8',
-      colorBgLayout: '#E2E8F0',
+      colorPrimary: '#5B7FBF',
+      colorPrimaryHover: '#4A6FA5',
+      colorPrimaryActive: '#3D5F91',
+      colorBgContainer: '#F2F5FA',
+      colorBgLayout: '#E4EAF3',
       colorText: '#2D3748',
       colorTextSecondary: '#718096',
-      colorBorder: '#CBD5E0',
+      colorBorder: '#C5D0DC',
+      colorBorderSecondary: '#DAE1E9',
       colorSuccess: '#48BB78',
       colorWarning: '#ED8936',
       colorError: '#E53E3E',
@@ -67,8 +79,9 @@ export const themes: Record<ThemeKey, ThemeDefinition> = {
       fontFamily:
         "'PingFang SC', 'Microsoft YaHei', -apple-system, sans-serif",
     },
-    loginBg:
-      'linear-gradient(135deg, #667EEA 0%, #764BA2 50%, #F093FB 100%)',
+    loginBg: 'linear-gradient(135deg, #5B7FBF 0%, #8B6AAF 100%)',
+    siderBg: 'linear-gradient(180deg, #4A6FA5 0%, #3D5F91 100%)',
+    gradientPrimary: 'linear-gradient(135deg, #5B7FBF 0%, #8B6AAF 100%)',
   },
   ink: {
     key: 'ink',
@@ -77,12 +90,15 @@ export const themes: Record<ThemeKey, ThemeDefinition> = {
     psychologyNote:
       '正念(Mindfulness) — 留白=心理空间，减少信息过载',
     tokens: {
-      colorPrimary: '#4A5568',
-      colorBgContainer: '#FAFAF5',
-      colorBgLayout: '#F5F0E8',
+      colorPrimary: '#5A6577',
+      colorPrimaryHover: '#4A5568',
+      colorPrimaryActive: '#3D4654',
+      colorBgContainer: '#FAFAF8',
+      colorBgLayout: '#F2F0EB',
       colorText: '#1A202C',
       colorTextSecondary: '#718096',
-      colorBorder: '#D0D0C8',
+      colorBorder: '#D4D4CC',
+      colorBorderSecondary: '#E2E2DB',
       colorSuccess: '#68D391',
       colorWarning: '#F6AD55',
       colorError: '#C75050',
@@ -91,8 +107,9 @@ export const themes: Record<ThemeKey, ThemeDefinition> = {
       fontFamily:
         "'Noto Serif SC', 'STSong', 'PingFang SC', serif",
     },
-    loginBg:
-      'linear-gradient(135deg, #2C2C2C 0%, #4A5568 50%, #90A4AE 100%)',
+    loginBg: 'linear-gradient(135deg, #5A6577 0%, #8899AA 100%)',
+    siderBg: 'linear-gradient(180deg, #4A5568 0%, #3D4654 100%)',
+    gradientPrimary: 'linear-gradient(135deg, #5A6577 0%, #8899AA 100%)',
   },
   warm: {
     key: 'warm',
@@ -101,12 +118,15 @@ export const themes: Record<ThemeKey, ThemeDefinition> = {
     psychologyNote:
       '环境心理学 — 圆角=安全感，暖色调=亲和/信任',
     tokens: {
-      colorPrimary: '#C97B3D',
-      colorBgContainer: '#FFF8F0',
-      colorBgLayout: '#FEEBC8',
+      colorPrimary: '#D4915C',
+      colorPrimaryHover: '#C97B3D',
+      colorPrimaryActive: '#B56E33',
+      colorBgContainer: '#FFFAF5',
+      colorBgLayout: '#FDF3E7',
       colorText: '#3D2E1C',
       colorTextSecondary: '#8B7355',
-      colorBorder: '#E8D5B8',
+      colorBorder: '#E5D5C0',
+      colorBorderSecondary: '#EDE3D4',
       colorSuccess: '#6EE7B7',
       colorWarning: '#FBBF24',
       colorError: '#EF4444',
@@ -115,8 +135,9 @@ export const themes: Record<ThemeKey, ThemeDefinition> = {
       fontFamily:
         "'PingFang SC', 'Microsoft YaHei', -apple-system, sans-serif",
     },
-    loginBg:
-      'linear-gradient(135deg, #FBBF24 0%, #F59E0B 30%, #D97706 70%, #C97B3D 100%)',
+    loginBg: 'linear-gradient(135deg, #D4915C 0%, #E8B88A 100%)',
+    siderBg: 'linear-gradient(180deg, #C97B3D 0%, #B56E33 100%)',
+    gradientPrimary: 'linear-gradient(135deg, #D4915C 0%, #E8B88A 100%)',
   },
 };
 
