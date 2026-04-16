@@ -25,7 +25,7 @@ function makeUser(overrides: Record<string, unknown> = {}): User {
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
-  } as User;
+  } as unknown as User;
 }
 
 describe('AuthService - Account Lockout', () => {
