@@ -11,6 +11,16 @@
 - 量表版本管理（copy-on-write 多版本、版本链 parentScaleId、publish/archive 状态）
 - 量表信效度标注（ScaleValidation 实体：信度系数、效度类型、样本量、文献来源）
 
+### 多轮测评追踪
+- 同一学生多次测评结果对比（RetestComparison）
+- 干预前后群体效果评估（InterventionAnalysisService：均值变化、改善率、等级转换）
+- 趋势恶化自动预警（detectTrendAlerts）
+
+### 报告生成
+- 个人测评报告（PDF 导出）
+- 班级/年级群体分析报告（GroupStatistics）
+- 自定义报告模板（ReportTemplate + JSON schema）
+
 ### 自动计分引擎
 - **求和策略** — 题目分数直接求和
 - **加权策略** — 每题可配置不同权重
@@ -93,13 +103,13 @@
 
 ### 多轮测评追踪
 - ~~同一学生多次测评结果对比~~（v0.6.0 已实现 RetestComparison）
-- 干预前后效果评估
-- 趋势变化预警
+- ~~干预前后效果评估~~（v0.12.0 已实现 InterventionAnalysisService 群体对比+改善率+等级转换）
+- ~~趋势变化预警~~（v0.12.0 已实现 detectTrendAlerts 自动扫描green→yellow/red恶化+AlertRecord）
 
 ### 报告生成
 - ~~个人测评报告（PDF 导出）~~（v0.5.0 已实现）
-- 班级/年级群体分析报告
-- 自定义报告模板
+- ~~班级/年级群体分析报告~~（v0.12.0 已实现 getGroupStatistics+generateGroupReport）
+- ~~自定义报告模板~~（v0.12.0 已实现 ReportTemplate实体+CRUD+内置种子模板）
 
 ### 消息通知
 - ~~预警触发时通知班主任/心理教师~~（v0.1.0 已实现 AlertNotification + 角色过滤）

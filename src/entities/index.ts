@@ -22,3 +22,4 @@ export { AlertNotification } from './audit/alert-notification.entity';
 export { PluginHook } from './plugin/plugin-hook.entity';
 export { PluginLog } from './plugin/plugin-log.entity';
 export { SystemConfig } from './config/system-config.entity';
+export { ReportTemplate } from './report/report-template.entity';
