@@ -14,6 +14,7 @@ import { ExportService } from './export.service';
 import { ResultService } from '../result/result.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RbacGuard, REQUIRE_PERMISSION } from '../auth/rbac.guard';
+import { RequireReauth } from '../auth/reauth.decorator';
 import { SetMetadata } from '@nestjs/common';
 
 interface AuthenticatedRequest extends express.Request {
@@ -41,6 +42,7 @@ export class ExportController {
   ) {}
 
   @Get('excel/task/:taskId')
+  @RequireReauth()
   async exportByTask(
     @Param('taskId') taskId: string,
     @Query('classId') classId: string | undefined,
@@ -76,6 +78,7 @@ export class ExportController {
   }
 
   @Post('excel')
+  @RequireReauth()
   async exportByFilter(
     @Body() filter: ExportFilterDto,
     @Req() req: AuthenticatedRequest,
@@ -104,6 +107,7 @@ export class ExportController {
   }
 
   @Get('pdf/:resultId')
+  @RequireReauth()
   async exportPdf(
     @Param('resultId') resultId: string,
     @Res() res: express.Response,

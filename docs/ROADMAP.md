@@ -50,6 +50,9 @@
 - 权限变更实时生效（从数据库加载，不依赖 JWT 缓存）
 - 数据范围过滤（自己 / 班级 / 年级 / 全校）
 - 公开接口装饰器（@Public）
+- 登录失败锁定（连续5次失败锁定15分钟，自动重置）
+- 敏感操作二次认证（@RequireReauth + X-Reauth-Token）
+- 全局API限频（@nestjs/throttler 100 req/min，login 5 req/min）
 
 ### 知情同意
 - 学生签署知情同意书记录
@@ -133,10 +136,10 @@
 - ~~健康检查端点（/health）~~（v0.5.0 已实现）
 
 ### 安全增强
-- 登录失败次数限制 + 账号锁定
-- 操作敏感接口二次认证
+- ~~登录失败次数限制 + 账号锁定~~（v0.13.0 已实现：failedLoginCount + lockedUntil + 5次锁定15分钟）
+- ~~操作敏感接口二次认证~~（v0.13.0 已实现：@RequireReauth + ReauthGuard + POST /api/auth/reauth）
+- ~~API 访问频率限制~~（v0.13.0 已实现：@nestjs/throttler 全局100/min + login 5/min）
 - ~~数据库字段级加密（替代当前 bytea 方案）~~（v0.1.0 已实现 bytea + pgcrypto 加密）
-- API 访问频率限制
 - ~~审计日志完整性校验（HMAC）~~（v0.7.0 已实现）
 - ~~Token 时序攻击防护~~（v0.7.0 已实现）
 - ~~知情同意过期强制重签~~（v0.7.0 已实现）

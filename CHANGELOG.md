@@ -2,6 +2,41 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.13.0] - 2026-04-16
+
+### Added
+
+#### 安全增强 — 登录限频/账户锁定/二次认证/API限频
+
+**登录账户锁定 (DIR-1)**
+- User 实体新增 `failedLoginCount` + `lockedUntil` 字段
+- AuthService: 连续5次失败后自动锁定账户15分钟
+- 锁定期间拒绝认证，返回剩余锁定时间
+- 锁定过期后自动重置，成功登录清除失败计数
+- Migration `1700000000008-AddUserLockoutFields`
+
+**二次认证 (DIR-2)**
+- `@RequireReauth()` 装饰器 — 标记需要二次认证的敏感端点
+- `ReauthGuard` — 验证 `X-Reauth-Token` 请求头（短期5分钟JWT）
+- `POST /api/auth/reauth` — 用密码换取 reauth token
+- 已标记端点: DELETE scale, DELETE validation, DELETE role, DELETE user, DELETE role/permission, DELETE grade/class/student, Export (excel/pdf)
+
+**全局API限频 (DIR-3)**
+- 安装 `@nestjs/throttler`
+- AppModule 注册 ThrottlerGuard (全局 100 req/min)
+- Login 端点额外限制: 5 req/min (`@Throttle`)
+
+**新增文件**
+- `src/modules/auth/reauth.decorator.ts`
+- `src/modules/auth/reauth.guard.ts`
+- `src/migrations/1700000000008-AddUserLockoutFields.ts`
+
+**测试**
+- auth-lockout.spec.ts: 9 个账户锁定测试
+- reauth.guard.spec.ts: 7 个二次认证守卫测试
+- auth.controller.spec.ts: +2 个 reauth 端点测试
+- 62 suites, 575 tests total
+
 ## [0.12.0] - 2026-04-16
 
 ### Added

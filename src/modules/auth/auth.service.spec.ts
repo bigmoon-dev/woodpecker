@@ -11,11 +11,11 @@ const mockedBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
 
 describe('AuthService', () => {
   let service: AuthService;
-  let userRepo: { findOne: jest.Mock };
+  let userRepo: { findOne: jest.Mock; save: jest.Mock };
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    userRepo = { findOne: jest.fn() };
+    userRepo = { findOne: jest.fn(), save: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [

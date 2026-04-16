@@ -26,6 +26,12 @@ export class User {
   @Column({ length: 20, default: 'active' })
   status: string;
 
+  @Column({ default: 0 })
+  failedLoginCount: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lockedUntil: Date | null;
+
   @Column({ type: 'uuid', nullable: true })
   studentId: string;
 
