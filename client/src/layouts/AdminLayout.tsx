@@ -67,8 +67,9 @@ export default function AdminLayout() {
           <ThemePicker key="theme" />,
           <a
             key="logout"
-            onClick={() => { clearToken(); window.location.href = '/login'; }}
-            style={{ fontSize: 14 }}
+            href="/login"
+            onClick={(e) => { e.preventDefault(); clearToken(); window.location.replace('/login'); }}
+            style={{ fontSize: 14, cursor: 'pointer' }}
           >
             退出
           </a>,
