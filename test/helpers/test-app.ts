@@ -3,6 +3,10 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { AppModule } from '../../src/app.module';
 import { AllExceptionsFilter } from '../../src/common/http-exception.filter';
 import request from 'supertest';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+dotenv.config({ path: path.resolve(__dirname, '../e2e-resources/.env.e2e') });
 
 export interface TestContext {
   app: INestApplication;
@@ -79,38 +83,4 @@ export function reauthHeaders(
     Authorization: `Bearer ${accessToken}`,
     'X-Reauth-Token': reauthToken,
   };
-}
-
-export async function createScale(
-  server: any,
-  accessToken: string,
-  name = 'E2E Test Scale',
-): Promise<any> {
-  const res = await request(server)
-    .post('/api/scales')
-    .set(authHeader(accessToken))
-    .send({
-      name,
-      version: '1.0',
-      description: 'E2E test scale',
-      items: [
-        {
-          itemText: 'I feel anxious',
-          sortOrder: 0,
-          options: [
-            { optionText: 'Never', scoreValue: 0, sortOrder: 0 },
-            { optionText: 'Sometimes', scoreValue: 1, sortOrder: 1 },
-            { optionText: 'Always', scoreValue: 2, sortOrder: 2 },
-          ],
-        },
-      ],
-      scoringRules: [{ formulaType: 'sum', weight: 1 }],
-      scoreRanges: [
-        { minScore: 0, maxScore: 0, level: 'normal', color: 'green', suggestion: 'OK' },
-        { minScore: 1, maxScore: 2, level: 'mild', color: 'yellow', suggestion: 'Watch' },
-      ],
-    })
-    .expect(201);
-
-  return res.body;
 }

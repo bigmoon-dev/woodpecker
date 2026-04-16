@@ -68,7 +68,7 @@
 - Refresh Token 时序安全比较（crypto.timingSafeEqual，防时序攻击）
 
 ### 测试与质量
-- ~~端到端(E2E)黑盒测试~~（v0.15.0 已实现：19 个用户旅程测试覆盖 auth/scale/alert/refresh/logout）
+- ~~端到端(E2E)黑盒测试~~（v0.16.0 重构：独立测试数据库 + 资源隔离 + 22 个测试全通过 + Markdown 测试报告）
 - 自动计分引擎单元测试覆盖率 >95%
 - AuditIntegrityService 分支覆盖率 100%（computeHash/verify/verifyChain 全路径）
 - 全局 Statements 89.85%、Lines 90.96%

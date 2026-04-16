@@ -8,5 +8,7 @@
   },
   "moduleNameMapper": {
     "^@/(.*)$": "<rootDir>/../src/$1"
-  }
+  },
+  "globalSetup": "./e2e-resources/setup.ts",
+  "globalTeardown": "./e2e-resources/teardown.ts"
 }

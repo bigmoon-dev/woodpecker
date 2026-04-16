@@ -136,7 +136,7 @@ describe('AuthController', () => {
       expect(result).toHaveProperty('accessToken', 'new-access-token');
       expect(result).toHaveProperty('refreshToken', 'new-refresh-token');
       expect(mockRefreshTokenRepo.update).toHaveBeenCalledWith(
-        'rt1',
+        { tokenHash: '397a2a9c5bf5e2ccec38c2596b682bb1bd05fe6e4ecea6c10cf42755ff225403', revokedAt: expect.anything() },
         expect.objectContaining({ revokedAt: expect.any(Date) }),
       );
       expect(mockRefreshTokenRepo.save).toHaveBeenCalled();

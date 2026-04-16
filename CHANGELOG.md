@@ -2,6 +2,38 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.16.0] - 2026-04-16
+
+### Added
+
+#### E2E 黑盒测试系统重构 — 独立测试数据库 + 资源隔离
+
+**测试基础设施 (DIR-1)**
+- `test/e2e-resources/.env.e2e` — 独立测试环境变量（DB_DATABASE=psych_scale_e2e_test, DB_SYNC=true）
+- `test/e2e-resources/setup.ts` — globalSetup：CREATE DATABASE + TypeORM synchronize + SQL seed + migrations 表预填充
+- `test/e2e-resources/teardown.ts` — globalTeardown：terminate backends + DROP DATABASE
+- `test/helpers/resource-tracker.ts` — ResourceTracker 类追踪创建的 scale/version ID
+- `test/helpers/report-generator.ts` — ReportGenerator 生成 Markdown 测试报告
+- `test/e2e-reports/` — 测试报告输出目录
+
+**测试覆盖 (22 tests, all pass)**
+- Auth: Login (invalid/valid credentials), Token validation (/me valid/no token/invalid), Reauth + Preferences
+- Scale: full lifecycle (create, list, get, update, publish, reject edit of published, create-version, delete with reauth, confirm gone)
+- Alert: paginated list
+- Auth: Refresh token rotation + Logout
+- Post-cleanup verification: no test scales remain
+- Production DB isolation verified (0 test data leaked)
+
+**前端构建 (DIR-3)**
+- Rebuilt `client/` to `public/` with PrivateRoute token 验证修复
+
+### Fixed
+
+- E2E setup: 预填充 migrations 表避免 AppModule 重跑 migrations 导致 "relation already exists"
+- `test/helpers/test-app.ts`: 加载 `.env.e2e` 确保连接测试数据库而非生产库
+- `test/app.e2e-spec.ts`: 加载 `.env.e2e` + ValidationPipe + AllExceptionsFilter
+- `auth.controller.spec.ts`: 更新 refresh 测试断言匹配批量 revoke（`update({ tokenHash, revokedAt: IsNull() }, ...)`)
+
 ## [0.15.0] - 2026-04-16
 
 ### Added
