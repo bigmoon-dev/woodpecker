@@ -195,15 +195,14 @@ export default function Dashboard() {
             <Pie
               data={pieData}
               angleField="value"
-              colorField="type"
+              colorField="level"
               height={300}
-              color={(d: any) =>
-                String((d as Record<string, unknown>).level) === 'red'
-                  ? '#f5222d'
-                  : '#faad14'
-              }
+              color={{ red: '#f5222d', yellow: '#faad14' }}
               label={{ text: 'type', position: 'outside' as const }}
-              legend={{ position: 'top-right' as const }}
+              legend={{
+                position: 'top-right' as const,
+                color: { red: '#f5222d', yellow: '#faad14' },
+              }}
             />
           </Card>
         </Col>

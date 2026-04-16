@@ -2,6 +2,12 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.19.6] - 2026-04-17
+
+### Fixed
+
+- Dashboard 预警分布饼图颜色修正：改用 `colorField="level"` + `color` 对象映射，红色预警=红色，黄色预警=黄色
+
 ## [0.19.5] - 2026-04-17
 
 ### Fixed
