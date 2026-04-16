@@ -2,6 +2,14 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.17.1] - 2026-04-16
+
+### Fixed
+
+- 修复中文用户名 JWT 解码失败问题：新增 `parseJwtPayload()` 工具函数，正确处理 base64url 编码的 Unicode 字符
+- 替换所有前端 `atob()` JWT 解码调用（Login、Assessment、TaskList、ConsentPage）为统一的 `parseJwtPayload()`
+- 移除 Login.tsx 中未使用的 `Button` import
+
 ## [0.17.0] - 2026-04-16
 
 ### Added

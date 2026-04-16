@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Card, Form, Input, Button, Checkbox, message } from 'antd';
 import request from '../../utils/request';
+import { parseJwtPayload } from '../../utils/auth';
 
 export default function ConsentPage() {
   const [loading, setLoading] = useState(false);
@@ -11,7 +12,7 @@ export default function ConsentPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token') || '';
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = parseJwtPayload(token);
       await request.post('/consent', {
         userId: payload.sub,
         consentType: 'assessment',
@@ -28,14 +29,26 @@ export default function ConsentPage() {
 
   return (
     <Card title="知情同意书">
-      <div style={{ marginBottom: 16, padding: 16, background: '#f5f5f5', borderRadius: 8 }}>
+      <div
+        style={{
+          marginBottom: 16,
+          padding: 16,
+          background: '#f5f5f5',
+          borderRadius: 8,
+        }}
+      >
         <p>尊敬的用户：</p>
-        <p>在开始心理健康测评之前，请您仔细阅读以下知情同意书。本次测评结果仅用于心理健康评估，您的个人信息将被严格保密。</p>
+        <p>
+          在开始心理健康测评之前，请您仔细阅读以下知情同意书。本次测评结果仅用于心理健康评估，您的个人信息将被严格保密。
+        </p>
         <p>参与测评完全自愿，您有权随时退出。</p>
       </div>
       <Form layout="vertical" onFinish={onFinish}>
         <Form.Item>
-          <Checkbox checked={agreed} onChange={(e) => setAgreed(e.target.checked)}>
+          <Checkbox
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+          >
             我已阅读并同意上述知情同意书
           </Checkbox>
         </Form.Item>
@@ -43,7 +56,12 @@ export default function ConsentPage() {
           <Input.TextArea rows={3} />
         </Form.Item>
         <Form.Item>
-          <Button type="primary" htmlType="submit" loading={loading} disabled={!agreed}>
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={loading}
+            disabled={!agreed}
+          >
             签署同意
           </Button>
         </Form.Item>

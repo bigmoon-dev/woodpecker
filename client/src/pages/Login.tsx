@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Form, Input, Button, message } from 'antd';
+import { Form, Input, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import request from '../utils/request';
-import { setToken, setRoles } from '../utils/auth';
+import { setToken, setRoles, parseJwtPayload } from '../utils/auth';
 import { useThemeTokens } from '../themes/ThemeProvider';
 
 export default function Login() {
@@ -16,14 +16,20 @@ export default function Login() {
     try {
       const res: any = await request.post('/auth/login', values);
       setToken(res.accessToken);
-      const payload = JSON.parse(atob(res.accessToken.split('.')[1]));
+      const payload = parseJwtPayload(res.accessToken);
       setRoles(payload.roles || []);
       const roles = payload.roles || [];
       if (roles.includes('admin')) navigate('/admin');
-      else if (roles.includes('psychologist') || roles.includes('teacher')) navigate('/teacher');
+      else if (roles.includes('psychologist') || roles.includes('teacher'))
+        navigate('/teacher');
       else navigate('/student');
-    } catch {
-      message.error('登录失败，请检查用户名和密码');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        '登录失败，请检查用户名和密码';
+      message.error(msg);
     } finally {
       setLoading(false);
     }
@@ -68,28 +74,70 @@ export default function Login() {
           padding: 48,
         }}
       >
-        <div style={{
-          position: 'absolute', width: 300, height: 300, borderRadius: '50%',
-          background: 'rgba(255,255,255,0.08)', top: '10%', left: '5%',
-          animation: 'loginFloat1 8s ease-in-out infinite',
-        }} />
-        <div style={{
-          position: 'absolute', width: 200, height: 200, borderRadius: '50%',
-          background: 'rgba(255,255,255,0.06)', bottom: '15%', right: '10%',
-          animation: 'loginFloat2 10s ease-in-out infinite',
-        }} />
-        <div style={{
-          position: 'absolute', width: 150, height: 150, borderRadius: '50%',
-          background: 'rgba(255,255,255,0.1)', top: '50%', left: '60%',
-          animation: 'loginFloat3 12s ease-in-out infinite',
-        }} />
+        <div
+          style={{
+            position: 'absolute',
+            width: 300,
+            height: 300,
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.08)',
+            top: '10%',
+            left: '5%',
+            animation: 'loginFloat1 8s ease-in-out infinite',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            width: 200,
+            height: 200,
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.06)',
+            bottom: '15%',
+            right: '10%',
+            animation: 'loginFloat2 10s ease-in-out infinite',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            width: 150,
+            height: 150,
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.1)',
+            top: '50%',
+            left: '60%',
+            animation: 'loginFloat3 12s ease-in-out infinite',
+          }}
+        />
 
-        <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', color: '#fff' }}>
+        <div
+          style={{
+            position: 'relative',
+            zIndex: 1,
+            textAlign: 'center',
+            color: '#fff',
+          }}
+        >
           <div style={{ fontSize: 64, marginBottom: 24 }}>🪶</div>
-          <h1 style={{ fontSize: 32, fontWeight: 700, margin: 0, textShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+          <h1
+            style={{
+              fontSize: 32,
+              fontWeight: 700,
+              margin: 0,
+              textShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            }}
+          >
             啄木鸟
           </h1>
-          <p style={{ fontSize: 18, opacity: 0.9, marginTop: 12, letterSpacing: 2 }}>
+          <p
+            style={{
+              fontSize: 18,
+              opacity: 0.9,
+              marginTop: 12,
+              letterSpacing: 2,
+            }}
+          >
             心理健康预警辅助系统
           </p>
           <p style={{ fontSize: 14, opacity: 0.7, marginTop: 8 }}>
@@ -113,30 +161,51 @@ export default function Login() {
           className="login-form-card"
           style={{ width: '100%', maxWidth: 360 }}
         >
-          <h2 style={{
-            fontSize: 24, fontWeight: 600, marginBottom: 8,
-            color: t.tokens.colorText,
-          }}>
+          <h2
+            style={{
+              fontSize: 24,
+              fontWeight: 600,
+              marginBottom: 8,
+              color: t.tokens.colorText,
+            }}
+          >
             欢迎登录
           </h2>
-          <p style={{
-            fontSize: 14, marginBottom: 32,
-            color: t.tokens.colorTextSecondary,
-          }}>
+          <p
+            style={{
+              fontSize: 14,
+              marginBottom: 32,
+              color: t.tokens.colorTextSecondary,
+            }}
+          >
             请输入您的账号信息
           </p>
 
           <Form onFinish={onFinish} layout="vertical" size="large">
-            <Form.Item name="username" rules={[{ required: true, message: '请输入用户名' }]}>
+            <Form.Item
+              name="username"
+              rules={[{ required: true, message: '请输入用户名' }]}
+            >
               <Input
-                prefix={<UserOutlined style={{ color: t.tokens.colorTextSecondary }} />}
+                prefix={
+                  <UserOutlined
+                    style={{ color: t.tokens.colorTextSecondary }}
+                  />
+                }
                 placeholder="用户名"
                 style={{ borderRadius: t.tokens.borderRadius }}
               />
             </Form.Item>
-            <Form.Item name="password" rules={[{ required: true, message: '请输入密码' }]}>
+            <Form.Item
+              name="password"
+              rules={[{ required: true, message: '请输入密码' }]}
+            >
               <Input.Password
-                prefix={<LockOutlined style={{ color: t.tokens.colorTextSecondary }} />}
+                prefix={
+                  <LockOutlined
+                    style={{ color: t.tokens.colorTextSecondary }}
+                  />
+                }
                 placeholder="密码"
                 style={{ borderRadius: t.tokens.borderRadius }}
               />

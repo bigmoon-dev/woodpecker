@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, Spin, Radio, Button, message, Space } from 'antd';
 import { useParams, useNavigate } from 'react-router-dom';
 import request from '../../utils/request';
+import { parseJwtPayload } from '../../utils/auth';
 
 export default function Assessment() {
   const { id } = useParams();
@@ -13,18 +14,21 @@ export default function Assessment() {
 
   useEffect(() => {
     if (!id) return;
-    request.get(`/tasks/${id}`)
+    request
+      .get(`/tasks/${id}`)
       .then((res: any) => setTask(res))
       .finally(() => setLoading(false));
   }, [id]);
 
   const handleSubmit = async () => {
     if (!task?.scale?.items) return;
-    const items = task.scale.items.map((item: any) => {
-      const optionId = answers[item.id];
-      if (!optionId) return null;
-      return { itemId: item.id, optionId };
-    }).filter(Boolean);
+    const items = task.scale.items
+      .map((item: any) => {
+        const optionId = answers[item.id];
+        if (!optionId) return null;
+        return { itemId: item.id, optionId };
+      })
+      .filter(Boolean);
 
     if (items.length < task.scale.items.length) {
       return message.warning('请完成所有题目');
@@ -33,7 +37,7 @@ export default function Assessment() {
     setSubmitting(true);
     try {
       const token = localStorage.getItem('token') || '';
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = parseJwtPayload(token);
       await request.post(`/tasks/${id}/answers/submit`, {
         studentId: payload.sub,
         items,
@@ -53,18 +57,32 @@ export default function Assessment() {
   return (
     <Card title={task.title}>
       {task.scale.items?.map((item: any, idx: number) => (
-        <Card key={item.id} type="inner" style={{ marginBottom: 12 }} title={`第${idx + 1}题`}>
+        <Card
+          key={item.id}
+          type="inner"
+          style={{ marginBottom: 12 }}
+          title={`第${idx + 1}题`}
+        >
           <div style={{ marginBottom: 8 }}>{item.content}</div>
-          <Radio.Group onChange={(e) => setAnswers({ ...answers, [item.id]: e.target.value })} value={answers[item.id]}>
+          <Radio.Group
+            onChange={(e) =>
+              setAnswers({ ...answers, [item.id]: e.target.value })
+            }
+            value={answers[item.id]}
+          >
             <Space direction="vertical">
               {item.options?.map((opt: any) => (
-                <Radio key={opt.id} value={opt.id}>{opt.content}</Radio>
+                <Radio key={opt.id} value={opt.id}>
+                  {opt.content}
+                </Radio>
               ))}
             </Space>
           </Radio.Group>
         </Card>
       ))}
-      <Button type="primary" loading={submitting} onClick={handleSubmit}>提交答案</Button>
+      <Button type="primary" loading={submitting} onClick={handleSubmit}>
+        提交答案
+      </Button>
     </Card>
   );
 }

@@ -8,7 +8,7 @@ import { Button, Modal, Form, Input, DatePicker, Select, message } from 'antd';
 import { DownloadOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import request from '../../utils/request';
-import { hasRole } from '../../utils/auth';
+import { hasRole, parseJwtPayload } from '../../utils/auth';
 
 export default function TaskList() {
   const actionRef = useRef<ActionType>();
@@ -35,9 +35,7 @@ export default function TaskList() {
       await request.post('/tasks', {
         ...values,
         deadline: values.deadline?.toISOString(),
-        createdById: JSON.parse(
-          atob((localStorage.getItem('token') || '').split('.')[1]),
-        ).sub,
+        createdById: parseJwtPayload(localStorage.getItem('token') || '').sub,
       });
       message.success('创建成功');
       setCreateOpen(false);
