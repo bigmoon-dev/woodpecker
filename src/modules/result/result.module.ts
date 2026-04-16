@@ -6,6 +6,7 @@ import { Task } from '../../entities/task/task.entity';
 import { ConsentRecord } from '../../entities/consent/consent-record.entity';
 import { Student } from '../../entities/org/student.entity';
 import { Class } from '../../entities/org/class.entity';
+import { Grade } from '../../entities/org/grade.entity';
 import { ReportTemplate } from '../../entities/report/report-template.entity';
 import { ResultService } from './result.service';
 import { ResultController } from './result.controller';
@@ -28,6 +29,7 @@ import { ExportModule } from '../export/export.module';
       ConsentRecord,
       Student,
       Class,
+      Grade,
       ReportTemplate,
     ]),
     ConsentModule,

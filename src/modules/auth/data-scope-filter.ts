@@ -25,7 +25,7 @@ export class DataScopeFilter {
       case 'own': {
         const student = await this.studentRepo
           .createQueryBuilder('s')
-          .innerJoin('users', 'u', 'u.studentRecordId = s.id')
+          .innerJoin('users', 'u', 'u."studentId" = s.id')
           .where('u.id = :userId', { userId: dataScope.userId })
           .getOne();
         return student ? [student.id] : [];

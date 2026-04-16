@@ -59,6 +59,10 @@ export class UpdateUserDto {
   status?: string;
 
   @IsOptional()
+  @IsUUID('4')
+  studentRecordId?: string;
+
+  @IsOptional()
   @IsArray()
   @IsUUID('4', { each: true })
   roleIds?: string[];

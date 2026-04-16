@@ -25,9 +25,6 @@ const STATUS_MAP: Record<string, { color: string; text: string }> = {
   completed: { color: 'default', text: '已完成' },
 };
 
-const canManageTasks =
-  hasRole('teacher') || hasRole('psychologist');
-
 export default function TaskList() {
   const actionRef = useRef<ActionType>();
   const [createOpen, setCreateOpen] = useState(false);
@@ -35,6 +32,7 @@ export default function TaskList() {
   const [targets, setTargets] = useState<any[]>([]);
   const [form] = Form.useForm();
   const navigate = useNavigate();
+  const canManageTasks = hasRole('teacher') || hasRole('psychologist');
 
   const openCreate = async () => {
     const [scalesRes, libraryRes, targetsRes]: any[] = await Promise.all([

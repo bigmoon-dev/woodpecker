@@ -6,6 +6,7 @@ import { TaskResult } from '../../entities/task/task-result.entity';
 import { TaskAnswer } from '../../entities/task/task-answer.entity';
 import { Student } from '../../entities/org/student.entity';
 import { Class } from '../../entities/org/class.entity';
+import { Grade } from '../../entities/org/grade.entity';
 import { DataScopeFilter } from '../auth/data-scope-filter';
 import { EncryptionService } from '../core/encryption.service';
 
@@ -26,6 +27,7 @@ describe('ResultService - findByFilter', () => {
   };
   const mockStudentRepo = { find: jest.fn() };
   const mockClassRepo = { find: jest.fn() };
+  const mockGradeRepo = { find: jest.fn() };
   const mockDataScopeFilter = {
     getStudentIds: jest.fn().mockResolvedValue([]),
   };
@@ -53,6 +55,7 @@ describe('ResultService - findByFilter', () => {
         { provide: getRepositoryToken(TaskAnswer), useValue: mockAnswerRepo },
         { provide: getRepositoryToken(Student), useValue: mockStudentRepo },
         { provide: getRepositoryToken(Class), useValue: mockClassRepo },
+        { provide: getRepositoryToken(Grade), useValue: mockGradeRepo },
         { provide: DataScopeFilter, useValue: mockDataScopeFilter },
         { provide: EncryptionService, useValue: mockEncryptionService },
       ],
@@ -67,7 +70,7 @@ describe('ResultService - findByFilter', () => {
   });
 
   it('filters by classId — finds students then answers', async () => {
-    mockStudentRepo.find.mockResolvedValue([{ id: 's1' }, { id: 's2' }]);
+    mockStudentRepo.find.mockResolvedValue([{ id: 's1', classId: 'c1' }, { id: 's2', classId: 'c1' }]);
     const answers = [
       {
         id: 'a1',
@@ -80,22 +83,21 @@ describe('ResultService - findByFilter', () => {
     mockEncryptionService.batchDecrypt.mockResolvedValue(
       new Map([['s1', { name: 'Alice', studentNumber: '001' }]]),
     );
+    mockClassRepo.find.mockResolvedValue([{ id: 'c1', name: '1班', gradeId: 'g1' }]);
+    mockGradeRepo.find.mockResolvedValue([{ id: 'g1', name: '高一' }]);
 
     const result = await service.findByFilter({
       classId: 'c1',
       dataScope: { scope: 'all', userId: 'u1' },
     });
 
-    expect(studentRepo.find).toHaveBeenCalledWith({
-      where: { classId: 'c1' },
-    });
     expect(result).toHaveLength(1);
     expect(result[0].studentName).toBe('Alice');
   });
 
   it('filters by gradeId — finds classes then students', async () => {
-    mockClassRepo.find.mockResolvedValue([{ id: 'c1' }, { id: 'c2' }]);
-    mockStudentRepo.find.mockResolvedValue([{ id: 's1' }]);
+    mockClassRepo.find.mockResolvedValue([{ id: 'c1', gradeId: 'g1' }, { id: 'c2', gradeId: 'g1' }]);
+    mockStudentRepo.find.mockResolvedValue([{ id: 's1', classId: 'c1' }]);
     const answers = [
       {
         id: 'a1',
@@ -106,6 +108,7 @@ describe('ResultService - findByFilter', () => {
     setupQueryBuilder(answers);
     mockResultRepo.find.mockResolvedValue([{ id: 'r1', answerId: 'a1' }]);
     mockEncryptionService.batchDecrypt.mockResolvedValue(new Map());
+    mockGradeRepo.find.mockResolvedValue([{ id: 'g1', name: '高一' }]);
 
     const result = await service.findByFilter({
       gradeId: 'g1',
@@ -113,7 +116,6 @@ describe('ResultService - findByFilter', () => {
     });
 
     expect(classRepo.find).toHaveBeenCalledWith({ where: { gradeId: 'g1' } });
-    expect(studentRepo.find).toHaveBeenCalled();
     expect(result).toHaveLength(1);
   });
 
@@ -162,13 +164,14 @@ describe('ResultService - findByFilter', () => {
     ];
     setupQueryBuilder(answers);
     mockResultRepo.find.mockResolvedValue([{ id: 'r1', answerId: 'a1' }]);
+    mockStudentRepo.find.mockResolvedValue([]);
+    mockClassRepo.find.mockResolvedValue([]);
 
     await service.findByFilter({
       dataScope: { scope: 'all', userId: 'u1' },
     });
 
-    expect(studentRepo.find).not.toHaveBeenCalled();
-    expect(classRepo.find).not.toHaveBeenCalled();
+    expect(dataScopeFilter.getStudentIds).not.toHaveBeenCalled();
     expect(dataScopeFilter.getStudentIds).not.toHaveBeenCalled();
   });
 

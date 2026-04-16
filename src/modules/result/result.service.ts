@@ -5,6 +5,7 @@ import { TaskResult } from '../../entities/task/task-result.entity';
 import { TaskAnswer } from '../../entities/task/task-answer.entity';
 import { Student } from '../../entities/org/student.entity';
 import { Class } from '../../entities/org/class.entity';
+import { Grade } from '../../entities/org/grade.entity';
 import { DataScopeFilter, DataScope } from '../auth/data-scope-filter';
 import { EncryptionService } from '../core/encryption.service';
 
@@ -47,6 +48,8 @@ export class ResultService {
     private studentRepo: Repository<Student>,
     @InjectRepository(Class)
     private classRepo: Repository<Class>,
+    @InjectRepository(Grade)
+    private gradeRepo: Repository<Grade>,
     private dataScopeFilter: DataScopeFilter,
     private encryptionService: EncryptionService,
   ) {}
@@ -255,19 +258,47 @@ export class ResultService {
 
     const answerMap = new Map(answers.map((a) => [a.id, a]));
 
+    const studentRecords = await this.studentRepo.find({
+      where: { id: In(uniqueStudentIds) },
+    });
+    const classIds = [...new Set(studentRecords.map((s) => s.classId))];
+    const classRecords =
+      classIds.length > 0
+        ? await this.classRepo.find({ where: { id: In(classIds) } })
+        : [];
+    const gradeIds = [...new Set(classRecords.map((c) => c.gradeId))];
+    const gradeRecords =
+      gradeIds.length > 0
+        ? await this.gradeRepo.find({ where: { id: In(gradeIds) } })
+        : [];
+    const classMap = new Map(classRecords.map((c) => [c.id, c]));
+    const gradeMap = new Map(gradeRecords.map((g) => [g.id, g]));
+    const studentClassMap = new Map(
+      studentRecords.map((s) => [s.id, s.classId]),
+    );
+
     return results.map((r) => {
       const answer = answerMap.get(r.answerId);
       const pii = answer ? piiMap.get(answer.studentId) : undefined;
       const taskEntity = answer?.task;
+      const studentClassId = answer
+        ? studentClassMap.get(answer.studentId)
+        : undefined;
+      const classEntity = studentClassId
+        ? classMap.get(studentClassId)
+        : undefined;
+      const gradeEntity = classEntity
+        ? gradeMap.get(classEntity.gradeId)
+        : undefined;
       return {
         result: r,
         studentId: answer?.studentId ?? '',
         studentName: pii?.name ?? '',
         studentNumber: pii?.studentNumber ?? '',
-        className: '',
-        gradeName: '',
+        className: classEntity?.name ?? '',
+        gradeName: gradeEntity?.name ?? '',
         taskTitle: taskEntity?.title ?? '',
-        scaleName: '',
+        scaleName: taskEntity?.scale?.name ?? '',
       };
     });
   }
@@ -295,19 +326,47 @@ export class ResultService {
     const piiMap = await this.encryptionService.batchDecrypt(studentIds);
     const answerMap = new Map(answers.map((a) => [a.id, a]));
 
+    const studentRecords = await this.studentRepo.find({
+      where: { id: In(studentIds) },
+    });
+    const classIds = [...new Set(studentRecords.map((s) => s.classId))];
+    const classRecords =
+      classIds.length > 0
+        ? await this.classRepo.find({ where: { id: In(classIds) } })
+        : [];
+    const gradeIds = [...new Set(classRecords.map((c) => c.gradeId))];
+    const gradeRecords =
+      gradeIds.length > 0
+        ? await this.gradeRepo.find({ where: { id: In(gradeIds) } })
+        : [];
+    const classMap = new Map(classRecords.map((c) => [c.id, c]));
+    const gradeMap = new Map(gradeRecords.map((g) => [g.id, g]));
+    const studentClassMap = new Map(
+      studentRecords.map((s) => [s.id, s.classId]),
+    );
+
     const all: ResultWithContext[] = results.map((r) => {
       const answer = answerMap.get(r.answerId);
       const pii = answer ? piiMap.get(answer.studentId) : undefined;
       const taskEntity = answer?.task;
+      const studentClassId = answer
+        ? studentClassMap.get(answer.studentId)
+        : undefined;
+      const classEntity = studentClassId
+        ? classMap.get(studentClassId)
+        : undefined;
+      const gradeEntity = classEntity
+        ? gradeMap.get(classEntity.gradeId)
+        : undefined;
       return {
         result: r,
         studentId: answer?.studentId ?? '',
         studentName: pii?.name ?? '',
         studentNumber: pii?.studentNumber ?? '',
-        className: '',
-        gradeName: '',
+        className: classEntity?.name ?? '',
+        gradeName: gradeEntity?.name ?? '',
         taskTitle: taskEntity?.title ?? '',
-        scaleName: '',
+        scaleName: taskEntity?.scale?.name ?? '',
       };
     });
 

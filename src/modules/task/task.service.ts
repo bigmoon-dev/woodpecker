@@ -90,7 +90,7 @@ export class TaskService {
 
     if (scope?.classId) {
       qb.andWhere(
-        'task.targetIds @> :classId::jsonb AND task.status = :status',
+        `task."targetIds" @> CAST(:classId AS jsonb) AND task.status = :status`,
         { classId: JSON.stringify([scope.classId]), status: 'published' },
       );
     } else if (scope?.status) {
@@ -102,17 +102,15 @@ export class TaskService {
   }
 
   async getStudentClassId(userId: string): Promise<string | null> {
-    const user: { studentId?: string } | null = await this.dataSource
-      .getRepository('users')
-      .createQueryBuilder('u')
-      .select('u.studentId')
-      .where('u.id = :userId', { userId })
-      .getRawOne();
-
-    if (!user?.studentId) return null;
+    const rows: { studentId: string }[] = await this.dataSource.query(
+      `SELECT u."studentId" as "studentId" FROM users u WHERE u.id = $1`,
+      [userId],
+    );
+    const studentId = rows?.[0]?.studentId;
+    if (!studentId) return null;
 
     const student = await this.studentRepo.findOne({
-      where: { id: user.studentId },
+      where: { id: studentId },
       select: ['classId'],
     });
     return student?.classId ?? null;

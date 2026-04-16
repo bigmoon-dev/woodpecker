@@ -56,6 +56,7 @@ describe('TaskService', () => {
   const mockDataSource = {
     transaction: jest.fn((cb) => cb(mockDataSource)),
     getRepository: jest.fn(),
+    query: jest.fn(),
     findOne: jest.fn(),
     create: jest.fn((_: any, d: any) => d),
     save: jest.fn((d: any) => Promise.resolve(d)),
@@ -308,7 +309,7 @@ describe('TaskService', () => {
       mockTaskRepo.createQueryBuilder.mockReturnValue(mockQb);
       await service.findAll(1, 20, { classId: 'c1', status: 'published' });
       expect(mockQb.andWhere).toHaveBeenCalledWith(
-        'task.targetIds @> :classId::jsonb AND task.status = :status',
+        `task."targetIds" @> CAST(:classId AS jsonb) AND task.status = :status`,
         expect.objectContaining({ status: 'published' }),
       );
     });
@@ -418,41 +419,20 @@ describe('TaskService', () => {
 
   describe('getStudentClassId', () => {
     it('should return classId when student exists', async () => {
-      const mockUserRepo = {
-        createQueryBuilder: jest.fn().mockReturnValue({
-          select: jest.fn().mockReturnThis(),
-          where: jest.fn().mockReturnThis(),
-          getRawOne: jest.fn().mockResolvedValue({ studentId: 's1' }),
-        }),
-      };
-      mockDataSource.getRepository.mockReturnValue(mockUserRepo);
+      mockDataSource.query.mockResolvedValue([{ studentId: 's1' }]);
       mockStudentRepo.findOne.mockResolvedValue({ id: 's1', classId: 'c1' });
       const result = await service.getStudentClassId('u1');
       expect(result).toBe('c1');
     });
 
     it('should return null when user has no studentId', async () => {
-      const mockUserRepo = {
-        createQueryBuilder: jest.fn().mockReturnValue({
-          select: jest.fn().mockReturnThis(),
-          where: jest.fn().mockReturnThis(),
-          getRawOne: jest.fn().mockResolvedValue(null),
-        }),
-      };
-      mockDataSource.getRepository.mockReturnValue(mockUserRepo);
+      mockDataSource.query.mockResolvedValue([]);
       const result = await service.getStudentClassId('u1');
       expect(result).toBeNull();
     });
 
     it('should return null when student not found', async () => {
-      const mockUserRepo = {
-        createQueryBuilder: jest.fn().mockReturnValue({
-          select: jest.fn().mockReturnThis(),
-          where: jest.fn().mockReturnThis(),
-          getRawOne: jest.fn().mockResolvedValue({ studentId: 's1' }),
-        }),
-      };
-      mockDataSource.getRepository.mockReturnValue(mockUserRepo);
+      mockDataSource.query.mockResolvedValue([{ studentId: 's1' }]);
       mockStudentRepo.findOne.mockResolvedValue(null);
       const result = await service.getStudentClassId('u1');
       expect(result).toBeNull();

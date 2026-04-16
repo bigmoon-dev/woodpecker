@@ -6,6 +6,7 @@ import { TaskResult } from '../../entities/task/task-result.entity';
 import { TaskAnswer } from '../../entities/task/task-answer.entity';
 import { Student } from '../../entities/org/student.entity';
 import { Class } from '../../entities/org/class.entity';
+import { Grade } from '../../entities/org/grade.entity';
 import { DataScopeFilter } from '../auth/data-scope-filter';
 import { EncryptionService } from '../core/encryption.service';
 
@@ -19,6 +20,7 @@ describe('ResultService', () => {
   const mockAnswerRepo = { find: jest.fn(), createQueryBuilder: jest.fn() };
   const mockStudentRepo = { find: jest.fn() };
   const mockClassRepo = { find: jest.fn() };
+  const mockGradeRepo = { find: jest.fn() };
   const mockDataScopeFilter = {
     getStudentIds: jest.fn().mockResolvedValue([]),
   };
@@ -35,6 +37,7 @@ describe('ResultService', () => {
         { provide: getRepositoryToken(TaskAnswer), useValue: mockAnswerRepo },
         { provide: getRepositoryToken(Student), useValue: mockStudentRepo },
         { provide: getRepositoryToken(Class), useValue: mockClassRepo },
+        { provide: getRepositoryToken(Grade), useValue: mockGradeRepo },
         { provide: DataScopeFilter, useValue: mockDataScopeFilter },
         { provide: EncryptionService, useValue: mockEncryptionService },
       ],

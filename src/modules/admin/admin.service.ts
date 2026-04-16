@@ -74,6 +74,8 @@ export class AdminService {
     const updateData: Partial<User> = {};
     if (dto.displayName !== undefined) updateData.displayName = dto.displayName;
     if (dto.status !== undefined) updateData.status = dto.status;
+    if (dto.studentRecordId !== undefined)
+      updateData.studentId = dto.studentRecordId;
     if (Object.keys(updateData).length > 0) {
       await this.userRepo.update(id, updateData);
     }

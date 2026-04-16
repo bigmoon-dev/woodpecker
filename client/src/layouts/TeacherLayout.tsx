@@ -1,8 +1,11 @@
 import { Outlet } from 'react-router-dom';
 import { ProLayout } from '@ant-design/pro-components';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { LogoutOutlined } from '@ant-design/icons';
+import { Dropdown } from 'antd';
 import ThemePicker from '../components/ThemePicker';
 import { useThemeTokens } from '../themes/ThemeProvider';
+import { clearToken } from '../utils/auth';
 
 const menuRoutes = [
   { path: '/teacher/dashboard', name: '数据看板' },
@@ -21,6 +24,11 @@ export default function TeacherLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const t = useThemeTokens();
+
+  const handleLogout = () => {
+    clearToken();
+    navigate('/login');
+  };
 
   return (
     <>
@@ -63,6 +71,22 @@ export default function TeacherLayout() {
         avatarProps={{
           title: '教师',
           size: 'small',
+          render: (_, defaultDom) => (
+            <Dropdown
+              menu={{
+                items: [
+                  {
+                    key: 'logout',
+                    icon: <LogoutOutlined />,
+                    label: '退出登录',
+                    onClick: handleLogout,
+                  },
+                ],
+              }}
+            >
+              {defaultDom}
+            </Dropdown>
+          ),
         }}
         actionsRender={() => [<ThemePicker key="theme" />]}
         contentStyle={{ padding: 24 }}

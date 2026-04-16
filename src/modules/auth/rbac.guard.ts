@@ -53,12 +53,18 @@ export class RbacGuard implements CanActivate {
     if (!hasAll) throw new ForbiddenException('Insufficient permissions');
 
     let scope: 'own' | 'class' | 'grade' | 'all' = 'own';
+    const roleNames = (user.roles || []).map((r) => r.name);
+    const hasScopeSuffix = userPerms.some(
+      (p) => p.endsWith(':all') || p.endsWith(':grade') || p.endsWith(':class'),
+    );
     if (userPerms.some((p) => p.endsWith(':all'))) {
       scope = 'all';
     } else if (userPerms.some((p) => p.endsWith(':grade'))) {
       scope = 'grade';
     } else if (userPerms.some((p) => p.endsWith(':class'))) {
       scope = 'class';
+    } else if (roleNames.includes('psychologist') && !hasScopeSuffix) {
+      scope = 'all';
     }
 
     request.dataScope = {
