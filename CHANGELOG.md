@@ -2,6 +2,62 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.12.0] - 2026-04-16
+
+### Added
+
+#### 多轮测评追踪 — 干预前后效果评估 + 趋势变化预警
+
+**InterventionAnalysisService**
+- `groupComparison(beforeTaskId, afterTaskId)` — 群体干预前后对比
+  - 均值变化 (avgScore delta)、改善率 (improvedRate)、恶化率 (worsenedRate)
+  - 等级转换矩阵 (levelTransitions: "normal→mild" 等)
+  - 前后统计 (avgScore, stdDev, levelDistribution)
+- `getStudentProgress(beforeTaskId, afterTaskId)` — 逐学生进度追踪
+  - trend: improved / worsened / stable / no_data
+- `detectTrendAlerts(taskId)` — 趋势恶化自动预警
+  - 扫描所有学生，检测 green→yellow/red 恶化，自动创建 AlertRecord
+
+**API 端点**
+- `GET /api/results/intervention-comparison?beforeTaskId=&afterTaskId=`
+- `GET /api/results/intervention-progress?beforeTaskId=&afterTaskId=`
+- `POST /api/results/scan-trend-alerts/:taskId`
+
+#### 报告生成 — 群体分析报告 + 自定义报告模板
+
+**ReportTemplate 实体**
+- id, name, description, type(group), schema(jsonb), isBuiltIn
+- 内置种子模板: "班级心理测评分析报告" (概览+分布+维度+建议)
+
+**ReportTemplateService** — 模板 CRUD (内置模板不可修改/删除)
+
+**ReportGeneratorService**
+- `getGroupStatistics(taskId)` — 群体统计聚合
+  - totalStudents, avgScore, stdDev, levelDistribution, colorDistribution, dimensionAverages
+- `generateGroupReport(templateId, taskId)` — 基于模板生成群体报告
+
+**API 端点**
+- `GET /api/results/report-templates` — 模板列表
+- `POST /api/results/report-templates` — 创建模板
+- `GET /api/results/report-templates/:id` — 模板详情
+- `PUT /api/results/report-templates/:id` — 更新模板
+- `DELETE /api/results/report-templates/:id` — 删除模板
+- `GET /api/results/group-report?templateId=&taskId=` — 生成群体报告
+
+**Migration**
+- `1700000000007-AddReportTemplate` — report_templates 表 + 内置种子
+
+### Changed
+
+- ResultModule 注册 InterventionAnalysisService, ReportTemplateService, ReportGeneratorService
+- ResultController 注入新服务，新增 9 个端点
+- Version bumped to `0.12.0`
+
+### Test Results
+
+- 60 test suites, 557 test cases, all passing
+- ESLint 0 warnings, TypeScript 0 errors
+
 ## [0.11.0] - 2026-04-16
 
 ### Added
