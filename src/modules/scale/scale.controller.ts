@@ -14,6 +14,12 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ScaleService } from './scale.service';
 import { ExcelImportService } from './excel-import.service';
+import { ScaleVersionService } from './scale-version.service';
+import { ScaleValidationService } from './scale-validation.service';
+import type {
+  CreateValidationDto,
+  UpdateValidationDto,
+} from './scale-validation.service';
 import { CreateScaleDto } from './scale.dto';
 import { Scale } from '../../entities/scale/scale.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -28,6 +34,8 @@ export class ScaleController {
   constructor(
     private scaleService: ScaleService,
     private excelImportService: ExcelImportService,
+    private scaleVersionService: ScaleVersionService,
+    private scaleValidationService: ScaleValidationService,
   ) {}
 
   @Post()
@@ -92,5 +100,65 @@ export class ScaleController {
     };
     const scale = await this.scaleService.create(dto);
     return scale;
+  }
+
+  @Get(':id/versions')
+  async getVersionHistory(@Param('id') id: string): Promise<Scale[]> {
+    return this.scaleVersionService.getVersionHistory(id);
+  }
+
+  @Post(':id/publish')
+  @SetMetadata(REQUIRE_PERMISSION, ['scale:write'])
+  async publishScale(@Param('id') id: string): Promise<Scale> {
+    return this.scaleVersionService.publishScale(id);
+  }
+
+  @Post(':id/create-version')
+  @SetMetadata(REQUIRE_PERMISSION, ['scale:write'])
+  async createVersion(@Param('id') id: string): Promise<Scale> {
+    return this.scaleVersionService.createVersion(id);
+  }
+
+  @Get(':id/versions/:versionId')
+  async getVersion(
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+  ): Promise<Scale> {
+    return this.scaleVersionService.getVersion(id, versionId);
+  }
+
+  @Get(':id/validations')
+  async getValidations(@Param('id') id: string) {
+    return this.scaleValidationService.getValidations(id);
+  }
+
+  @Post(':id/validations')
+  @SetMetadata(REQUIRE_PERMISSION, ['scale:write'])
+  async addValidation(
+    @Param('id') id: string,
+    @Body() dto: CreateValidationDto,
+  ) {
+    return this.scaleValidationService.addValidation(id, dto);
+  }
+
+  @Put('validations/:validationId')
+  @SetMetadata(REQUIRE_PERMISSION, ['scale:write'])
+  async updateValidation(
+    @Param('validationId') validationId: string,
+    @Body() dto: UpdateValidationDto,
+  ) {
+    return this.scaleValidationService.updateValidation(validationId, dto);
+  }
+
+  @Delete('validations/:validationId')
+  @SetMetadata(REQUIRE_PERMISSION, ['scale:write'])
+  async deleteValidation(@Param('validationId') validationId: string) {
+    await this.scaleValidationService.deleteValidation(validationId);
+    return { deleted: true };
+  }
+
+  @Get(':id/validations/summary')
+  async getValidationSummary(@Param('id') id: string) {
+    return this.scaleValidationService.getValidationSummary(id);
   }
 }
