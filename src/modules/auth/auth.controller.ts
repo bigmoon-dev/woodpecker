@@ -164,9 +164,10 @@ export class AuthController {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    await this.refreshTokenRepo.update(stored.id, {
-      revokedAt: new Date(),
-    });
+    await this.refreshTokenRepo.update(
+      { tokenHash, revokedAt: IsNull() },
+      { revokedAt: new Date() },
+    );
 
     const newPayload = {
       sub: payload.sub,
