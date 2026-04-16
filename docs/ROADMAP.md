@@ -89,6 +89,13 @@
 - 知情同意签署页
 - 组织架构管理页
 - 角色/用户/插件管理页
+- 多主题动态切换（4套心理学映射主题：森林疗愈/情绪光谱/水墨留白/温暖几何，ThemePicker + ThemeProvider + ConfigProvider theme）
+
+### 美学设计
+- 4套预设主题，每套映射心理学理论（Biophilia/Plutchik情绪轮/正念/环境心理学）
+- Login页面主题渐变背景 + 毛玻璃卡片
+- Dashboard语义色token化，响应主题切换
+- 后端主题偏好持久化（User.themePreference + GET/PUT preferences API）
 
 ---
 

@@ -3,6 +3,8 @@ import { ConfigProvider } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import { PrivateRoute, setToken, setRoles } from './utils/auth';
 import { routeConfigs } from './router';
+import { ThemeProvider, useTheme } from './themes/ThemeProvider';
+import { themes } from './themes';
 
 if (!localStorage.getItem('token')) {
   fetch('/api/auth/login', {
@@ -20,9 +22,30 @@ if (!localStorage.getItem('token')) {
     });
 }
 
-export default function App() {
+function ThemedApp() {
+  const { themeKey } = useTheme();
+  const theme = themes[themeKey];
+
   return (
-    <ConfigProvider locale={zhCN}>
+    <ConfigProvider
+      locale={zhCN}
+      theme={{
+        token: {
+          colorPrimary: theme.tokens.colorPrimary,
+          colorBgContainer: theme.tokens.colorBgContainer,
+          colorBgLayout: theme.tokens.colorBgLayout,
+          colorText: theme.tokens.colorText,
+          colorTextSecondary: theme.tokens.colorTextSecondary,
+          colorBorder: theme.tokens.colorBorder,
+          colorSuccess: theme.tokens.colorSuccess,
+          colorWarning: theme.tokens.colorWarning,
+          colorError: theme.tokens.colorError,
+          colorInfo: theme.tokens.colorInfo,
+          borderRadius: theme.tokens.borderRadius,
+          fontFamily: theme.tokens.fontFamily,
+        },
+      }}
+    >
       <Routes>
         {routeConfigs.map((config) => {
           if (config.public) {
@@ -63,5 +86,13 @@ export default function App() {
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     </ConfigProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <ThemedApp />
+    </ThemeProvider>
   );
 }

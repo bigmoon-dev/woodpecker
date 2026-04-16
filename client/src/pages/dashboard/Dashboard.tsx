@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Row, Col, Card, Statistic, Spin } from 'antd';
+import { Row, Col, Card, Statistic, Spin, theme } from 'antd';
 import { Column, Pie, Area } from '@ant-design/charts';
 import {
   BarChartOutlined,
@@ -8,6 +8,7 @@ import {
   ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import request from '../../utils/request';
+import { useThemeTokens } from '../../themes/ThemeProvider';
 
 interface OverviewData {
   total_tasks: string;
@@ -52,6 +53,8 @@ export default function Dashboard() {
   const [alertDist, setAlertDist] = useState<AlertDistItem[]>([]);
   const [trend, setTrend] = useState<TrendItem[]>([]);
   const [scaleUsage, setScaleUsage] = useState<ScaleUsageItem[]>([]);
+  const { token: antToken } = theme.useToken();
+  const themeTokens = useThemeTokens();
 
   useEffect(() => {
     async function load() {
@@ -88,7 +91,6 @@ export default function Dashboard() {
   const total = Number(overview?.total_answers || 0);
   const rate = total > 0 ? Math.round((submitted / total) * 100) : 0;
   const redAlerts = Number(overview?.red_alerts || 0);
-  const yellowAlerts = Number(overview?.yellow_alerts || 0);
   const pendingAlerts = Number(overview?.pending_alerts || 0);
 
   const completionData = completion.flatMap((c) => [
@@ -143,7 +145,7 @@ export default function Dashboard() {
               value={rate}
               suffix="%"
               prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#3f8600' }}
+              valueStyle={{ color: themeTokens.tokens.colorSuccess }}
             />
           </Card>
         </Col>
@@ -153,7 +155,7 @@ export default function Dashboard() {
               title="红色预警"
               value={redAlerts}
               prefix={<AlertOutlined />}
-              valueStyle={{ color: '#cf1322' }}
+              valueStyle={{ color: themeTokens.tokens.colorError }}
             />
           </Card>
         </Col>
@@ -163,7 +165,7 @@ export default function Dashboard() {
               title="待处理预警"
               value={pendingAlerts}
               prefix={<ExclamationCircleOutlined />}
-              valueStyle={{ color: '#fa8c16' }}
+              valueStyle={{ color: themeTokens.tokens.colorWarning }}
             />
           </Card>
         </Col>
@@ -179,7 +181,7 @@ export default function Dashboard() {
               colorField="type"
               stack
               height={300}
-              color={['#52c41a', '#d9d9d9']}
+              color={[themeTokens.tokens.colorSuccess, antToken.colorBorderSecondary]}
               legend={{ position: 'top-right' as const }}
             />
           </Card>
@@ -191,7 +193,7 @@ export default function Dashboard() {
               angleField="value"
               colorField="type"
               height={300}
-              color={['#cf1322', '#faad14']}
+              color={[themeTokens.tokens.colorError, themeTokens.tokens.colorWarning]}
               label={{ text: 'type', position: 'outside' as const }}
               legend={{ position: 'top-right' as const }}
             />
