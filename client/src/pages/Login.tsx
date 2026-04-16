@@ -20,7 +20,7 @@ export default function Login() {
       setRoles(payload.roles || []);
       const roles = payload.roles || [];
       if (roles.includes('admin')) navigate('/admin');
-      else if (roles.includes('teacher')) navigate('/teacher');
+      else if (roles.includes('psychologist') || roles.includes('teacher')) navigate('/teacher');
       else navigate('/student');
     } catch {
       message.error('登录失败，请检查用户名和密码');

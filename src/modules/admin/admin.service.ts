@@ -50,6 +50,7 @@ export class AdminService {
 
   async findAllUsers(page = 1, pageSize = 20) {
     const [data, total] = await this.userRepo.findAndCount({
+      relations: ['roles'],
       skip: (page - 1) * pageSize,
       take: pageSize,
     });

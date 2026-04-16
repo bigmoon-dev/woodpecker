@@ -121,6 +121,7 @@ describe('AdminService', () => {
       const result = await service.findAllUsers(1, 20);
       expect(result).toEqual({ data: users, total: 1 });
       expect(userRepo.findAndCount).toHaveBeenCalledWith({
+        relations: ['roles'],
         skip: 0,
         take: 20,
       });

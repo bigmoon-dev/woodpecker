@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { ProTable, type ActionType } from '@ant-design/pro-components';
-import { Button, Modal, Form, Input, message } from 'antd';
+import { Button, Modal, Form, Input, Select, Tag, message } from 'antd';
 import request from '../../utils/request';
 
 export default function UserManage() {
@@ -8,7 +8,16 @@ export default function UserManage() {
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [currentId, setCurrentId] = useState('');
+  const [roles, setRoles] = useState<{ id: string; name: string }[]>([]);
   const [form] = Form.useForm();
+  const [editForm] = Form.useForm();
+
+  useEffect(() => {
+    request.get('/admin/roles', { params: { pageSize: 100 } }).then((res: any) => {
+      const list = res.data || res;
+      setRoles(Array.isArray(list) ? list : []);
+    });
+  }, []);
 
   const handleCreate = async (values: any) => {
     try {
@@ -27,7 +36,7 @@ export default function UserManage() {
       await request.put(`/admin/users/${currentId}`, values);
       message.success('更新成功');
       setEditOpen(false);
-      form.resetFields();
+      editForm.resetFields();
       actionRef.current?.reload();
     } catch {
       message.error('更新失败');
@@ -48,11 +57,26 @@ export default function UserManage() {
     { title: '用户名', dataIndex: 'username', key: 'username' },
     { title: '显示名', dataIndex: 'displayName', key: 'displayName' },
     {
+      title: '角色',
+      key: 'roles',
+      render: (_: any, record: any) =>
+        (record.roles || []).map((r: any) => (
+          <Tag key={r.id} color="blue">{r.name}</Tag>
+        )),
+    },
+    {
       title: '操作',
       key: 'action',
       render: (_: any, record: any) => (
         <>
-          <Button type="link" onClick={() => { setCurrentId(record.id); form.setFieldsValue(record); setEditOpen(true); }}>
+          <Button type="link" onClick={() => {
+            setCurrentId(record.id);
+            editForm.setFieldsValue({
+              displayName: record.displayName,
+              roleIds: (record.roles || []).map((r: any) => r.id),
+            });
+            setEditOpen(true);
+          }}>
             编辑
           </Button>
           <Button type="link" danger onClick={() => handleDelete(record.id)}>删除</Button>
@@ -78,24 +102,35 @@ export default function UserManage() {
       />
       <Modal title="新建用户" open={open} onCancel={() => { setOpen(false); form.resetFields(); }} onOk={() => form.submit()}>
         <Form form={form} layout="vertical" onFinish={handleCreate}>
-          <Form.Item name="username" label="用户名" rules={[{ required: true }]}>
+          <Form.Item name="username" label="用户名" rules={[{ required: true, message: '请输入用户名' }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="password" label="密码" rules={[{ required: true }]}>
+          <Form.Item name="password" label="密码" rules={[{ required: true, min: 8, message: '密码至少8位' }]}>
             <Input.Password />
           </Form.Item>
-          <Form.Item name="displayName" label="显示名">
+          <Form.Item name="displayName" label="显示名" rules={[{ required: true, message: '请输入显示名' }]}>
             <Input />
+          </Form.Item>
+          <Form.Item name="roleIds" label="角色" rules={[{ required: true, message: '请选择角色' }]}>
+            <Select mode="multiple" placeholder="选择角色">
+              {roles.map((r) => (
+                <Select.Option key={r.id} value={r.id}>{r.name}</Select.Option>
+              ))}
+            </Select>
           </Form.Item>
         </Form>
       </Modal>
-      <Modal title="编辑用户" open={editOpen} onCancel={() => { setEditOpen(false); form.resetFields(); }} onOk={() => form.submit()}>
-        <Form form={form} layout="vertical" onFinish={handleEdit}>
-          <Form.Item name="username" label="用户名" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
+      <Modal title="编辑用户" open={editOpen} onCancel={() => { setEditOpen(false); editForm.resetFields(); }} onOk={() => editForm.submit()}>
+        <Form form={editForm} layout="vertical" onFinish={handleEdit}>
           <Form.Item name="displayName" label="显示名">
             <Input />
+          </Form.Item>
+          <Form.Item name="roleIds" label="角色">
+            <Select mode="multiple" placeholder="选择角色">
+              {roles.map((r) => (
+                <Select.Option key={r.id} value={r.id}>{r.name}</Select.Option>
+              ))}
+            </Select>
           </Form.Item>
         </Form>
       </Modal>
