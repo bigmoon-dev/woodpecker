@@ -23,6 +23,7 @@ import { Class } from '../../entities/org/class.entity';
 import { Student } from '../../entities/org/student.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RbacGuard, REQUIRE_PERMISSION } from '../auth/rbac.guard';
+import { RequireReauth } from '../auth/reauth.decorator';
 import { CreateGradeDto, CreateClassDto, CreateStudentDto } from './org.dto';
 import { PaginationQueryDto } from '../../common/pagination.dto';
 import { SetMetadata } from '@nestjs/common';
@@ -80,6 +81,7 @@ export class OrgController {
 
   @Delete('grades/:id')
   @SetMetadata(REQUIRE_PERMISSION, ['org:write'])
+  @RequireReauth()
   async removeGrade(@Param('id') id: string): Promise<void> {
     return this.orgService.removeGrade(id);
   }
@@ -120,6 +122,7 @@ export class OrgController {
 
   @Delete('classes/:id')
   @SetMetadata(REQUIRE_PERMISSION, ['org:write'])
+  @RequireReauth()
   async removeClass(@Param('id') id: string): Promise<void> {
     return this.orgService.removeClass(id);
   }
@@ -160,6 +163,7 @@ export class OrgController {
 
   @Delete('students/:id')
   @SetMetadata(REQUIRE_PERMISSION, ['org:write'])
+  @RequireReauth()
   async removeStudent(@Param('id') id: string): Promise<void> {
     return this.orgService.removeStudent(id);
   }

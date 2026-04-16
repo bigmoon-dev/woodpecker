@@ -16,6 +16,7 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { JwtStrategy } from './jwt.strategy';
 import { RbacGuard } from './rbac.guard';
 import { DataScopeFilter } from './data-scope-filter';
+import { ReauthGuard } from './reauth.guard';
 
 @Global()
 @Module({
@@ -50,11 +51,12 @@ import { DataScopeFilter } from './data-scope-filter';
     JwtStrategy,
     RbacGuard,
     DataScopeFilter,
+    ReauthGuard,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
   ],
-  exports: [AuthService, JwtModule, RbacGuard, DataScopeFilter],
+  exports: [AuthService, JwtModule, RbacGuard, DataScopeFilter, ReauthGuard],
 })
 export class AuthModule {}

@@ -20,6 +20,7 @@ import {
 import { PaginationQueryDto } from '../../common/pagination.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RbacGuard, REQUIRE_PERMISSION } from '../auth/rbac.guard';
+import { RequireReauth } from '../auth/reauth.decorator';
 import { SetMetadata } from '@nestjs/common';
 import { PluginManager } from '../plugin/plugin-manager';
 import { ConfigReloadService } from '../core/config-reload.service';
@@ -50,6 +51,7 @@ export class AdminController {
   }
 
   @Delete('roles/:id')
+  @RequireReauth()
   async deleteRole(@Param('id') id: string) {
     return this.adminService.deleteRole(id);
   }
@@ -71,6 +73,7 @@ export class AdminController {
   }
 
   @Delete('roles/:id/permissions/:permissionId')
+  @RequireReauth()
   async removeRolePermission(
     @Param('id') id: string,
     @Param('permissionId') permissionId: string,
@@ -94,6 +97,7 @@ export class AdminController {
   }
 
   @Delete('users/:id')
+  @RequireReauth()
   async deleteUser(@Param('id') id: string) {
     return this.adminService.deleteUser(id);
   }

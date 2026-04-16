@@ -16,6 +16,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { RefreshToken } from '../../entities/auth/refresh-token.entity';
 import { LogoutDto } from './logout.dto';
+import { Throttle } from '@nestjs/throttler';
 import * as crypto from 'crypto';
 
 interface AuthedRequest extends Request {
@@ -51,6 +52,12 @@ class RefreshDto {
   refreshToken: string;
 }
 
+class ReauthDto {
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+}
+
 @Controller('api/auth')
 export class AuthController {
   constructor(
@@ -68,6 +75,7 @@ export class AuthController {
 
   @Post('login')
   @Public()
+  @Throttle({ short: { limit: 5, ttl: 60000 } })
   async login(@Body() dto: LoginDto, @Req() req: AuthedRequest) {
     const user = await this.authService.validateUser(
       dto.username,
@@ -199,5 +207,23 @@ export class AuthController {
       { revokedAt: new Date() },
     );
     return { success: true };
+  }
+
+  @Post('reauth')
+  async reauth(@Body() dto: ReauthDto, @Req() req: AuthedRequest) {
+    const valid = await this.authService.verifyPassword(
+      req.user.id,
+      dto.password,
+    );
+    if (!valid) {
+      throw new UnauthorizedException('Invalid password');
+    }
+
+    const reauthToken = this.jwtService.sign(
+      { sub: req.user.id, reauth: true },
+      { expiresIn: '5m' },
+    );
+
+    return { reauthToken };
   }
 }

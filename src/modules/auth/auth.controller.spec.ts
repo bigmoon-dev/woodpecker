@@ -15,6 +15,7 @@ describe('AuthController', () => {
 
   const mockAuthService = {
     validateUser: jest.fn(),
+    verifyPassword: jest.fn(),
   };
   const mockJwtService = {
     sign: jest.fn().mockReturnValue('token'),
@@ -153,6 +154,30 @@ describe('AuthController', () => {
 
       await expect(
         controller.refresh({ refreshToken: 'revoked-token' }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('reauth()', () => {
+    it('returns reauth token when password is correct', async () => {
+      authService.verifyPassword.mockResolvedValueOnce(true);
+      mockJwtService.sign.mockReturnValueOnce('reauth-jwt');
+
+      const result = await controller.reauth({ password: 'correct' }, {
+        user: { id: 'u1', username: 'test', roles: [] },
+      } as any);
+
+      expect(result).toEqual({ reauthToken: 'reauth-jwt' });
+      expect(authService.verifyPassword).toHaveBeenCalledWith('u1', 'correct');
+    });
+
+    it('throws UnauthorizedException when password is wrong', async () => {
+      authService.verifyPassword.mockResolvedValueOnce(false);
+
+      await expect(
+        controller.reauth({ password: 'wrong' }, {
+          user: { id: 'u1', username: 'test', roles: [] },
+        } as any),
       ).rejects.toThrow(UnauthorizedException);
     });
   });

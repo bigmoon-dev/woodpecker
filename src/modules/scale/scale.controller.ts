@@ -24,6 +24,7 @@ import { CreateScaleDto } from './scale.dto';
 import { Scale } from '../../entities/scale/scale.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RbacGuard, REQUIRE_PERMISSION } from '../auth/rbac.guard';
+import { RequireReauth } from '../auth/reauth.decorator';
 import { PaginationQueryDto } from '../../common/pagination.dto';
 import { SetMetadata } from '@nestjs/common';
 
@@ -76,6 +77,7 @@ export class ScaleController {
 
   @Delete(':id')
   @SetMetadata(REQUIRE_PERMISSION, ['scale:write'])
+  @RequireReauth()
   async remove(@Param('id') id: string): Promise<void> {
     return this.scaleService.remove(id);
   }
@@ -152,6 +154,7 @@ export class ScaleController {
 
   @Delete('validations/:validationId')
   @SetMetadata(REQUIRE_PERMISSION, ['scale:write'])
+  @RequireReauth()
   async deleteValidation(@Param('validationId') validationId: string) {
     await this.scaleValidationService.deleteValidation(validationId);
     return { deleted: true };
