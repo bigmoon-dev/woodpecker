@@ -5,7 +5,8 @@ import {
   IsUUID,
   IsArray,
   ValidateNested,
-  IsDate,
+  IsIn,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -15,6 +16,7 @@ export class CreateTaskDto {
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   title: string;
 
   @IsArray()
@@ -23,15 +25,36 @@ export class CreateTaskDto {
 
   @IsOptional()
   @IsString()
+  @IsIn(['class', 'grade'])
   targetType?: string;
 
   @IsOptional()
-  @IsDate()
-  @Type(() => Date)
-  deadline?: Date;
+  @IsString()
+  @MaxLength(50)
+  deadline?: string;
+}
 
-  @IsUUID()
-  createdById: string;
+export class UpdateTaskDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  title?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  targetIds?: string[];
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['class', 'grade'])
+  targetType?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  deadline?: string;
 }
 
 export class TaskItemAnswerDto {
@@ -43,9 +66,6 @@ export class TaskItemAnswerDto {
 }
 
 export class SubmitAnswersDto {
-  @IsUUID()
-  studentId: string;
-
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => TaskItemAnswerDto)

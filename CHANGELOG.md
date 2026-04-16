@@ -2,6 +2,36 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.18.0] - 2026-04-16
+
+### Added — 任务发放系统完整闭环 (design_system_v2 → coding_v1)
+
+**后端 API 重构**
+- TaskService.findAll() 按角色过滤：教师按 createdById、学生按 classId in targetIds + published、管理员无过滤
+- TaskService.findOne() 加载 scale 关系（scale.items + scale.items.options），修复测评页渲染
+- submitAnswers 用 DataSource.transaction() 包装，保证原子性
+- submitAnswers 防重提交：检查 answer.status === 'submitted' 拒绝重复
+- publish/complete 加状态前置校验（仅 draft→published→completed）
+- update/remove 仅允许 draft 状态操作
+- Controller 从 JWT req.user 提取 createdById/studentId，消除身份冒充漏洞
+- 新增 GET /tasks/:id/submission-status 接口
+- 新增 getStudentClassId() 方法：User.studentId → Student.classId 班级解析
+- 新增 UpdateTaskDto 验证
+- CreateTaskDto 移除 createdById，SubmitAnswersDto 移除 studentId
+- TaskAnswer entity 新增 @Unique(['taskId', 'studentId']) 约束
+- Task entity targetType 默认值改为 'class'
+
+**前端 UI**
+- TaskList 新增"发布"和"完成"按钮（教师视图）
+- 任务状态列改为 Tag 徽章（草稿=蓝, 已发布=绿, 已完成=灰）
+- 移除前端 createdById/studentId 提取（改由后端从 JWT 获取）
+- Assessment 提交时不再发送 studentId
+
+**单元测试**
+- TaskService: 29 个测试（scoped findAll, findOne relations, submitAnswers transaction, publish/complete guards, update/remove guards, getStudentClassId, getSubmissionStatus）
+- TaskController: 10 个测试（JWT extraction, role-based routing, publish/complete delegation）
+- 总测试数: 609 (从 589 增加 20 个)
+
 ## [0.17.1] - 2026-04-16
 
 ### Fixed

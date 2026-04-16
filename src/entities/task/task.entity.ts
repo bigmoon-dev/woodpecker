@@ -23,7 +23,7 @@ export class Task {
   @Column({ type: 'jsonb' })
   targetIds: string[];
 
-  @Column({ length: 20, default: 'grade' })
+  @Column({ length: 20, default: 'class' })
   targetType: string;
 
   @Column({ type: 'timestamp', nullable: true })

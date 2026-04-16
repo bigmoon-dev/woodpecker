@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Card, Spin, Radio, Button, message, Space } from 'antd';
 import { useParams, useNavigate } from 'react-router-dom';
 import request from '../../utils/request';
-import { parseJwtPayload } from '../../utils/auth';
 
 export default function Assessment() {
   const { id } = useParams();
@@ -36,10 +35,7 @@ export default function Assessment() {
 
     setSubmitting(true);
     try {
-      const token = localStorage.getItem('token') || '';
-      const payload = parseJwtPayload(token);
       await request.post(`/tasks/${id}/answers/submit`, {
-        studentId: payload.sub,
         items,
       });
       message.success('提交成功');

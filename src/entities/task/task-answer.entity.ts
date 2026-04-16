@@ -5,11 +5,13 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Unique,
 } from 'typeorm';
 import { Task } from './task.entity';
 import { User } from '../auth/user.entity';
 
 @Entity('task_answers')
+@Unique(['taskId', 'studentId'])
 export class TaskAnswer {
   @PrimaryGeneratedColumn('uuid')
   id: string;

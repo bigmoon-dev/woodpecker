@@ -4,11 +4,26 @@ import {
   type ActionType,
   type ProColumns,
 } from '@ant-design/pro-components';
-import { Button, Modal, Form, Input, DatePicker, Select, message } from 'antd';
-import { DownloadOutlined } from '@ant-design/icons';
+import {
+  Button,
+  Modal,
+  Form,
+  Input,
+  DatePicker,
+  Select,
+  Tag,
+  message,
+} from 'antd';
+import { DownloadOutlined, SendOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import request from '../../utils/request';
-import { hasRole, parseJwtPayload } from '../../utils/auth';
+import { hasRole } from '../../utils/auth';
+
+const STATUS_MAP: Record<string, { color: string; text: string }> = {
+  draft: { color: 'blue', text: '草稿' },
+  published: { color: 'green', text: '已发布' },
+  completed: { color: 'default', text: '已完成' },
+};
 
 export default function TaskList() {
   const actionRef = useRef<ActionType>();
@@ -22,7 +37,9 @@ export default function TaskList() {
     const [scalesRes, targetsRes]: any[] = await Promise.all([
       request.get('/scales', { params: { page: 1, pageSize: 100 } }),
       hasRole('teacher')
-        ? request.get('/admin/classes', { params: { page: 1, pageSize: 100 } })
+        ? request.get('/admin/classes', {
+            params: { page: 1, pageSize: 100 },
+          })
         : Promise.resolve({ data: [] }),
     ]);
     setScales(scalesRes.data || scalesRes || []);
@@ -35,7 +52,6 @@ export default function TaskList() {
       await request.post('/tasks', {
         ...values,
         deadline: values.deadline?.toISOString(),
-        createdById: parseJwtPayload(localStorage.getItem('token') || '').sub,
       });
       message.success('创建成功');
       setCreateOpen(false);
@@ -46,9 +62,42 @@ export default function TaskList() {
     }
   };
 
+  const handlePublish = async (id: string) => {
+    try {
+      await request.post(`/tasks/${id}/publish`);
+      message.success('发布成功');
+      actionRef.current?.reload();
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || '发布失败');
+    }
+  };
+
+  const handleComplete = async (id: string) => {
+    try {
+      await request.post(`/tasks/${id}/complete`);
+      message.success('已完成');
+      actionRef.current?.reload();
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || '操作失败');
+    }
+  };
+
+  const isTeacher = hasRole('teacher');
+
   const columns: ProColumns[] = [
     { title: '标题', dataIndex: 'title', key: 'title' },
-    { title: '状态', dataIndex: 'status', key: 'status' },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      key: 'status',
+      render: (_: any, record: any) => {
+        const s = STATUS_MAP[record.status] || {
+          color: 'default',
+          text: record.status,
+        };
+        return <Tag color={s.color}>{s.text}</Tag>;
+      },
+    },
     {
       title: '截止时间',
       dataIndex: 'deadline',
@@ -59,19 +108,36 @@ export default function TaskList() {
     {
       title: '操作',
       key: 'action',
-      width: 180,
+      width: 240,
       render: (_: any, record: any) => (
         <>
           <Button
             type="link"
             onClick={() => {
-              const basePath = hasRole('teacher') ? '/teacher' : '/student';
+              const basePath = isTeacher ? '/teacher' : '/student';
               navigate(`${basePath}/assessment/${record.id}`);
             }}
           >
-            {hasRole('teacher') ? '查看' : '作答'}
+            {isTeacher ? '查看' : '作答'}
           </Button>
-          {hasRole('teacher') && (
+          {isTeacher && record.status === 'draft' && (
+            <Button
+              type="link"
+              icon={<SendOutlined />}
+              onClick={() => handlePublish(record.id)}
+            >
+              发布
+            </Button>
+          )}
+          {isTeacher && record.status === 'published' && (
+            <Button
+              type="link"
+              onClick={() => handleComplete(record.id)}
+            >
+              完成
+            </Button>
+          )}
+          {isTeacher && (
             <Button
               type="link"
               icon={<DownloadOutlined />}
@@ -100,7 +166,7 @@ export default function TaskList() {
         }}
         toolBarRender={() => {
           const btns = [];
-          if (hasRole('teacher')) {
+          if (isTeacher) {
             btns.push(
               <Button key="create" type="primary" onClick={openCreate}>
                 创建任务
@@ -123,7 +189,10 @@ export default function TaskList() {
           </Form.Item>
           <Form.Item name="scaleId" label="量表" rules={[{ required: true }]}>
             <Select
-              options={scales.map((s: any) => ({ label: s.name, value: s.id }))}
+              options={scales.map((s: any) => ({
+                label: s.name,
+                value: s.id,
+              }))}
             />
           </Form.Item>
           <Form.Item
