@@ -109,6 +109,7 @@ export default function Dashboard() {
   const pieData = alertDist.map((a) => ({
     type: a.level === 'red' ? '红色预警' : '黄色预警',
     value: Number(a.count),
+    level: a.level,
   }));
 
   const trendData = trend.flatMap((t) => [
@@ -181,7 +182,10 @@ export default function Dashboard() {
               colorField="type"
               stack
               height={300}
-              color={[themeTokens.tokens.colorSuccess, antToken.colorBorderSecondary]}
+              color={[
+                themeTokens.tokens.colorSuccess,
+                antToken.colorBorderSecondary,
+              ]}
               legend={{ position: 'top-right' as const }}
             />
           </Card>
@@ -193,7 +197,11 @@ export default function Dashboard() {
               angleField="value"
               colorField="type"
               height={300}
-              color={[themeTokens.tokens.colorError, themeTokens.tokens.colorWarning]}
+              color={(d: any) =>
+                String((d as Record<string, unknown>).level) === 'red'
+                  ? '#f5222d'
+                  : '#faad14'
+              }
               label={{ text: 'type', position: 'outside' as const }}
               legend={{ position: 'top-right' as const }}
             />
