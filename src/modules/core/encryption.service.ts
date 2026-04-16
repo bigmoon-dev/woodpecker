@@ -31,7 +31,7 @@ export class EncryptionService {
 
   async decrypt(ciphertext: Buffer): Promise<string> {
     const result: { decrypted: string }[] = await this.dataSource.query(
-      "SELECT convert_from(pgp_sym_decrypt($1, $2), 'UTF8') AS decrypted",
+      'SELECT pgp_sym_decrypt($1, $2) AS decrypted',
       [ciphertext, this.key],
     );
     return result[0].decrypted;
@@ -47,8 +47,8 @@ export class EncryptionService {
       student_number: string;
     }[] = await this.dataSource.query(
       `SELECT s.id,
-              convert_from(pgp_sym_decrypt(s.encrypted_name, $1), 'UTF8') AS name,
-              convert_from(pgp_sym_decrypt(s.encrypted_student_number, $1), 'UTF8') AS student_number
+              pgp_sym_decrypt(s."encryptedName", $1) AS name,
+              pgp_sym_decrypt(s."encryptedStudentNumber", $1) AS student_number
        FROM students s
        WHERE s.id = ANY($2::uuid[])`,
       [this.key, studentIds],

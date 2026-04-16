@@ -15,6 +15,7 @@ import { TaskAnswer } from '../../entities/task/task-answer.entity';
 import { ResultService } from '../result/result.service';
 import { HookBus } from '../plugin/hook-bus';
 import { DataScopeFilter } from '../auth/data-scope-filter';
+import { EncryptionService } from '../core/encryption.service';
 
 describe('Alert Followup Retest Comparison', () => {
   let controller: AlertController;
@@ -60,6 +61,10 @@ describe('Alert Followup Retest Comparison', () => {
         { provide: HookBus, useValue: mockHookBus },
         { provide: DataScopeFilter, useValue: mockDataScopeFilter },
         { provide: ResultService, useValue: mockResultService },
+        {
+          provide: EncryptionService,
+          useValue: { batchDecrypt: jest.fn().mockResolvedValue(new Map()) },
+        },
       ],
     }).compile();
 

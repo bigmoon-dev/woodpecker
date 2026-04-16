@@ -14,6 +14,7 @@ import { TaskAnswer } from '../../entities/task/task-answer.entity';
 import { HookBus } from '../plugin/hook-bus';
 import { DataScopeFilter } from '../auth/data-scope-filter';
 import { ResultService } from '../result/result.service';
+import { EncryptionService } from '../core/encryption.service';
 
 describe('AlertService', () => {
   let service: AlertService;
@@ -45,6 +46,9 @@ describe('AlertService', () => {
   const mockResultRepo = { findOne: jest.fn() };
   const mockAnswerRepo = { createQueryBuilder: jest.fn() };
   const mockResultService = { compareResults: jest.fn() };
+  const mockEncryptionService = {
+    batchDecrypt: jest.fn().mockResolvedValue(new Map()),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -68,6 +72,7 @@ describe('AlertService', () => {
         { provide: HookBus, useValue: mockHookBus },
         { provide: DataScopeFilter, useValue: mockDataScopeFilter },
         { provide: ResultService, useValue: mockResultService },
+        { provide: EncryptionService, useValue: mockEncryptionService },
       ],
     }).compile();
 
@@ -80,8 +85,9 @@ describe('AlertService', () => {
 
   describe('findAll', () => {
     it('should find all alerts with scope=all', async () => {
-      const alerts = [{ id: 'a1' }];
+      const alerts = [{ id: 'a1', studentId: 'u1' }];
       mockAlertRepo.findAndCount.mockResolvedValue([alerts, 1]);
+      mockUserRepo.find.mockResolvedValue([]);
 
       const result = await service.findAll(
         { scope: 'all', userId: 'u1' },
@@ -90,7 +96,10 @@ describe('AlertService', () => {
         20,
       );
 
-      expect(result).toEqual({ data: alerts, total: 1 });
+      expect(result).toEqual({
+        data: [{ id: 'a1', studentId: 'u1', studentName: '' }],
+        total: 1,
+      });
       expect(dataScopeFilter.getStudentIds).not.toHaveBeenCalled();
     });
 
