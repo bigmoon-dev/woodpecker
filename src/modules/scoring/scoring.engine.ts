@@ -65,10 +65,38 @@ export class ScoringEngine {
     const dimensionRanges = scaleDef.scoreRanges.filter(
       (r): r is typeof r & { dimension: string } => !!r.dimension,
     );
-    const dimensionLevels =
-      Object.keys(dimensionScores).length > 0
-        ? ScoreRangeMatcher.matchDimension(dimensionScores, dimensionRanges)
-        : undefined;
+    let dimensionLevels:
+      | Record<string, { level: string; color: string; suggestion: string }>
+      | undefined;
+
+    if (Object.keys(dimensionScores).length > 0) {
+      const dimensionMeanScores = this.computeDimensionMeans(
+        dimensionScores,
+        processedAnswers,
+      );
+      dimensionLevels = ScoreRangeMatcher.matchDimension(
+        dimensionMeanScores,
+        dimensionRanges,
+      );
+
+      const worstColor = this.pickWorstColor(
+        matched.color,
+        Object.values(dimensionLevels).map((d) => d.color),
+      );
+      if (worstColor !== matched.color) {
+        const worstDim = Object.values(dimensionLevels).find(
+          (d) => d.color === worstColor,
+        );
+        return {
+          totalScore,
+          dimensionScores,
+          dimensionLevels,
+          level: worstDim!.level,
+          color: worstDim!.color,
+          suggestion: worstDim!.suggestion,
+        };
+      }
+    }
 
     return {
       totalScore,
@@ -78,6 +106,44 @@ export class ScoringEngine {
       color: matched.color,
       suggestion: matched.suggestion,
     };
+  }
+
+  private computeDimensionMeans(
+    dimensionScores: Record<string, number>,
+    answers: ScoredAnswer[],
+  ): Record<string, number> {
+    const dimCounts: Record<string, number> = {};
+    for (const a of answers) {
+      const dim = a.dimension || '_total';
+      dimCounts[dim] = (dimCounts[dim] || 0) + 1;
+    }
+    const result: Record<string, number> = {};
+    for (const [dim, total] of Object.entries(dimensionScores)) {
+      const count = dimCounts[dim] || 1;
+      result[dim] = Math.round((total / count) * 100) / 100;
+    }
+    return result;
+  }
+
+  private pickWorstColor(
+    totalColor: string,
+    dimensionColors: string[],
+  ): string {
+    const severity: Record<string, number> = {
+      red: 4,
+      orange: 3,
+      yellow: 2,
+      green: 1,
+      gray: 0,
+      unknown: 0,
+    };
+    let worst = totalColor;
+    for (const c of dimensionColors) {
+      if ((severity[c] ?? 0) > (severity[worst] ?? 0)) {
+        worst = c;
+      }
+    }
+    return worst;
   }
 
   private scoreAnswers(
