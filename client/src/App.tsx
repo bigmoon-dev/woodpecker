@@ -6,22 +6,6 @@ import { routeConfigs } from './router';
 import { ThemeProvider, useTheme } from './themes/ThemeProvider';
 import { themes } from './themes';
 
-if (!localStorage.getItem('token')) {
-  fetch('/api/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: 'admin', password: 'admin123' }),
-  })
-    .then((r) => r.json())
-    .then((d) => {
-      if (d.accessToken) {
-        setToken(d.accessToken);
-        setRoles(['admin']);
-        window.location.reload();
-      }
-    });
-}
-
 function ThemedApp() {
   const { themeKey } = useTheme();
   const theme = themes[themeKey];
