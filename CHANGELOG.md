@@ -2,6 +2,12 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.19.7] - 2026-04-17
+
+### Fixed
+
+- Dashboard 预警分布饼图颜色：改用 `scale.color.range` 按 level→颜色映射（适配 @ant-design/charts v2.x API）
+
 ## [0.19.6] - 2026-04-17
 
 ### Fixed

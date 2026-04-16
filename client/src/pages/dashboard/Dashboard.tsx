@@ -112,6 +112,8 @@ export default function Dashboard() {
     level: a.level,
   }));
 
+  const pieColorMap: Record<string, string> = { red: '#f5222d', yellow: '#faad14' };
+
   const trendData = trend.flatMap((t) => [
     { date: String(t.date).slice(0, 10), type: '正常', value: Number(t.green) },
     {
@@ -195,14 +197,15 @@ export default function Dashboard() {
             <Pie
               data={pieData}
               angleField="value"
-              colorField="level"
+              colorField="type"
               height={300}
-              color={{ red: '#f5222d', yellow: '#faad14' }}
-              label={{ text: 'type', position: 'outside' as const }}
-              legend={{
-                position: 'top-right' as const,
-                color: { red: '#f5222d', yellow: '#faad14' },
+              scale={{
+                color: {
+                  range: pieData.map((d) => pieColorMap[d.level] || '#999'),
+                },
               }}
+              label={{ text: 'type', position: 'outside' as const }}
+              legend={{ position: 'top-right' as const }}
             />
           </Card>
         </Col>
