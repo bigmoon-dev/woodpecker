@@ -27,10 +27,10 @@ export class Student {
   @Column({ type: 'bytea', nullable: true })
   encryptedContact: Buffer | null;
 
-  @Column({ length: 64, nullable: true })
+  @Column({ type: 'varchar', length: 64, nullable: true })
   studentNumberHash: string | null;
 
-  @Column({ length: 10, nullable: true })
+  @Column({ type: 'varchar', length: 10, nullable: true })
   gender: string | null;
 
   @CreateDateColumn()

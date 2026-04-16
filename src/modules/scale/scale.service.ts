@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Scale } from '../../entities/scale/scale.entity';
@@ -186,7 +190,7 @@ export class ScaleService {
       if (!scale) throw new NotFoundException(`Scale ${id} not found`);
 
       if (scale.versionStatus === 'published' || scale.isLibrary) {
-        throw new Error(
+        throw new BadRequestException(
           'Cannot modify a published or library scale. Use createVersion() to fork a new version.',
         );
       }
@@ -198,23 +202,34 @@ export class ScaleService {
       scale.validationInfo = dto.validationInfo ?? scale.validationInfo;
 
       if (dto.items) {
-        scale.items = dto.items.map((item, idx) => {
-          const si = new ScaleItem();
-          si.scaleId = scale.id;
-          si.itemText = item.itemText;
-          si.itemType = item.itemType || 'single_choice';
-          si.sortOrder = item.sortOrder ?? idx;
-          si.dimension = item.dimension ?? '';
-          si.reverseScore = item.reverseScore || false;
-          si.options = (item.options || []).map((opt, oi) => {
-            const so = new ScaleOption();
-            so.optionText = opt.optionText;
-            so.scoreValue = opt.scoreValue;
-            so.sortOrder = opt.sortOrder ?? oi;
-            return so;
+        for (const oldItem of scale.items) {
+          await manager.remove(ScaleItem, oldItem);
+        }
+        const newItems: ScaleItem[] = [];
+        for (const [idx, item] of dto.items.entries()) {
+          const si = manager.create(ScaleItem, {
+            scaleId: scale.id,
+            itemText: item.itemText,
+            itemType: item.itemType || 'single_choice',
+            sortOrder: item.sortOrder ?? idx,
+            dimension: item.dimension ?? '',
+            reverseScore: item.reverseScore || false,
           });
-          return si;
-        });
+          const savedItem = await manager.save(ScaleItem, si);
+          if (item.options && item.options.length > 0) {
+            for (const [oi, opt] of item.options.entries()) {
+              const so = manager.create(ScaleOption, {
+                itemId: savedItem.id,
+                optionText: opt.optionText,
+                scoreValue: opt.scoreValue,
+                sortOrder: opt.sortOrder ?? oi,
+              });
+              await manager.save(ScaleOption, so);
+            }
+          }
+          newItems.push(savedItem);
+        }
+        scale.items = newItems;
       }
 
       if (dto.scoringRules) {

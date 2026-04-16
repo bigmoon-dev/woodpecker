@@ -30,10 +30,10 @@ export class Scale {
   @Column({ length: 20, default: 'draft' })
   status: string;
 
-  @Column({ length: 200, nullable: true })
+  @Column({ type: 'varchar', length: 200, nullable: true })
   source: string;
 
-  @Column({ length: 500, nullable: true })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   validationInfo: string;
 
   @Column({ default: false })

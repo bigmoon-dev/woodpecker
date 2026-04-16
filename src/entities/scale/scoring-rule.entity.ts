@@ -15,7 +15,7 @@ export class ScoringRule {
   @Column({ type: 'uuid' })
   scaleId: string;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   dimension: string;
 
   @Column({ length: 30, default: 'sum' })

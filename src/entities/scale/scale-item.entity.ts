@@ -26,7 +26,7 @@ export class ScaleItem {
   @Column({ type: 'int' })
   sortOrder: number;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   dimension: string;
 
   @Column({ type: 'boolean', default: false })

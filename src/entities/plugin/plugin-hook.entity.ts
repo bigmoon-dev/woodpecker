@@ -16,7 +16,7 @@ export class PluginHook {
   @Column({ length: 100 })
   event: string;
 
-  @Column({ length: 200, nullable: true })
+  @Column({ type: 'varchar', length: 200, nullable: true })
   description: string;
 
   @Column({ default: 100 })

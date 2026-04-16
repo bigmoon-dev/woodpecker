@@ -25,13 +25,13 @@ export class AuditLog {
   @Column({ type: 'jsonb', nullable: true })
   detail: Record<string, any>;
 
-  @Column({ length: 45, nullable: true })
+  @Column({ type: 'varchar', length: 45, nullable: true })
   ip: string;
 
-  @Column({ length: 500, nullable: true })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   userAgent: string;
 
-  @Column({ length: 128, nullable: true })
+  @Column({ type: 'varchar', length: 128, nullable: true })
   integrityHash: string | null;
 
   @CreateDateColumn()

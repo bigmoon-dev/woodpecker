@@ -32,7 +32,7 @@ export class User {
   @Column({ type: 'timestamp', nullable: true })
   lockedUntil: Date | null;
 
-  @Column({ length: 30, nullable: true, default: null })
+  @Column({ type: 'varchar', length: 30, nullable: true })
   themePreference: string | null;
 
   @Column({ type: 'uuid', nullable: true })

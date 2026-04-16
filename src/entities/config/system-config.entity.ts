@@ -20,6 +20,6 @@ export class SystemConfig {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   updatedBy: string;
 }

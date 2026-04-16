@@ -21,6 +21,7 @@ describe('ScaleService', () => {
     create: jest.fn().mockReturnValue({}),
     save: jest.fn().mockResolvedValue({ id: 'scale-1' }),
     findOne: jest.fn(),
+    remove: jest.fn().mockResolvedValue(undefined),
   };
 
   const mockDataSource = {

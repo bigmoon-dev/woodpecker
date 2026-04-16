@@ -2,6 +2,60 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.15.0] - 2026-04-16
+
+### Added
+
+#### E2E 黑盒测试系统
+
+**测试基础设施 (DIR-1)**
+- `test/helpers/test-app.ts` — createTestApp 单例、login、getReauthToken、authHeader、reauthHeaders、createScale 工具函数
+- `test/jest-e2e.json` — 独立 Jest 配置，moduleNameMapper 支持 `@/` 路径别名
+- `test/app.e2e-spec.ts` — 基础健康检查
+- `test/journeys/user-journey.e2e-spec.ts` — 19 个端到端用户旅程测试
+
+**测试覆盖 (19 tests)**
+- Auth: GET /me、POST /reauth (成功/失败)、GET/PUT /preferences
+- Scale: create、list (分页)、get by id、update、publish、reject edit of published、create-version、delete with reauth
+- Alert: GET /alerts (分页)、GET /alerts?status=filter
+- Auth: refresh token rotation (旧 token 吊销)、logout
+- Lockout: 由单元测试覆盖 (e2e 受 throttle 限制跳过)
+
+### Fixed
+
+#### Entity Column Type 修复
+- 所有 `nullable: true` 的 varchar 列添加显式 `type: 'varchar'`（13 列跨 9 实体）
+  - student.entity.ts: studentNumberHash, gender
+  - scale.entity.ts: source, validationInfo
+  - system-config.entity.ts: updatedBy
+  - audit-log.entity.ts: ip, userAgent, integrityHash
+  - consent-record.entity.ts: ip
+  - plugin-hook.entity.ts: description
+  - score-range.entity.ts: dimension
+  - scoring-rule.entity.ts: dimension
+  - scale-item.entity.ts: dimension
+
+#### Scale Update 修复
+- `ScaleService.update()`: 修复 items 替换时的 null scaleId 约束违反
+  - 先删除旧 items + options，再逐个保存新 items 和 options
+  - published/library 量表拒绝修改改用 `BadRequestException` (400) 替代 `Error` (500)
+
+#### 缺失 Entity 注册
+- `RefreshToken` 添加到 entities/index.ts 和 AppModule entities 数组
+- 缺失的数据库表和列手动同步（refresh_tokens、system_config、scale_validations、report_templates）
+- migrations 表注册所有已执行的迁移记录
+
+### Changed
+
+- `.env` 新增 `AUDIT_HMAC_SECRET` 配置
+- Version bumped to `0.15.0`
+
+### Test Results
+
+- 63 unit test suites, 589 tests, all passing
+- 2 e2e test suites, 19 tests, all passing
+- ESLint 0 warnings, TypeScript 0 errors
+
 ## [0.14.0] - 2026-04-16
 
 ### Added

@@ -27,7 +27,7 @@ export class ConsentRecord {
   @Column({ type: 'timestamp' })
   signedAt: Date;
 
-  @Column({ length: 45, nullable: true })
+  @Column({ type: 'varchar', length: 45, nullable: true })
   ip: string;
 
   @Column({ type: 'timestamptz', nullable: true })

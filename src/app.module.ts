@@ -1,11 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ServeStaticModule } from '@nestjs/serve-static';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
-import { join } from 'path';
 
 import { ScaleModule } from './modules/scale/scale.module';
 import { ScoringModule } from './modules/scoring/scoring.module';
@@ -46,6 +44,9 @@ import {
   AlertRecord,
   AlertNotification,
   SystemConfig,
+  ScaleValidation,
+  ReportTemplate,
+  RefreshToken,
 } from './entities';
 
 @Module({
@@ -53,10 +54,6 @@ import {
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([{ name: 'short', ttl: 60000, limit: 100 }]),
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'public'),
-      serveRoot: '/',
-    }),
     TypeOrmModule.forRootAsync({
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
@@ -89,6 +86,9 @@ import {
           AlertRecord,
           AlertNotification,
           SystemConfig,
+          ScaleValidation,
+          ReportTemplate,
+          RefreshToken,
         ],
         synchronize: config.get('DB_SYNC', 'false') === 'true',
         logging: config.get('DB_LOGGING', 'false') === 'true',
