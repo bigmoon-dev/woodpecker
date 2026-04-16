@@ -112,19 +112,34 @@ export class ExcelImportService {
         scoreValue: number;
         sortOrder: number;
       }[] = [];
-      let optCol = 7;
-      let optIdx = 0;
-      while (optCol <= row.cellCount) {
-        const optText = cellStr(row.getCell(optCol).value);
-        const optScore = row.getCell(optCol + 1).value;
-        if (!optText && optScore === undefined) break;
-        options.push({
-          optionText: optText,
-          scoreValue: Number(optScore) || 0,
-          sortOrder: optIdx,
+
+      const rawOpt = cellStr(row.getCell(7).value);
+      if (rawOpt.includes('|')) {
+        rawOpt.split('|').forEach((segment, idx) => {
+          const parts = segment.split(':');
+          if (parts.length >= 2) {
+            options.push({
+              optionText: parts[0],
+              scoreValue: Number(parts[1]) || 0,
+              sortOrder: parts.length >= 3 ? Number(parts[2]) : idx,
+            });
+          }
         });
-        optCol += 2;
-        optIdx++;
+      } else {
+        let optCol = 7;
+        let optIdx = 0;
+        while (optCol <= row.cellCount) {
+          const optText = cellStr(row.getCell(optCol).value);
+          const optScore = row.getCell(optCol + 1).value;
+          if (!optText && optScore === undefined) break;
+          options.push({
+            optionText: optText,
+            scoreValue: Number(optScore) || 0,
+            sortOrder: optIdx,
+          });
+          optCol += 2;
+          optIdx++;
+        }
       }
 
       items.push({
