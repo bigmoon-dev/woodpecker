@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AlertRecord } from '../../entities/audit/alert-record.entity';
 import { TaskResult } from '../../entities/task/task-result.entity';
@@ -21,7 +21,7 @@ import { CoreModule } from '../core/core.module';
       Class,
       Grade,
     ]),
-    ResultModule,
+    forwardRef(() => ResultModule),
     CoreModule,
   ],
   controllers: [ExportController],
