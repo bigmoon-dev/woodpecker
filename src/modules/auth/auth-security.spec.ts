@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { ThemePreferenceService } from './theme-preference.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { RefreshToken } from '../../entities/auth/refresh-token.entity';
 import { ConfigService } from '@nestjs/config';
@@ -28,6 +29,10 @@ describe('Auth Security', () => {
     create: jest.fn((d) => d),
   };
   const mockHookBus = { emit: jest.fn().mockResolvedValue(undefined) };
+  const mockThemePreferenceService = {
+    getPreference: jest.fn().mockResolvedValue(null),
+    setPreference: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -47,6 +52,10 @@ describe('Auth Security', () => {
         {
           provide: ConfigService,
           useValue: { get: jest.fn().mockReturnValue('7d') },
+        },
+        {
+          provide: ThemePreferenceService,
+          useValue: mockThemePreferenceService,
         },
       ],
     }).compile();

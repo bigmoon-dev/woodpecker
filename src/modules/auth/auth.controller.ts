@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Put,
   Body,
   Req,
   UnauthorizedException,
@@ -17,6 +18,7 @@ import { Repository, IsNull } from 'typeorm';
 import { RefreshToken } from '../../entities/auth/refresh-token.entity';
 import { LogoutDto } from './logout.dto';
 import { Throttle } from '@nestjs/throttler';
+import { ThemePreferenceService } from './theme-preference.service';
 import * as crypto from 'crypto';
 
 interface AuthedRequest extends Request {
@@ -58,12 +60,19 @@ class ReauthDto {
   password: string;
 }
 
+class SetPreferenceDto {
+  @IsString()
+  @IsNotEmpty()
+  theme: string;
+}
+
 @Controller('api/auth')
 export class AuthController {
   constructor(
     private authService: AuthService,
     private jwtService: JwtService,
     private hookBus: HookBus,
+    private themePreferenceService: ThemePreferenceService,
     @InjectRepository(RefreshToken)
     private refreshTokenRepo: Repository<RefreshToken>,
   ) {}
@@ -225,5 +234,23 @@ export class AuthController {
     );
 
     return { reauthToken };
+  }
+
+  @Get('preferences')
+  async getPreferences(@Req() req: AuthedRequest) {
+    const theme = await this.themePreferenceService.getPreference(req.user.id);
+    return { theme };
+  }
+
+  @Put('preferences')
+  async setPreferences(
+    @Body() dto: SetPreferenceDto,
+    @Req() req: AuthedRequest,
+  ) {
+    const theme = await this.themePreferenceService.setPreference(
+      req.user.id,
+      dto.theme,
+    );
+    return { theme };
   }
 }

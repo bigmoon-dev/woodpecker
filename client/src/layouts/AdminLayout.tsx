@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import { ProLayout } from '@ant-design/pro-components';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { clearToken } from '../utils/auth';
+import ThemePicker from '../components/ThemePicker';
 
 const menuRoutes = [
   { path: '/admin/scales', name: '量表管理' },
@@ -34,6 +35,7 @@ export default function AdminLayout() {
         size: 'small',
       }}
       actionsRender={() => [
+        <ThemePicker key="theme" />,
         <a key="logout" onClick={() => { clearToken(); }}>退出</a>,
       ]}
     >

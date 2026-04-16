@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { ProLayout } from '@ant-design/pro-components';
 import { useNavigate, useLocation } from 'react-router-dom';
+import ThemePicker from '../components/ThemePicker';
 
 const menuRoutes = [
   { path: '/student/tasks', name: '我的任务' },
@@ -25,6 +26,7 @@ export default function StudentLayout() {
         title: '学生',
         size: 'small',
       }}
+      actionsRender={() => [<ThemePicker key="theme" />]}
     >
       <Outlet />
     </ProLayout>

@@ -17,6 +17,7 @@ import { JwtStrategy } from './jwt.strategy';
 import { RbacGuard } from './rbac.guard';
 import { DataScopeFilter } from './data-scope-filter';
 import { ReauthGuard } from './reauth.guard';
+import { ThemePreferenceService } from './theme-preference.service';
 
 @Global()
 @Module({
@@ -52,6 +53,7 @@ import { ReauthGuard } from './reauth.guard';
     RbacGuard,
     DataScopeFilter,
     ReauthGuard,
+    ThemePreferenceService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

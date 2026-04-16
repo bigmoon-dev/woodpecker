@@ -1,8 +1,10 @@
 import { Outlet } from 'react-router-dom';
 import { ProLayout } from '@ant-design/pro-components';
 import { useNavigate, useLocation } from 'react-router-dom';
+import ThemePicker from '../components/ThemePicker';
 
 const menuRoutes = [
+  { path: '/teacher/dashboard', name: '数据看板' },
   { path: '/teacher/scales', name: '量表管理' },
   { path: '/teacher/tasks', name: '测评任务' },
   { path: '/teacher/results', name: '结果查看' },
@@ -26,6 +28,7 @@ export default function TeacherLayout() {
         title: '教师',
         size: 'small',
       }}
+      actionsRender={() => [<ThemePicker key="theme" />]}
     >
       <Outlet />
     </ProLayout>

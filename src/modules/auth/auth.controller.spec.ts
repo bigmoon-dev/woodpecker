@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { ThemePreferenceService } from './theme-preference.service';
 import { JwtService } from '@nestjs/jwt';
 import { HookBus } from '../plugin/hook-bus';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -28,6 +29,10 @@ describe('AuthController', () => {
     update: jest.fn().mockResolvedValue({}),
     create: jest.fn((data: unknown) => data),
   };
+  const mockThemePreferenceService = {
+    getPreference: jest.fn(),
+    setPreference: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -40,6 +45,10 @@ describe('AuthController', () => {
         {
           provide: getRepositoryToken(RefreshToken),
           useValue: mockRefreshTokenRepo,
+        },
+        {
+          provide: ThemePreferenceService,
+          useValue: mockThemePreferenceService,
         },
       ],
     }).compile();
@@ -206,6 +215,38 @@ describe('AuthController', () => {
 
       const result = await controller.logout({ refreshToken: 'bad-token' });
       expect(result).toEqual({ success: true });
+    });
+  });
+
+  describe('preferences()', () => {
+    it('GET returns current theme preference', async () => {
+      mockThemePreferenceService.getPreference.mockResolvedValueOnce('forest');
+      const result = await controller.getPreferences({
+        user: { id: 'u1' },
+      } as any);
+      expect(result).toEqual({ theme: 'forest' });
+    });
+
+    it('GET returns null when no preference set', async () => {
+      mockThemePreferenceService.getPreference.mockResolvedValueOnce(null);
+      const result = await controller.getPreferences({
+        user: { id: 'u1' },
+      } as any);
+      expect(result).toEqual({ theme: null });
+    });
+
+    it('PUT sets theme preference', async () => {
+      mockThemePreferenceService.setPreference.mockResolvedValueOnce(
+        'spectrum',
+      );
+      const result = await controller.setPreferences({ theme: 'spectrum' }, {
+        user: { id: 'u1' },
+      } as any);
+      expect(result).toEqual({ theme: 'spectrum' });
+      expect(mockThemePreferenceService.setPreference).toHaveBeenCalledWith(
+        'u1',
+        'spectrum',
+      );
     });
   });
 });

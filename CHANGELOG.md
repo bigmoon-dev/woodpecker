@@ -2,6 +2,54 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.14.0] - 2026-04-16
+
+### Added
+
+#### 多主题系统 — 心理学映射美学 + 用户动态切换
+
+**主题定义 (DIR-2)**
+- 4 套预设主题，每套映射心理学理论：
+  - 森林疗愈 (forest): 生态心理学 — 自然绿降低焦虑
+  - 情绪光谱 (spectrum): Plutchik情绪轮 — 色彩编码映射心理状态
+  - 水墨留白 (ink): 正念(Mindfulness) — 留白=心理空间
+  - 温暖几何 (warm): 环境心理学 — 圆角+暖色=安全感
+- 每套主题定义 antd token (colorPrimary/colorBgContainer/colorText 等 14 项)
+- 每套主题包含专属 Login 页背景渐变
+
+**前端主题引擎 (DIR-2)**
+- `ThemeProvider` React Context — 全局主题状态管理
+- `App.tsx` 重构：ThemeProvider 包裹 ConfigProvider，动态注入 `theme.token`
+- `useTheme()` / `useThemeTokens()` hooks
+- localStorage 持久化 + 即时切换
+
+**主题选择器 UI (DIR-3)**
+- `ThemePicker` 组件 — 色块下拉选择器
+- 集成到所有 3 个 Layout (Admin/Teacher/Student) 的 actionsRender
+- Dashboard 硬编码颜色全部替换为主题 token (`useThemeTokens()`)
+- Login 页面使用主题渐变背景 + 毛玻璃卡片
+
+**后端主题偏好 API (DIR-1)**
+- User 实体新增 `themePreference` 字段 (varchar 30, nullable)
+- `ThemePreferenceService` — getPreference / setPreference / isValidTheme
+- `GET /api/auth/preferences` — 获取当前用户主题偏好
+- `PUT /api/auth/preferences` — 设置主题偏好
+- 4 个有效主题: forest / spectrum / ink / warm
+- Migration `1700000000009-AddUserThemePreference`
+
+**新增文件**
+- `client/src/themes/index.ts` — 主题定义
+- `client/src/themes/ThemeProvider.tsx` — Context + hooks
+- `client/src/components/ThemePicker.tsx` — 主题切换 UI
+- `src/modules/auth/theme-preference.service.ts` — 后端偏好服务
+- `src/modules/auth/theme-preference.service.spec.ts` — 14 个测试
+- `src/migrations/1700000000009-AddUserThemePreference.ts`
+
+**测试**
+- ThemePreferenceService: 14 个测试 (get 3 + set 6 + isValid 2 + valid themes loop 1 + clear 1 + notFound 1)
+- auth.controller.spec.ts: +3 个 preferences 端点测试
+- 63 suites, 589 tests total
+
 ## [0.13.0] - 2026-04-16
 
 ### Added
