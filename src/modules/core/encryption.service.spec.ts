@@ -45,7 +45,7 @@ describe('EncryptionService', () => {
     const cipher = Buffer.from('fake-cipher');
     const result = await service.decrypt(cipher);
     expect(dataSource.query).toHaveBeenCalledWith(
-      "SELECT convert_from(pgp_sym_decrypt($1, $2), 'UTF8') AS decrypted",
+      'SELECT pgp_sym_decrypt($1, $2) AS decrypted',
       [cipher, 'test-encryption-key'],
     );
     expect(result).toBe('hello');

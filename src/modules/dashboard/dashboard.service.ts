@@ -59,12 +59,13 @@ export class DashboardService {
         g.name as grade_name,
         c.name as class_name,
         COUNT(DISTINCT s.id) as total_students,
-        COUNT(DISTINCT ta."studentId") FILTER (WHERE ta.status = 'submitted') as completed
+        COUNT(DISTINCT u2.id) FILTER (WHERE ta.status = 'submitted') as completed
       FROM tasks t
       LEFT JOIN classes c ON c.id IN (SELECT jsonb_array_elements_text(t."targetIds")::uuid)
       LEFT JOIN grades g ON g.id = c."gradeId"
       LEFT JOIN students s ON s."classId" = c.id
-      LEFT JOIN task_answers ta ON ta."taskId" = t.id AND ta."studentId" = s.id
+      LEFT JOIN users u2 ON u2."studentId" = s.id
+      LEFT JOIN task_answers ta ON ta."taskId" = t.id AND ta."studentId" = u2.id
       WHERE t.status IN ('published', 'completed')
         ${taskFilter}
         ${filterSql}

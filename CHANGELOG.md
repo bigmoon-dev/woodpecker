@@ -2,6 +2,16 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.19.4] - 2026-04-16
+
+### Fixed
+
+- 心理老师/班主任结果页改用 `GET /results`（findByScope）而非 `GET /results/me`，解决空白问题
+- 预警管理显示学生姓名（通过 users→students 解密 encryptedName），替代原始 UUID
+- Dashboard 完成率 SQL 修复：通过 `users` 表中转关联 `task_answers.studentId → users.id → students.id`
+- `EncryptionService.batchDecrypt` SQL 列名修正为 camelCase（`"encryptedName"`, `"encryptedStudentNumber"`）
+- `EncryptionService.decrypt` 移除不必要的 `convert_from()`，`pgp_sym_decrypt` 已返回 text
+
 ## [0.19.3] - 2026-04-16
 
 ### Fixed

@@ -12,6 +12,7 @@ import { DataScopeFilter, DataScope } from '../auth/data-scope-filter';
 import { ResultService } from '../result/result.service';
 import { TaskResult } from '../../entities/task/task-result.entity';
 import { TaskAnswer } from '../../entities/task/task-answer.entity';
+import { EncryptionService } from '../core/encryption.service';
 
 export interface FollowupResponse {
   alert: AlertRecord;
@@ -40,6 +41,7 @@ export class AlertService {
     private hookBus: HookBus,
     private dataScopeFilter: DataScopeFilter,
     private resultService: ResultService,
+    private encryptionService: EncryptionService,
   ) {}
 
   async findAll(
@@ -47,7 +49,7 @@ export class AlertService {
     status?: string,
     page = 1,
     pageSize = 20,
-  ): Promise<{ data: AlertRecord[]; total: number }> {
+  ): Promise<{ data: any[]; total: number }> {
     const where: Record<string, any> = status ? { status } : {};
 
     if (dataScope.scope !== 'all') {
@@ -57,12 +59,40 @@ export class AlertService {
       where.studentId = In(studentIds);
     }
 
-    const [data, total] = await this.alertRepo.findAndCount({
+    const [records, total] = await this.alertRepo.findAndCount({
       where,
       skip: (page - 1) * pageSize,
       take: pageSize,
       order: { createdAt: 'DESC' },
     });
+
+    const alertUserIds = [...new Set(records.map((r) => r.studentId))];
+    const users =
+      alertUserIds.length > 0
+        ? await this.userRepo.find({
+            where: { id: In(alertUserIds) },
+            select: ['id', 'studentId'],
+          })
+        : [];
+    const userStudentMap = new Map(
+      users.filter((u) => u.studentId).map((u) => [u.id, u.studentId]),
+    );
+
+    const dbStudentIds = [...new Set(userStudentMap.values())];
+    const piiMap =
+      dbStudentIds.length > 0
+        ? await this.encryptionService.batchDecrypt(dbStudentIds)
+        : new Map<string, { name: string; studentNumber: string }>();
+
+    const data = records.map((r) => {
+      const dbStudentId = userStudentMap.get(r.studentId);
+      const pii = dbStudentId ? piiMap.get(dbStudentId) : undefined;
+      return {
+        ...r,
+        studentName: pii?.name ?? '',
+      };
+    });
+
     return { data, total };
   }
 

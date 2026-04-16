@@ -26,9 +26,14 @@ export default function AlertList() {
   const statusColor: Record<string, string> = { pending: 'orange', handled: 'green', followup: 'blue' };
 
   const columns: ProColumns[] = [
-    { title: 'ID', dataIndex: 'id', key: 'id', ellipsis: true },
-    { title: '学生ID', dataIndex: 'studentId', key: 'studentId', ellipsis: true },
-    { title: '类型', dataIndex: 'alertType', key: 'alertType' },
+    { title: 'ID', dataIndex: 'id', key: 'id', ellipsis: true, hideInSearch: true },
+    { title: '学生', dataIndex: 'studentName', key: 'studentName' },
+    { title: '等级', dataIndex: 'level', key: 'level',
+      render: (_: any, record: any) => {
+        const colorMap: Record<string, string> = { red: 'red', yellow: 'orange', green: 'green' };
+        return <Tag color={colorMap[record.level] || 'default'}>{record.level}</Tag>;
+      },
+    },
     { title: '状态', dataIndex: 'status', key: 'status', render: (_: any, record: any) => <Tag color={statusColor[record.status]}>{record.status}</Tag> },
     { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', render: (_: any, record: any) => record.createdAt ? new Date(record.createdAt).toLocaleString() : '-' },
     {
