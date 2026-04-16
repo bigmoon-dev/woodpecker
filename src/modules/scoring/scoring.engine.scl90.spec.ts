@@ -61,15 +61,15 @@ describe('ScoringEngine - SCL-90 (abbreviated)', () => {
         {
           dimension: d,
           minScore: 0,
-          maxScore: 5,
+          maxScore: 2,
           level: 'normal',
           color: 'green',
           suggestion: `${d}: normal`,
         },
         {
           dimension: d,
-          minScore: 6,
-          maxScore: 12,
+          minScore: 2.01,
+          maxScore: 4,
           level: 'elevated',
           color: 'orange',
           suggestion: `${d}: elevated`,

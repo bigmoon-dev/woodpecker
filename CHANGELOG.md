@@ -2,6 +2,20 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.19.3] - 2026-04-16
+
+### Fixed
+
+- 评分引擎维度均分转换：`computeDimensionMeans()` 将维度总分÷题数得到均分，再匹配 score ranges
+- 评分引擎取最严重颜色：`pickWorstColor()` 取总分和所有维度中最严重的 color 作为最终结果
+- SCL-90 单元测试 score ranges 从原始总分范围改为均分范围（0-2 normal, 2.01-4 elevated）
+- E2E 黑盒测试脚本：30名学生 SCL-90 答题提交验证通过（A组10人green/B组5green+5yellow/C组10人red）
+
+### Added
+
+- `scripts/e2e-test/scl90-blackbox-test.js` — 完整端到端黑盒测试脚本
+- `scripts/e2e-test/scl90-submit-answers.js` — 答题提交专用脚本（使用已有资源）
+
 ## [0.19.2] - 2026-04-16
 
 ### Fixed
