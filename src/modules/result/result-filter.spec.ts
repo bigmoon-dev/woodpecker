@@ -13,7 +13,7 @@ import { EncryptionService } from '../core/encryption.service';
 describe('ResultService - findByFilter', () => {
   let service: ResultService;
   let resultRepo: any;
-  let studentRepo: any;
+
   let classRepo: any;
   let dataScopeFilter: any;
   let encryptionService: any;
@@ -63,14 +63,16 @@ describe('ResultService - findByFilter', () => {
 
     service = module.get<ResultService>(ResultService);
     resultRepo = module.get(getRepositoryToken(TaskResult));
-    studentRepo = module.get(getRepositoryToken(Student));
     classRepo = module.get(getRepositoryToken(Class));
     dataScopeFilter = module.get(DataScopeFilter);
     encryptionService = module.get(EncryptionService);
   });
 
   it('filters by classId — finds students then answers', async () => {
-    mockStudentRepo.find.mockResolvedValue([{ id: 's1', classId: 'c1' }, { id: 's2', classId: 'c1' }]);
+    mockStudentRepo.find.mockResolvedValue([
+      { id: 's1', classId: 'c1' },
+      { id: 's2', classId: 'c1' },
+    ]);
     const answers = [
       {
         id: 'a1',
@@ -83,7 +85,9 @@ describe('ResultService - findByFilter', () => {
     mockEncryptionService.batchDecrypt.mockResolvedValue(
       new Map([['s1', { name: 'Alice', studentNumber: '001' }]]),
     );
-    mockClassRepo.find.mockResolvedValue([{ id: 'c1', name: '1班', gradeId: 'g1' }]);
+    mockClassRepo.find.mockResolvedValue([
+      { id: 'c1', name: '1班', gradeId: 'g1' },
+    ]);
     mockGradeRepo.find.mockResolvedValue([{ id: 'g1', name: '高一' }]);
 
     const result = await service.findByFilter({
@@ -96,7 +100,10 @@ describe('ResultService - findByFilter', () => {
   });
 
   it('filters by gradeId — finds classes then students', async () => {
-    mockClassRepo.find.mockResolvedValue([{ id: 'c1', gradeId: 'g1' }, { id: 'c2', gradeId: 'g1' }]);
+    mockClassRepo.find.mockResolvedValue([
+      { id: 'c1', gradeId: 'g1' },
+      { id: 'c2', gradeId: 'g1' },
+    ]);
     mockStudentRepo.find.mockResolvedValue([{ id: 's1', classId: 'c1' }]);
     const answers = [
       {

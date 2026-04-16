@@ -2,6 +2,35 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.19.2] - 2026-04-16
+
+### Fixed
+
+- Assessment.tsx 选项文字字段名修正：`opt.content` → `opt.optionText`（与后端 ScaleOption entity 一致）
+- Assessment.tsx 题目文字字段名修正：`item.content` → `item.itemText`（与后端 ScaleItem entity 一致）
+- result-filter.spec.ts 移除未使用的 `studentRepo` 变量，修复 ESLint 错误
+
+## [0.19.1] - 2026-04-16
+
+### Fixed
+
+- Excel 导入管道分隔格式选项正确拆分（SDS/SAS/MHT 量表选项不再合并为单个字符串）
+
+## [0.19.0] - 2026-04-16
+
+### Fixed
+
+- Dashboard SQL 列名 snake_case→camelCase 全面修复（双引号包裹）
+- 学生任务可见性修复：getStudentClassId 改用 raw SQL，student 角色补充 task:read 权限
+- TeacherLayout/StudentLayout 添加退出登录按钮
+- UpdateUserDto 添加 studentRecordId 字段
+- ResultWithContext 填充 className/gradeName/scaleName
+- Dashboard 改为统计 published+completed 任务
+- psychologist dataScope 默认 all（无 scope 后缀时）
+- TaskList canManageTasks 移入组件内部修复时机问题
+- Dashboard completion 计数修复（CROSS JOIN LATERAL→子查询）
+- findAll classId 过滤修复（CAST AS jsonb）
+
 ## [0.18.1] - 2026-04-16
 
 ### Fixed

@@ -59,7 +59,7 @@ export default function Assessment() {
           style={{ marginBottom: 12 }}
           title={`第${idx + 1}题`}
         >
-          <div style={{ marginBottom: 8 }}>{item.content}</div>
+          <div style={{ marginBottom: 8 }}>{item.itemText}</div>
           <Radio.Group
             onChange={(e) =>
               setAnswers({ ...answers, [item.id]: e.target.value })
@@ -69,7 +69,7 @@ export default function Assessment() {
             <Space direction="vertical">
               {item.options?.map((opt: any) => (
                 <Radio key={opt.id} value={opt.id}>
-                  {opt.content}
+                  {opt.optionText}
                 </Radio>
               ))}
             </Space>
