@@ -6,7 +6,14 @@ import ThemePicker from '../components/ThemePicker';
 import { useThemeTokens } from '../themes/ThemeProvider';
 
 const menuRoutes = [
-  { path: '/admin/scales', name: '量表管理' },
+  {
+    path: '/admin/scales',
+    name: '量表管理',
+    routes: [
+      { path: '/admin/scales', name: '自定义量表' },
+      { path: '/admin/scales/library', name: '种子量表' },
+    ],
+  },
   { path: '/admin/tasks', name: '任务管理' },
   { path: '/admin/alerts', name: '预警管理' },
   { path: '/admin/results', name: '测评结果' },
@@ -32,13 +39,15 @@ export default function AdminLayout() {
         .ant-pro-sider .ant-menu {
           background: transparent !important;
         }
-        .ant-pro-sider .ant-menu .ant-menu-item {
+        .ant-pro-sider .ant-menu .ant-menu-item,
+        .ant-pro-sider .ant-menu .ant-menu-submenu-title {
           color: rgba(255,255,255,0.75) !important;
           margin: 4px 8px !important;
           border-radius: ${t.tokens.borderRadius}px !important;
           transition: all 0.2s ease !important;
         }
-        .ant-pro-sider .ant-menu .ant-menu-item:hover {
+        .ant-pro-sider .ant-menu .ant-menu-item:hover,
+        .ant-pro-sider .ant-menu .ant-menu-submenu-title:hover {
           color: #fff !important;
           background: rgba(255,255,255,0.12) !important;
         }

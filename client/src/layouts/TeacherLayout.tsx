@@ -6,7 +6,12 @@ import { useThemeTokens } from '../themes/ThemeProvider';
 
 const menuRoutes = [
   { path: '/teacher/dashboard', name: '数据看板' },
-  { path: '/teacher/scales', name: '量表管理' },
+  { path: '/teacher/scales', name: '量表管理',
+    routes: [
+      { path: '/teacher/scales', name: '自定义量表' },
+      { path: '/teacher/scales/library', name: '种子量表' },
+    ],
+  },
   { path: '/teacher/tasks', name: '测评任务' },
   { path: '/teacher/results', name: '结果查看' },
   { path: '/teacher/alerts', name: '预警管理' },
@@ -26,13 +31,15 @@ export default function TeacherLayout() {
         .ant-pro-sider .ant-menu {
           background: transparent !important;
         }
-        .ant-pro-sider .ant-menu .ant-menu-item {
+        .ant-pro-sider .ant-menu .ant-menu-item,
+        .ant-pro-sider .ant-menu .ant-menu-submenu-title {
           color: rgba(255,255,255,0.75) !important;
           margin: 4px 8px !important;
           border-radius: ${t.tokens.borderRadius}px !important;
           transition: all 0.2s ease !important;
         }
-        .ant-pro-sider .ant-menu .ant-menu-item:hover {
+        .ant-pro-sider .ant-menu .ant-menu-item:hover,
+        .ant-pro-sider .ant-menu .ant-menu-submenu-title:hover {
           color: #fff !important;
           background: rgba(255,255,255,0.12) !important;
         }

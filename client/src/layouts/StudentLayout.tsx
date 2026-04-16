@@ -24,13 +24,15 @@ export default function StudentLayout() {
         .ant-pro-sider .ant-menu {
           background: transparent !important;
         }
-        .ant-pro-sider .ant-menu .ant-menu-item {
+        .ant-pro-sider .ant-menu .ant-menu-item,
+        .ant-pro-sider .ant-menu .ant-menu-submenu-title {
           color: rgba(255,255,255,0.75) !important;
           margin: 4px 8px !important;
           border-radius: ${t.tokens.borderRadius}px !important;
           transition: all 0.2s ease !important;
         }
-        .ant-pro-sider .ant-menu .ant-menu-item:hover {
+        .ant-pro-sider .ant-menu .ant-menu-item:hover,
+        .ant-pro-sider .ant-menu .ant-menu-submenu-title:hover {
           color: #fff !important;
           background: rgba(255,255,255,0.12) !important;
         }
