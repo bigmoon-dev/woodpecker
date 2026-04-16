@@ -2,6 +2,67 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.11.0] - 2026-04-16
+
+### Added
+
+#### 量表版本管理 — Copy-on-Write 多版本机制
+
+**Scale 实体增强**
+- `parentScaleId` (uuid nullable FK→scales) — 版本链自引用
+- `versionStatus` (enum: draft/published/archived) — 版本状态
+- `publishedAt` (timestamp nullable) — 发布时间
+- 已发布版本不可修改（update 时校验拒绝）
+
+**ScaleVersionService**
+- `publishScale(id)` — 发布量表 (draft→published)
+- `createVersion(id)` — 基于已发布量表 fork 新版本（自动归档旧版本）
+- `getVersionHistory(id)` — 获取版本链（BFS 遍历 parentScaleId 树）
+- `getVersion(scaleId, versionId)` — 获取指定版本详情
+- `archiveVersion(id)` — 归档草稿版本
+
+**版本管理 API 端点**
+- `GET /api/scales/:id/versions` — 版本历史列表
+- `POST /api/scales/:id/publish` — 发布量表
+- `POST /api/scales/:id/create-version` — 创建新版本
+- `GET /api/scales/:id/versions/:versionId` — 版本详情
+
+#### 信效度结构化标注
+
+**ScaleValidation 实体**
+- `id`, `scaleId`, `reliabilityType` (CronbachsAlpha/SplitHalf/TestRetest/KR20)
+- `reliabilityValue` (float 0-1), `validityType` (Content/Construct/Criterion)
+- `validityDetail`, `sampleSize`, `population`, `referenceSource`, `validatedAt`
+
+**ScaleValidationService**
+- `addValidation(scaleId, dto)` — 添加信效度记录（校验 reliabilityValue 0-1）
+- `updateValidation(validationId, dto)` — 更新信效度记录
+- `deleteValidation(validationId)` — 删除信效度记录
+- `getValidations(scaleId)` — 获取量表所有信效度记录
+- `getValidationSummary(scaleId)` — 聚合摘要（avgReliability, types, latest）
+
+**信效度 API 端点**
+- `GET /api/scales/:id/validations` — 信效度列表
+- `POST /api/scales/:id/validations` — 添加信效度
+- `PUT /api/scales/validations/:validationId` — 更新信效度
+- `DELETE /api/scales/validations/:validationId` — 删除信效度
+- `GET /api/scales/:id/validations/summary` — 信效度汇总
+
+**Migration**
+- `1700000000006-AddScaleVersionAndValidation` — Scale 增加 3 列 + scale_validations 表
+- 自动将现有 active 量表标记为 published
+
+### Changed
+
+- `ScaleService.update()` 增加保护：published/library 量表拒绝直接修改
+- `ScaleModule` 注册 ScaleVersionService, ScaleValidationService, ScaleValidation
+- Version bumped to `0.11.0`
+
+### Test Results
+
+- 58 test suites, 519 test cases, all passing
+- ESLint 0 warnings, TypeScript 0 errors
+
 ## [0.10.0] - 2026-04-15
 
 ### Added

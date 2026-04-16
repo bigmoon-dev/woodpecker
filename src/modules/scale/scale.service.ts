@@ -185,6 +185,12 @@ export class ScaleService {
       });
       if (!scale) throw new NotFoundException(`Scale ${id} not found`);
 
+      if (scale.versionStatus === 'published' || scale.isLibrary) {
+        throw new Error(
+          'Cannot modify a published or library scale. Use createVersion() to fork a new version.',
+        );
+      }
+
       scale.name = dto.name ?? scale.name;
       scale.version = dto.version ?? scale.version;
       scale.description = dto.description ?? scale.description;

@@ -8,6 +8,8 @@
 - 题目支持维度分组、反向计分标记
 - 计分规则配置（求和/加权/维度三种策略）
 - 分数区间定义（min-max → 等级 + 颜色 + 建议）
+- 量表版本管理（copy-on-write 多版本、版本链 parentScaleId、publish/archive 状态）
+- 量表信效度标注（ScaleValidation 实体：信度系数、效度类型、样本量、文献来源）
 
 ### 自动计分引擎
 - **求和策略** — 题目分数直接求和
@@ -86,8 +88,8 @@
 
 ### 量表库
 - ~~内置常用量表模板（SCL-90、PHQ-9、GAD-7、MHT 等）~~（v0.4.0 已实现：SCL-90、SDS、SAS、MHT）
-- 量表版本管理与升级迁移
-- 量表信效度标注
+- ~~量表版本管理与升级迁移~~（v0.11.0 已实现：copy-on-write多版本、parentScaleId版本链、publish/createVersion/archive、版本历史查询）
+- ~~量表信效度标注~~（v0.11.0 已实现：ScaleValidation实体、信度系数+效度类型+样本量+文献来源、CRUD+聚合摘要API）
 
 ### 多轮测评追踪
 - ~~同一学生多次测评结果对比~~（v0.6.0 已实现 RetestComparison）

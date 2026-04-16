@@ -3,6 +3,7 @@ export { ScaleItem } from './scale/scale-item.entity';
 export { ScaleOption } from './scale/scale-option.entity';
 export { ScoringRule } from './scale/scoring-rule.entity';
 export { ScoreRange } from './scale/score-range.entity';
+export { ScaleValidation } from './scale/scale-validation.entity';
 export { Grade } from './org/grade.entity';
 export { Class } from './org/class.entity';
 export { Student } from './org/student.entity';

@@ -3,6 +3,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ScaleController } from './scale.controller';
 import { ScaleService } from './scale.service';
 import { ExcelImportService } from './excel-import.service';
+import { ScaleVersionService } from './scale-version.service';
+import { ScaleValidationService } from './scale-validation.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RbacGuard } from '../auth/rbac.guard';
 
@@ -17,10 +19,27 @@ describe('ScaleController', () => {
     findLibrary: jest.fn(),
     cloneFromLibrary: jest.fn(),
     findOne: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
   };
 
   const mockExcelImportService = {
     parseScaleFromBuffer: jest.fn(),
+  };
+
+  const mockVersionService = {
+    getVersionHistory: jest.fn(),
+    publishScale: jest.fn(),
+    createVersion: jest.fn(),
+    getVersion: jest.fn(),
+  };
+
+  const mockValidationService = {
+    getValidations: jest.fn(),
+    addValidation: jest.fn(),
+    updateValidation: jest.fn(),
+    deleteValidation: jest.fn(),
+    getValidationSummary: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -30,6 +49,8 @@ describe('ScaleController', () => {
       providers: [
         { provide: ScaleService, useValue: mockScaleService },
         { provide: ExcelImportService, useValue: mockExcelImportService },
+        { provide: ScaleVersionService, useValue: mockVersionService },
+        { provide: ScaleValidationService, useValue: mockValidationService },
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -100,5 +121,105 @@ describe('ScaleController', () => {
       expect.objectContaining({ name: 'Imported' }),
     );
     expect(result).toEqual({ id: 's3', name: 'Imported' });
+  });
+
+  describe('version endpoints', () => {
+    it('getVersionHistory delegates to versionService', async () => {
+      mockVersionService.getVersionHistory.mockResolvedValueOnce([]);
+      const result = await controller.getVersionHistory('s1');
+      expect(mockVersionService.getVersionHistory).toHaveBeenCalledWith('s1');
+      expect(result).toEqual([]);
+    });
+
+    it('publishScale delegates to versionService', async () => {
+      mockVersionService.publishScale.mockResolvedValueOnce({
+        id: 's1',
+        versionStatus: 'published',
+      });
+      const result = await controller.publishScale('s1');
+      expect(mockVersionService.publishScale).toHaveBeenCalledWith('s1');
+      expect(result.versionStatus).toBe('published');
+    });
+
+    it('createVersion delegates to versionService', async () => {
+      mockVersionService.createVersion.mockResolvedValueOnce({
+        id: 's2',
+        version: '1.1',
+      });
+      const result = await controller.createVersion('s1');
+      expect(mockVersionService.createVersion).toHaveBeenCalledWith('s1');
+      expect(result.version).toBe('1.1');
+    });
+
+    it('getVersion delegates to versionService', async () => {
+      mockVersionService.getVersion.mockResolvedValueOnce({
+        id: 'v1',
+        version: '1.0',
+      });
+      const result = await controller.getVersion('s1', 'v1');
+      expect(mockVersionService.getVersion).toHaveBeenCalledWith('s1', 'v1');
+      expect(result.version).toBe('1.0');
+    });
+  });
+
+  describe('validation endpoints', () => {
+    it('getValidations delegates to validationService', async () => {
+      mockValidationService.getValidations.mockResolvedValueOnce([]);
+      const result = await controller.getValidations('s1');
+      expect(mockValidationService.getValidations).toHaveBeenCalledWith('s1');
+      expect(result).toEqual([]);
+    });
+
+    it('addValidation delegates to validationService', async () => {
+      const dto = {
+        reliabilityType: 'CronbachsAlpha',
+        reliabilityValue: 0.9,
+        validityType: 'Construct',
+        validatedAt: '2020-01-01',
+      };
+      mockValidationService.addValidation.mockResolvedValueOnce({
+        id: 'v1',
+        ...dto,
+      });
+      await controller.addValidation('s1', dto as any);
+      expect(mockValidationService.addValidation).toHaveBeenCalledWith(
+        's1',
+        dto,
+      );
+    });
+
+    it('updateValidation delegates to validationService', async () => {
+      const dto = { reliabilityValue: 0.95 };
+      mockValidationService.updateValidation.mockResolvedValueOnce({
+        id: 'v1',
+        reliabilityValue: 0.95,
+      });
+      await controller.updateValidation('v1', dto as any);
+      expect(mockValidationService.updateValidation).toHaveBeenCalledWith(
+        'v1',
+        dto,
+      );
+    });
+
+    it('deleteValidation delegates to validationService', async () => {
+      mockValidationService.deleteValidation.mockResolvedValueOnce(undefined);
+      const result = await controller.deleteValidation('v1');
+      expect(mockValidationService.deleteValidation).toHaveBeenCalledWith('v1');
+      expect(result).toEqual({ deleted: true });
+    });
+
+    it('getValidationSummary delegates to validationService', async () => {
+      const summary = {
+        scaleId: 's1',
+        totalStudies: 2,
+        avgReliability: 0.85,
+      };
+      mockValidationService.getValidationSummary.mockResolvedValueOnce(summary);
+      const result = await controller.getValidationSummary('s1');
+      expect(mockValidationService.getValidationSummary).toHaveBeenCalledWith(
+        's1',
+      );
+      expect(result.totalStudies).toBe(2);
+    });
   });
 });

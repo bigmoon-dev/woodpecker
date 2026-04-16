@@ -273,6 +273,8 @@ describe('ScaleService', () => {
       description: 'desc',
       source: 'src',
       validationInfo: null,
+      versionStatus: 'draft',
+      isLibrary: false,
       items: [],
       scoringRules: [],
       scoreRanges: [],
@@ -355,6 +357,30 @@ describe('ScaleService', () => {
       });
 
       expect(mockEntityManager.save).toHaveBeenCalled();
+    });
+
+    it('should reject update on published scale', async () => {
+      const publishedScale = {
+        ...existingScale,
+        versionStatus: 'published',
+      };
+      mockEntityManager.findOne.mockResolvedValueOnce(publishedScale);
+
+      await expect(service.update('scale-1', { name: 'New' })).rejects.toThrow(
+        'Cannot modify a published or library scale',
+      );
+    });
+
+    it('should reject update on library scale', async () => {
+      const libraryScale = {
+        ...existingScale,
+        isLibrary: true,
+      };
+      mockEntityManager.findOne.mockResolvedValueOnce(libraryScale);
+
+      await expect(service.update('scale-1', { name: 'New' })).rejects.toThrow(
+        'Cannot modify a published or library scale',
+      );
     });
   });
 });
