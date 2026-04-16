@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unused-vars, @typescript-eslint/require-await */
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
@@ -100,7 +100,9 @@ describe('TaskService', () => {
     mockDataSource.create.mockReset();
     mockDataSource.delete.mockReset();
     mockDataSource.transaction.mockReset();
-    mockDataSource.transaction.mockImplementation((cb: any) => cb(mockDataSource));
+    mockDataSource.transaction.mockImplementation((cb: any) =>
+      cb(mockDataSource),
+    );
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TaskService,
@@ -182,7 +184,9 @@ describe('TaskService', () => {
     it('should reject submission for non-published tasks', async () => {
       mockDataSource.transaction.mockImplementation(async (cb: any) => {
         const m = {
-          findOne: jest.fn().mockResolvedValue({ id: 't1', scaleId: 's1', status: 'draft' }),
+          findOne: jest
+            .fn()
+            .mockResolvedValue({ id: 't1', scaleId: 's1', status: 'draft' }),
           create: jest.fn((_, d) => d),
           save: jest.fn((d) => Promise.resolve(d)),
           delete: jest.fn(),
@@ -190,16 +194,28 @@ describe('TaskService', () => {
         return cb(m);
       });
       await expect(
-        service.submitAnswers('t1', 'student1', [{ itemId: 'i1', optionId: 'o1' }]),
+        service.submitAnswers('t1', 'student1', [
+          { itemId: 'i1', optionId: 'o1' },
+        ]),
       ).rejects.toThrow(BadRequestException);
     });
 
     it('should reject duplicate submission', async () => {
       mockDataSource.transaction.mockImplementation(async (cb: any) => {
         const m = {
-          findOne: jest.fn()
-            .mockResolvedValueOnce({ id: 't1', scaleId: 's1', status: 'published' })
-            .mockResolvedValueOnce({ id: 'a1', taskId: 't1', studentId: 'student1', status: 'submitted' }),
+          findOne: jest
+            .fn()
+            .mockResolvedValueOnce({
+              id: 't1',
+              scaleId: 's1',
+              status: 'published',
+            })
+            .mockResolvedValueOnce({
+              id: 'a1',
+              taskId: 't1',
+              studentId: 'student1',
+              status: 'submitted',
+            }),
           create: jest.fn((_, d) => d),
           save: jest.fn((d) => Promise.resolve(d)),
           delete: jest.fn(),
@@ -207,7 +223,9 @@ describe('TaskService', () => {
         return cb(m);
       });
       await expect(
-        service.submitAnswers('t1', 'student1', [{ itemId: 'i1', optionId: 'o1' }]),
+        service.submitAnswers('t1', 'student1', [
+          { itemId: 'i1', optionId: 'o1' },
+        ]),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -298,7 +316,10 @@ describe('TaskService', () => {
 
   describe('findOne', () => {
     it('should load scale relations', async () => {
-      mockTaskRepo.findOne.mockResolvedValue({ id: 't1', scale: { items: [] } });
+      mockTaskRepo.findOne.mockResolvedValue({
+        id: 't1',
+        scale: { items: [] },
+      });
       const result = await service.findOne('t1');
       expect(mockTaskRepo.findOne).toHaveBeenCalledWith({
         where: { id: 't1' },
@@ -315,7 +336,11 @@ describe('TaskService', () => {
 
   describe('update', () => {
     it('should merge data and save for draft tasks', async () => {
-      mockTaskRepo.findOne.mockResolvedValue({ id: 't1', title: 'Old', status: 'draft' });
+      mockTaskRepo.findOne.mockResolvedValue({
+        id: 't1',
+        title: 'Old',
+        status: 'draft',
+      });
       mockTaskRepo.save.mockImplementation((d: any) => Promise.resolve(d));
       const result = await service.update('t1', { title: 'New' });
       expect(result.title).toBe('New');
@@ -329,10 +354,14 @@ describe('TaskService', () => {
     });
 
     it('should throw if not creator', async () => {
-      mockTaskRepo.findOne.mockResolvedValue({ id: 't1', status: 'draft', createdById: 'u2' });
-      await expect(service.update('t1', { title: 'New' }, 'u1')).rejects.toThrow(
-        BadRequestException,
-      );
+      mockTaskRepo.findOne.mockResolvedValue({
+        id: 't1',
+        status: 'draft',
+        createdById: 'u2',
+      });
+      await expect(
+        service.update('t1', { title: 'New' }, 'u1'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw NotFoundException for missing task', async () => {

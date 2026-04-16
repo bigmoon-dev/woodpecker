@@ -25,6 +25,9 @@ const STATUS_MAP: Record<string, { color: string; text: string }> = {
   completed: { color: 'default', text: '已完成' },
 };
 
+const canManageTasks =
+  hasRole('teacher') || hasRole('psychologist');
+
 export default function TaskList() {
   const actionRef = useRef<ActionType>();
   const [createOpen, setCreateOpen] = useState(false);
@@ -34,15 +37,18 @@ export default function TaskList() {
   const navigate = useNavigate();
 
   const openCreate = async () => {
-    const [scalesRes, targetsRes]: any[] = await Promise.all([
+    const [scalesRes, libraryRes, targetsRes]: any[] = await Promise.all([
       request.get('/scales', { params: { page: 1, pageSize: 100 } }),
-      hasRole('teacher')
+      request.get('/scales/library', { params: { page: 1, pageSize: 100 } }),
+      canManageTasks
         ? request.get('/admin/classes', {
             params: { page: 1, pageSize: 100 },
           })
         : Promise.resolve({ data: [] }),
     ]);
-    setScales(scalesRes.data || scalesRes || []);
+    const ownScales = scalesRes.data || scalesRes || [];
+    const libScales = libraryRes.data || libraryRes || [];
+    setScales([...ownScales, ...libScales]);
     setTargets(targetsRes.data || targetsRes || []);
     setCreateOpen(true);
   };
@@ -82,8 +88,6 @@ export default function TaskList() {
     }
   };
 
-  const isTeacher = hasRole('teacher');
-
   const columns: ProColumns[] = [
     { title: '标题', dataIndex: 'title', key: 'title' },
     {
@@ -114,13 +118,13 @@ export default function TaskList() {
           <Button
             type="link"
             onClick={() => {
-              const basePath = isTeacher ? '/teacher' : '/student';
+              const basePath = canManageTasks ? '/teacher' : '/student';
               navigate(`${basePath}/assessment/${record.id}`);
             }}
           >
-            {isTeacher ? '查看' : '作答'}
+            {canManageTasks ? '查看' : '作答'}
           </Button>
-          {isTeacher && record.status === 'draft' && (
+          {canManageTasks && record.status === 'draft' && (
             <Button
               type="link"
               icon={<SendOutlined />}
@@ -129,7 +133,7 @@ export default function TaskList() {
               发布
             </Button>
           )}
-          {isTeacher && record.status === 'published' && (
+          {canManageTasks && record.status === 'published' && (
             <Button
               type="link"
               onClick={() => handleComplete(record.id)}
@@ -137,7 +141,7 @@ export default function TaskList() {
               完成
             </Button>
           )}
-          {isTeacher && (
+          {canManageTasks && (
             <Button
               type="link"
               icon={<DownloadOutlined />}
@@ -166,7 +170,7 @@ export default function TaskList() {
         }}
         toolBarRender={() => {
           const btns = [];
-          if (isTeacher) {
+          if (canManageTasks) {
             btns.push(
               <Button key="create" type="primary" onClick={openCreate}>
                 创建任务

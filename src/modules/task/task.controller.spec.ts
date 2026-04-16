@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return */
 import { Test, TestingModule } from '@nestjs/testing';
 import { TaskController } from './task.controller';
 import { TaskService } from './task.service';
@@ -10,7 +10,7 @@ describe('TaskController', () => {
   let controller: TaskController;
   let taskService: any;
 
-  const mockReq = (user: any) => ({ user } as any);
+  const mockReq = (user: any) => ({ user }) as any;
 
   const mockTaskService = {
     create: jest.fn(),

@@ -2,6 +2,15 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.18.1] - 2026-04-16
+
+### Fixed
+
+- 前端 TaskList 角色检查：psychologist 和 teacher 都可管理任务（原 `hasRole('teacher')` 漏掉 psychologist）
+- 创建任务时同时加载自定义量表和种子量表库（`/scales` + `/scales/library`）
+- 后端 task.controller.ts 移除未使用的 `ForbiddenException` import
+- 后端 task.service.ts 移除未使用的 `In` import，修复 `getStudentClassId` 的 unsafe 类型警告
+
 ## [0.18.0] - 2026-04-16
 
 ### Added — 任务发放系统完整闭环 (design_system_v2 → coding_v1)

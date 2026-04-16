@@ -9,7 +9,6 @@ import {
   Query,
   UseGuards,
   Req,
-  ForbiddenException,
 } from '@nestjs/common';
 import { TaskService } from './task.service';
 import { Task } from '../../entities/task/task.entity';
@@ -58,8 +57,7 @@ export class TaskController {
     const roleNames = req.user.roles.map((r) => r.name);
     const isStudent = roleNames.includes('student');
     const isTeacher =
-      roleNames.includes('teacher') ||
-      roleNames.includes('psychologist');
+      roleNames.includes('teacher') || roleNames.includes('psychologist');
 
     if (isStudent) {
       const classId = await this.taskService.getStudentClassId(req.user.id);

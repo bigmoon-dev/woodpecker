@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Task } from '../../entities/task/task.entity';
 import { TaskAnswer } from '../../entities/task/task-answer.entity';
 import { TaskAnswerItem } from '../../entities/task/task-answer-item.entity';
@@ -102,7 +102,7 @@ export class TaskService {
   }
 
   async getStudentClassId(userId: string): Promise<string | null> {
-    const user = await this.dataSource
+    const user: { studentId?: string } | null = await this.dataSource
       .getRepository('users')
       .createQueryBuilder('u')
       .select('u.studentId')
@@ -227,7 +227,10 @@ export class TaskService {
           id: i.id,
           dimension: i.dimension,
           reverseScore: i.reverseScore,
-          options: i.options.map((o) => ({ id: o.id, scoreValue: o.scoreValue })),
+          options: i.options.map((o) => ({
+            id: o.id,
+            scoreValue: o.scoreValue,
+          })),
         })),
         scoringRules:
           (scale.scoringRules as ScoringRule[] | undefined)?.map(
