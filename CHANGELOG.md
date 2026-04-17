@@ -2,6 +2,32 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.22.0] - 2026-04-17
+
+### Added
+
+#### 访谈档案前端页面（coding_v1 workflow）
+
+**8个React页面** (client/src/pages/interview/)
+- InterviewList: 访谈列表页（ProTable + 新建Modal + 删除Popconfirm）
+- InterviewDetail: 访谈详情页（Tabs布局：基本信息/文件/摘要/时间线）
+- FileUpload: 文件上传组件（Upload.Dragger + OCR状态标签 + 重新OCR + 删除）
+- TemplateManage: 模板管理页（CRUD + JSON字段定义验证）
+- FollowUpManage: 随访提醒管理页（Tabs: 待处理/已完成 + 标记完成）
+- OcrEditor: OCR校对编辑器（原始文本展示 + 可编辑文本区）
+- SummaryView: 结构化摘要展示（模板字段列表 + 编辑保存）
+- TimelineView: 时间线视图（访谈/测评/预警三维度聚合）
+
+**路由 + 菜单集成**
+- 5个interview路由添加到teacher和admin路由组
+- TeacherLayout和AdminLayout菜单添加interviews子菜单
+
+**测试基础设施 + 覆盖率**
+- Vitest + React Testing Library + jsdom 环境配置
+- 8个测试文件，75个测试用例全通过
+- 覆盖率：Stmts 98.04%, Lines 98.96%, Funcs 97.75%
+- 每个handler函数均有成功/失败路径测试
+
 ## [0.21.1] - 2026-04-17
 
 ### Fixed

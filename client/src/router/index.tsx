@@ -20,6 +20,11 @@ import PluginManage from '../pages/admin/PluginManage';
 import ConsentPage from '../pages/consent/ConsentPage';
 import ScaleLibrary from '../pages/scale/ScaleLibrary';
 import Dashboard from '../pages/dashboard/Dashboard';
+import InterviewList from '../pages/interview/InterviewList';
+import InterviewDetail from '../pages/interview/InterviewDetail';
+import TemplateManage from '../pages/interview/TemplateManage';
+import FollowUpManage from '../pages/interview/FollowUpManage';
+import TimelineView from '../pages/interview/TimelineView';
 
 export const routeConfigs: RouteConfig[] = [
   { path: '/login', component: Login, public: true },
@@ -49,6 +54,11 @@ export const routeConfigs: RouteConfig[] = [
       { path: 'results/class/:classId', component: ClassResults },
       { path: 'results/grade/:gradeId', component: GradeResults },
       { path: 'alerts', component: AlertList },
+      { path: 'interviews', component: InterviewList },
+      { path: 'interviews/:id', component: InterviewDetail },
+      { path: 'interviews/templates', component: TemplateManage },
+      { path: 'interviews/follow-ups', component: FollowUpManage },
+      { path: 'interviews/timeline/:studentId', component: TimelineView },
     ],
   },
   {
@@ -65,6 +75,11 @@ export const routeConfigs: RouteConfig[] = [
       { path: 'results', component: MyResults },
       { path: 'results/class/:classId', component: ClassResults },
       { path: 'results/grade/:gradeId', component: GradeResults },
+      { path: 'interviews', component: InterviewList },
+      { path: 'interviews/:id', component: InterviewDetail },
+      { path: 'interviews/templates', component: TemplateManage },
+      { path: 'interviews/follow-ups', component: FollowUpManage },
+      { path: 'interviews/timeline/:studentId', component: TimelineView },
       { path: 'roles', component: RoleManage },
       { path: 'users', component: UserManage },
       { path: 'plugins', component: PluginManage },

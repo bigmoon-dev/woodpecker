@@ -18,6 +18,13 @@ const menuRoutes = [
   { path: '/teacher/tasks', name: '测评任务' },
   { path: '/teacher/results', name: '结果查看' },
   { path: '/teacher/alerts', name: '预警管理' },
+  { path: '/teacher/interviews', name: '访谈档案',
+    routes: [
+      { path: '/teacher/interviews', name: '访谈列表' },
+      { path: '/teacher/interviews/templates', name: '模板管理' },
+      { path: '/teacher/interviews/follow-ups', name: '随访提醒' },
+    ],
+  },
 ];
 
 export default function TeacherLayout() {
