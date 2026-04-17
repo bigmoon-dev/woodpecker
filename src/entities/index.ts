@@ -24,3 +24,7 @@ export { PluginLog } from './plugin/plugin-log.entity';
 export { SystemConfig } from './config/system-config.entity';
 export { ReportTemplate } from './report/report-template.entity';
 export { RefreshToken } from './auth/refresh-token.entity';
+export { Interview } from './interview/interview.entity';
+export { InterviewFile } from './interview/interview-file.entity';
+export { InterviewTemplate } from './interview/interview-template.entity';
+export { FollowUpReminder } from './interview/follow-up-reminder.entity';

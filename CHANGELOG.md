@@ -2,6 +2,53 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.20.0] - 2026-04-17
+
+### Added
+
+#### 访谈档案模块 — Interview Module (design_system_v2 → coding_v1)
+
+**后端 API**
+- `InterviewService`: 访谈记录 CRUD + PII 加密存储（复用 EncryptionService/pgcrypto）
+- `InterviewController`: RESTful API（api/interviews），JwtAuthGuard + RbacGuard 保护的完整端点
+- 按角色数据隔离：心理老师看全部访谈，班主任不可见访谈内容（findOne 中按角色过滤）
+- DataScope 过滤：findAll 按 own/class/grade/all 范围返回可见学生访谈
+
+**文件管理与 OCR**
+- `InterviewFile` 实体：访谈附件（上传图片/PDF 扫描件）
+- `OcrService`: PaddleOCR 子进程管理（30s 超时 + 3 次重试 + mock 模式）
+- 文件 OCR 状态跟踪（pending/processing/done/failed）
+
+**模板管理**
+- `InterviewTemplate` 实体：访谈模板上传与解析
+- `TemplateService`: 模板 CRUD（老师自定义电子版模板）
+
+**时间线关联**
+- `TimelineService`: 学生全维度时间线视图（访谈记录 ↔ 量表测评 ↔ 预警事件）
+- 按日期倒序排列，返回结构化事件列表
+
+**随访提醒**
+- `FollowUpReminder` 实体：随访提醒 CRUD
+- `FollowUpService`: 创建提醒、按学生查询、标记完成、查询待处理提醒
+
+**数据安全**
+- 访谈内容（content）使用 pgp_sym_encrypt 加密存储
+- 班主任角色无法查看访谈内容和加密内容（服务端强制过滤）
+- 复用现有 RBAC + DataScope 体系
+
+**新增文件（15 个）**
+- 实体：interview.entity.ts, interview-file.entity.ts, interview-template.entity.ts, follow-up-reminder.entity.ts
+- 服务：interview.service.ts, ocr.service.ts, template.service.ts, timeline.service.ts, follow-up.service.ts
+- 控制器：interview.controller.ts
+- DTO：interview.dto.ts
+- 模块：interview.module.ts
+- 测试：interview.service.spec.ts, ocr.service.spec.ts, template.service.spec.ts, timeline.service.spec.ts, follow-up.service.spec.ts, interview.controller.spec.ts
+
+**测试**
+- 69 test suites, 673 tests, all passing
+- Interview 模块覆盖率：Stmts 98.9% | Branch 82% | Lines 98.79%
+- ESLint 0 warnings, TypeScript 0 errors
+
 ## [0.19.7] - 2026-04-17
 
 ### Fixed

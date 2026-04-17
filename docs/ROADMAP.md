@@ -104,6 +104,16 @@
 - Dashboard语义色token化，响应主题切换
 - 后端主题偏好持久化（User.themePreference + GET/PUT preferences API）
 
+### 访谈档案（后端）
+- Interview 实体（interviews 表）+ CRUD + PII 加密存储
+- InterviewFile 实体（interview_files 表）+ OCR 状态跟踪
+- InterviewTemplate 实体（interview_templates 表）+ 模板管理
+- FollowUpReminder 实体（follow_up_reminders 表）+ 随访提醒
+- OcrService（PaddleOCR 子进程 + mock 模式 + 30s 超时 + 3 次重试）
+- TimelineService（学生全维度时间线：访谈 ↔ 测评 ↔ 预警）
+- 角色数据隔离（班主任不可见访谈内容）
+- 69 test suites, 673 tests, Interview 模块覆盖率 Stmts 98.9%
+
 ---
 
 ## 规划中
@@ -133,6 +143,45 @@
 - 待处理预警提醒
 - 任务到期提醒
 - 站内信 + 邮件/短信渠道（可配置）
+
+### 访谈档案（后端模块 v0.20.0）
+
+> psych-scale-server 内嵌 NestJS 模块，复用 PostgreSQL + EncryptionService + RBAC 体系。
+> 产品定义（product_definition_v1）→ 系统设计（design_system_v2）→ 编码（coding_v1）全流程完成。
+
+- **访谈记录管理**（v0.20.0 后端已实现，UI 待开发）
+  - ~~为来访学生建立访谈档案~~（InterviewService CRUD + PII 加密存储）
+  - ~~上传手写表格图片/PDF 扫描件~~（InterviewFile 实体 + OcrService）
+  - ~~本地 OCR 提取文字~~（PaddleOCR 子进程，30s 超时 + 3 次重试 + mock 模式）
+  - OCR 结果校对编辑界面（待前端开发）
+
+- **访谈模板**（v0.20.0 后端已实现，UI 待开发）
+  - ~~老师上传电子版模板~~（TemplateService CRUD）
+  - 上传扫描件时自动匹配模板提取字段（待开发）
+
+- **时间线关联**（v0.20.0 后端已实现，UI 待开发）
+  - ~~时间线视图：访谈记录 ↔ 量表测评 ↔ 预警事件~~（TimelineService）
+  - 前端时间线组件（待开发）
+
+- **随访提醒**（v0.20.0 后端已实现，UI 待开发）
+  - ~~创建/查询/完成随访提醒~~（FollowUpService）
+  - 前端提醒管理界面（待开发）
+
+- **隐私控制**（v0.20.0 已实现）
+  - 访谈内容仅心理老师和 admin 可见，班主任不可见
+
+- **风险标签**
+  - 四级风险：关注/一般/重点/危机（Entity 字段已定义）
+
+- **结构化摘要提取**（待开发 v1.1）
+  - 从 OCR 文本中按大纲自动提取摘要
+  - 提取大纲可配置（后续集成本地小模型自动生成）
+
+- **前端页面**（待开发）
+  - 访谈列表页
+  - OCR 校对编辑页
+  - 模板管理页
+  - 时间线视图组件
 
 ### 移动端适配
 - 响应式布局优化

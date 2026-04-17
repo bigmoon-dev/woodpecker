@@ -20,6 +20,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { ExportModule } from './modules/export/export.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { HealthModule } from './modules/health/health.module';
+import { InterviewModule } from './modules/interview/interview.module';
 import {
   Scale,
   ScaleItem,
@@ -47,6 +48,10 @@ import {
   ScaleValidation,
   ReportTemplate,
   RefreshToken,
+  Interview,
+  InterviewFile,
+  InterviewTemplate,
+  FollowUpReminder,
 } from './entities';
 
 @Module({
@@ -89,6 +94,10 @@ import {
           ScaleValidation,
           ReportTemplate,
           RefreshToken,
+          Interview,
+          InterviewFile,
+          InterviewTemplate,
+          FollowUpReminder,
         ],
         synchronize: config.get('DB_SYNC', 'false') === 'true',
         logging: config.get('DB_LOGGING', 'false') === 'true',
@@ -112,6 +121,7 @@ import {
     ExportModule,
     DashboardModule,
     HealthModule,
+    InterviewModule,
   ],
   providers: [
     {
