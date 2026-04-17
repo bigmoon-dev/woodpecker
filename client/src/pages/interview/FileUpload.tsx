@@ -5,6 +5,7 @@ import request from '../../utils/request';
 
 interface FileUploadProps {
   interviewId: string;
+  onUploadComplete?: () => void;
 }
 
 const ocrStatusMap: Record<string, { color: string; text: string }> = {
@@ -13,7 +14,7 @@ const ocrStatusMap: Record<string, { color: string; text: string }> = {
   failed: { color: 'red', text: '失败' },
 };
 
-export default function FileUpload({ interviewId }: FileUploadProps) {
+export default function FileUpload({ interviewId, onUploadComplete }: FileUploadProps) {
   const [files, setFiles] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
 
@@ -41,6 +42,7 @@ export default function FileUpload({ interviewId }: FileUploadProps) {
       });
       message.success('上传成功');
       loadFiles();
+      onUploadComplete?.();
     } catch {
       message.error('上传失败');
     } finally {

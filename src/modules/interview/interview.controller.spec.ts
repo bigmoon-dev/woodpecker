@@ -210,7 +210,7 @@ describe('InterviewController', () => {
     expect(followUpService.markComplete).toHaveBeenCalledWith('r1');
   });
 
-  it('POST /:id/files/:fileId/ocr triggers OCR', async () => {
+  it('POST /:id/files/:fileId/ocr triggers OCR and auto-extracts summary', async () => {
     interviewService.getFiles.mockResolvedValueOnce([
       { id: 'f1', filePath: '/img.png' },
     ]);
@@ -222,6 +222,8 @@ describe('InterviewController', () => {
       id: 'f1',
       ocrStatus: 'done',
     });
+    interviewService.aggregateOcrText.mockResolvedValueOnce({ id: 'iv1' });
+    summaryExtractionService.extract.mockResolvedValueOnce({ id: 'iv1' });
 
     const result = await controller.triggerOcr('iv1', 'f1');
 
@@ -231,6 +233,8 @@ describe('InterviewController', () => {
       { text: 'result', confidence: 0.9 },
       'done',
     );
+    expect(interviewService.aggregateOcrText).toHaveBeenCalledWith('iv1');
+    expect(summaryExtractionService.extract).toHaveBeenCalledWith('iv1');
     expect((result as any).text).toBe('result');
   });
 
@@ -282,6 +286,40 @@ describe('InterviewController', () => {
       'done',
     );
     expect(interviewService.aggregateOcrText).toHaveBeenCalledWith('iv1');
+    expect(summaryExtractionService.extract).toHaveBeenCalledWith('iv1');
+  });
+
+  it('POST /:id/files handles summary extraction failure gracefully', async () => {
+    const file = {
+      id: 'f1',
+      interviewId: 'iv1',
+      filePath: '/upload/test.png',
+      fileType: 'image',
+    };
+    interviewService.addFile.mockResolvedValueOnce(file);
+    let ocrResolve: (v: any) => void;
+    const ocrPromise = new Promise((resolve) => {
+      ocrResolve = resolve;
+    });
+    mockOcrService.recognize.mockReturnValueOnce(ocrPromise);
+    interviewService.updateFileOcr.mockResolvedValueOnce({
+      id: 'f1',
+      ocrStatus: 'done',
+    });
+    interviewService.aggregateOcrText.mockResolvedValueOnce({ id: 'iv1' });
+    summaryExtractionService.extract.mockRejectedValueOnce(
+      new Error('no template'),
+    );
+
+    await controller.uploadFile('iv1', {
+      path: '/upload/test.png',
+      mimetype: 'image/png',
+    } as Express.Multer.File);
+
+    ocrResolve!({ text: 'ocr result' });
+    await flushMicrotasks();
+
+    expect(summaryExtractionService.extract).toHaveBeenCalledWith('iv1');
   });
 
   it('POST /:id/files handles OCR failure gracefully', async () => {

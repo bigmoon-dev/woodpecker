@@ -35,6 +35,10 @@ vi.mock('./SummaryView', () => ({
   default: () => <div data-testid="summary-view">SummaryView</div>,
 }));
 
+vi.mock('./OcrEditor', () => ({
+  default: () => <div data-testid="ocr-editor">OcrEditor</div>,
+}));
+
 import request from '../../utils/request';
 import { message } from 'antd';
 
@@ -54,7 +58,10 @@ const mockData = {
 describe('InterviewDetail', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (request.get as any).mockResolvedValue(mockData);
+    (request.get as any).mockImplementation((url: string) => {
+      if (url.includes('/templates/')) return Promise.resolve({ fields: [] });
+      return Promise.resolve(mockData);
+    });
     (request.put as any).mockResolvedValue({});
   });
 
@@ -84,6 +91,11 @@ describe('InterviewDetail', () => {
     await user.click(screen.getByRole('tab', { name: '文件管理' }));
     await waitFor(() => {
       expect(screen.getByTestId('file-upload')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('tab', { name: 'OCR文本' }));
+    await waitFor(() => {
+      expect(screen.getByTestId('ocr-editor')).toBeInTheDocument();
     });
 
     await user.click(screen.getByRole('tab', { name: '结构化摘要' }));
@@ -140,6 +152,41 @@ describe('InterviewDetail', () => {
     render(<InterviewDetail />);
     await waitFor(() => {
       expect(screen.getByText('未找到访谈记录')).toBeInTheDocument();
+    }, { timeout: 3000 });
+  });
+
+  it('fetches template fields when templateId exists', async () => {
+    (request.get as any).mockImplementation((url: string) => {
+      if (url.includes('/templates/')) return Promise.resolve({ fields: [{ key: 'summary', label: '总结' }] });
+      return Promise.resolve({ ...mockData, templateId: 'tpl-1' });
+    });
+    render(<InterviewDetail />);
+    await waitFor(() => {
+      expect(screen.getByText('访谈详情')).toBeInTheDocument();
+    });
+    expect(request.get).toHaveBeenCalledWith('/interviews/templates/tpl-1');
+  });
+
+  it('handles template fetch failure gracefully', async () => {
+    (request.get as any).mockImplementation((url: string) => {
+      if (url.includes('/templates/')) return Promise.reject(new Error('fail'));
+      return Promise.resolve({ ...mockData, templateId: 'tpl-1' });
+    });
+    render(<InterviewDetail />);
+    await waitFor(() => {
+      expect(screen.getByText('访谈详情')).toBeInTheDocument();
+    });
+  });
+
+  it('shows error on status transition failure', async () => {
+    (request.put as any).mockRejectedValueOnce(new Error('fail'));
+    const user = userEvent.setup();
+    render(<InterviewDetail />);
+    await waitFor(() => expect(screen.getByRole('button', { name: /标记为已审阅/ })).toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: /标记为已审阅/ }));
+    await waitFor(() => {
+      expect(message.error).toHaveBeenCalledWith('状态更新失败');
     });
   });
 

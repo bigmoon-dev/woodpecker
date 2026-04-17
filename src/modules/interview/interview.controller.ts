@@ -151,6 +151,7 @@ export class InterviewController {
           'done',
         );
         await this.interviewService.aggregateOcrText(id);
+        await this.summaryExtractionService.extract(id).catch(() => {});
       })
       .catch(async () => {
         await this.interviewService.updateFileOcr(
@@ -180,6 +181,7 @@ export class InterviewController {
     const result = await this.ocrService.recognize(file.filePath);
     await this.interviewService.updateFileOcr(fileId, result, 'done');
     await this.interviewService.aggregateOcrText(id);
+    await this.summaryExtractionService.extract(id).catch(() => {});
     return result;
   }
 

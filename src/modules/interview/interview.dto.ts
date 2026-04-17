@@ -56,6 +56,13 @@ export class UpdateInterviewDto {
   @IsOptional()
   @IsUUID()
   templateId?: string;
+
+  @IsOptional()
+  @IsString()
+  ocrText?: string;
+
+  @IsOptional()
+  structuredSummary?: Record<string, unknown>;
 }
 
 export class CreateTemplateDto {

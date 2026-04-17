@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import request from '../../utils/request';
 import FileUpload from './FileUpload';
 import SummaryView from './SummaryView';
+import OcrEditor from './OcrEditor';
 
 const statusMap: Record<string, { color: string; text: string }> = {
   draft: { color: 'blue', text: '草稿' },
@@ -29,6 +30,7 @@ export default function InterviewDetail() {
   const [data, setData] = useState<any>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editForm] = Form.useForm();
+  const [templateFields, setTemplateFields] = useState<{ key: string; label: string }[]>([]);
 
   const loadData = async () => {
     if (!id) return;
@@ -36,6 +38,18 @@ export default function InterviewDetail() {
     try {
       const res: any = await request.get(`/interviews/${id}`);
       setData(res);
+
+      if (res.templateId) {
+        try {
+          const tpl: any = await request.get(`/interviews/templates/${res.templateId}`);
+          const fields = tpl.fields || tpl.data?.fields || [];
+          setTemplateFields(fields.map((f: any) => ({ key: f.key, label: f.label })));
+        } catch {
+          setTemplateFields([]);
+        }
+      } else {
+        setTemplateFields([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -136,7 +150,18 @@ export default function InterviewDetail() {
             {
               key: 'files',
               label: '文件管理',
-              children: <FileUpload interviewId={id!} />,
+              children: <FileUpload interviewId={id!} onUploadComplete={loadData} />,
+            },
+            {
+              key: 'ocr',
+              label: 'OCR文本',
+              children: (
+                <OcrEditor
+                  interviewId={id!}
+                  ocrText={data.ocrText || null}
+                  onSave={() => loadData()}
+                />
+              ),
             },
             {
               key: 'summary',
@@ -146,6 +171,7 @@ export default function InterviewDetail() {
                   interviewId={id!}
                   ocrText={data.ocrText || null}
                   structuredSummary={data.structuredSummary || null}
+                  templateFields={templateFields}
                   onReload={loadData}
                 />
               ),

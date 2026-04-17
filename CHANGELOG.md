@@ -2,6 +2,20 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.22.1] - 2026-04-17
+
+### Changed
+
+#### 访谈摘要自动提取 + 可编辑校正
+
+- **后端**: OCR完成后自动触发 `summaryExtractionService.extract()`，无需手动点击（upload + re-ocr 两处均已集成）
+- **后端**: `UpdateInterviewDto` 添加 `ocrText` 和 `structuredSummary` 字段，支持前端保存校正后的摘要
+- **前端**: SummaryView 从只读 Descriptions 改为可编辑 Form，老师可直接修改每个摘要字段并保存
+- **前端**: InterviewDetail 新增"OCR文本"Tab（OcrEditor 组件），方便校对原始识别文本
+- **前端**: InterviewDetail 自动加载模板字段定义传递给 SummaryView，编辑时显示中文标签
+- **前端**: FileUpload 支持 `onUploadComplete` 回调，上传完成后刷新详情数据
+- **测试**: 后端 713 tests（+1），前端 82 tests（+7），覆盖率 99.05% Lines
+
 ## [0.22.0] - 2026-04-17
 
 ### Added
