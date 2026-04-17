@@ -2,7 +2,38 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
-## [0.20.0] - 2026-04-17
+## [0.21.0] - 2026-04-17
+
+### Added
+
+#### 访谈档案功能补全（coding_v1 workflow）
+
+**枚举约束 + 状态机 (DIR-2)**
+- `interview.types.ts`: RiskLevel enum (normal/attention/warning/crisis) + InterviewStatus enum (draft/reviewed/completed)
+- VALID_TRANSITIONS 状态转换矩阵 (draft→reviewed→completed)
+- InterviewService.create()/update() 增加 riskLevel/status 枚举校验
+- PUT /:id/status 状态机端点，校验合法状态转换
+
+**路由补全 + 文件上传 (DIR-3)**
+- GET/PUT/DELETE /templates/:id 模板 CRUD 路由
+- POST /:id/files 文件上传（Multer FileInterceptor, 10MB 限制）+ 自动 OCR + 聚合
+- GET /:id/files 文件列表 + DELETE /:id/files/:fileId 删除文件
+- UpdateStatusDto + UpdateTemplateDto (class-validator)
+
+**结构化摘要提取引擎 (DIR-1)**
+- `SummaryExtractionService`: 从 OCR 文本按模板字段提取结构化摘要
+- 提取策略优先级: regex pattern > section 段落定位 > label 关键词匹配 > 空 fallback
+- Interview.structuredSummary (jsonb) 字段
+- POST /:id/extract-summary 端点
+- TemplateFieldSchema 接口（extractionRule: pattern/section）
+
+**测试**
+- 70 test suites, 708 tests, all passing
+- 新增 summary-extraction.service.spec.ts (11 tests)
+- 扩展 interview.service.spec.ts (+updateStatus/deleteFile/aggregateOcrText/enum 校验)
+- 扩展 interview.controller.spec.ts (+template CRUD/file upload/status/extract-summary)
+
+## [0.20.1] - 2026-04-17
 
 ### Added
 

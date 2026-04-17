@@ -9,12 +9,16 @@ import {
   Query,
   Req,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { InterviewService } from './interview.service';
 import { TemplateService } from './template.service';
 import { TimelineService } from './timeline.service';
 import { FollowUpService } from './follow-up.service';
 import { OcrService } from './ocr.service';
+import { SummaryExtractionService } from './summary-extraction.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RbacGuard, REQUIRE_PERMISSION } from '../auth/rbac.guard';
 import {
@@ -22,10 +26,13 @@ import {
   UpdateInterviewDto,
   CreateTemplateDto,
   CreateFollowUpDto,
+  UpdateStatusDto,
+  UpdateTemplateDto,
 } from './interview.dto';
 import { PaginationQueryDto } from '../../common/pagination.dto';
 import { Request } from 'express';
 import { SetMetadata } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 interface AuthenticatedRequest extends Request {
   user: { id: string };
@@ -47,6 +54,7 @@ export class InterviewController {
     private timelineService: TimelineService,
     private followUpService: FollowUpService,
     private ocrService: OcrService,
+    private summaryExtractionService: SummaryExtractionService,
   ) {}
 
   @Get()
@@ -65,9 +73,34 @@ export class InterviewController {
     );
   }
 
+  @Get('templates/all')
+  async findAllTemplates() {
+    return this.templateService.findAll();
+  }
+
+  @Get('templates/:id')
+  async findOneTemplate(@Param('id') id: string) {
+    return this.templateService.findOne(id);
+  }
+
+  @Get('follow-ups/pending')
+  async findPending() {
+    return this.followUpService.findPending();
+  }
+
+  @Get('timeline/:studentId')
+  async getTimeline(@Param('studentId') studentId: string) {
+    return this.timelineService.getTimeline(studentId);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.interviewService.findOne(id, req.user.id);
+  }
+
+  @Get(':id/files')
+  async getFiles(@Param('id') id: string) {
+    return this.interviewService.getFiles(id);
   }
 
   @Post()
@@ -76,32 +109,10 @@ export class InterviewController {
     return this.interviewService.create(dto);
   }
 
-  @Put(':id')
-  @SetMetadata(REQUIRE_PERMISSION, ['interview:write'])
-  async update(@Param('id') id: string, @Body() dto: UpdateInterviewDto) {
-    return this.interviewService.update(id, dto);
-  }
-
-  @Delete(':id')
-  @SetMetadata(REQUIRE_PERMISSION, ['interview:write'])
-  async delete(@Param('id') id: string) {
-    return this.interviewService.delete(id);
-  }
-
-  @Get('templates/all')
-  async findAllTemplates() {
-    return this.templateService.findAll();
-  }
-
   @Post('templates')
   @SetMetadata(REQUIRE_PERMISSION, ['interview:write'])
   async createTemplate(@Body() dto: CreateTemplateDto) {
     return this.templateService.create(dto);
-  }
-
-  @Get('timeline/:studentId')
-  async getTimeline(@Param('studentId') studentId: string) {
-    return this.timelineService.getTimeline(studentId);
   }
 
   @Post(':id/follow-up')
@@ -110,15 +121,52 @@ export class InterviewController {
     return this.followUpService.create(dto);
   }
 
-  @Get('follow-ups/pending')
-  async findPending() {
-    return this.followUpService.findPending();
+  @Post(':id/files')
+  @SetMetadata(REQUIRE_PERMISSION, ['interview:write'])
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 10 * 1024 * 1024 },
+    }),
+  )
+  async uploadFile(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File | undefined,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+    const fileType = file.mimetype.startsWith('image/') ? 'image' : 'pdf';
+    const interviewFile = await this.interviewService.addFile(
+      id,
+      file.path,
+      fileType,
+    );
+
+    this.ocrService
+      .recognize(file.path)
+      .then(async (result) => {
+        await this.interviewService.updateFileOcr(
+          interviewFile.id,
+          result,
+          'done',
+        );
+        await this.interviewService.aggregateOcrText(id);
+      })
+      .catch(async () => {
+        await this.interviewService.updateFileOcr(
+          interviewFile.id,
+          null,
+          'failed',
+        );
+      });
+
+    return interviewFile;
   }
 
-  @Put('follow-ups/:id/complete')
+  @Post(':id/extract-summary')
   @SetMetadata(REQUIRE_PERMISSION, ['interview:write'])
-  async markComplete(@Param('id') id: string) {
-    return this.followUpService.markComplete(id);
+  async extractSummary(@Param('id') id: string) {
+    return this.summaryExtractionService.extract(id);
   }
 
   @Post(':id/files/:fileId/ocr')
@@ -127,10 +175,56 @@ export class InterviewController {
     const files = await this.interviewService.getFiles(id);
     const file = files.find((f) => f.id === fileId);
     if (!file) {
-      return { error: 'File not found' };
+      throw new BadRequestException('File not found');
     }
     const result = await this.ocrService.recognize(file.filePath);
     await this.interviewService.updateFileOcr(fileId, result, 'done');
+    await this.interviewService.aggregateOcrText(id);
     return result;
+  }
+
+  @Put(':id')
+  @SetMetadata(REQUIRE_PERMISSION, ['interview:write'])
+  async update(@Param('id') id: string, @Body() dto: UpdateInterviewDto) {
+    return this.interviewService.update(id, dto);
+  }
+
+  @Put(':id/status')
+  @SetMetadata(REQUIRE_PERMISSION, ['interview:write'])
+  async updateStatus(@Param('id') id: string, @Body() dto: UpdateStatusDto) {
+    return this.interviewService.updateStatus(id, dto.status);
+  }
+
+  @Put('templates/:id')
+  @SetMetadata(REQUIRE_PERMISSION, ['interview:write'])
+  async updateTemplate(
+    @Param('id') id: string,
+    @Body() dto: UpdateTemplateDto,
+  ) {
+    return this.templateService.update(id, dto);
+  }
+
+  @Put('follow-ups/:id/complete')
+  @SetMetadata(REQUIRE_PERMISSION, ['interview:write'])
+  async markComplete(@Param('id') id: string) {
+    return this.followUpService.markComplete(id);
+  }
+
+  @Delete(':id')
+  @SetMetadata(REQUIRE_PERMISSION, ['interview:write'])
+  async delete(@Param('id') id: string) {
+    return this.interviewService.delete(id);
+  }
+
+  @Delete('templates/:id')
+  @SetMetadata(REQUIRE_PERMISSION, ['interview:write'])
+  async deleteTemplate(@Param('id') id: string) {
+    return this.templateService.delete(id);
+  }
+
+  @Delete(':id/files/:fileId')
+  @SetMetadata(REQUIRE_PERMISSION, ['interview:write'])
+  async deleteFile(@Param('id') id: string, @Param('fileId') fileId: string) {
+    return this.interviewService.deleteFile(fileId);
   }
 }
