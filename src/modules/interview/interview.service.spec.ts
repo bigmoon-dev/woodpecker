@@ -512,11 +512,14 @@ describe('InterviewService', () => {
 
   describe('deleteFile', () => {
     it('should delete a file', async () => {
-      mockFileRepo.findOne.mockResolvedValue({ id: 'f1' });
+      mockFileRepo.findOne.mockResolvedValue({ id: 'f1', interviewId: 'iv1' });
 
       await service.deleteFile('f1');
 
-      expect(fileRepo.remove).toHaveBeenCalledWith({ id: 'f1' });
+      expect(fileRepo.remove).toHaveBeenCalledWith({
+        id: 'f1',
+        interviewId: 'iv1',
+      });
     });
 
     it('should throw NotFoundException when file not found', async () => {
@@ -525,6 +528,28 @@ describe('InterviewService', () => {
       await expect(service.deleteFile('missing')).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('should reject delete when file belongs to different interview', async () => {
+      mockFileRepo.findOne.mockResolvedValue({
+        id: 'f1',
+        interviewId: 'iv2',
+      });
+
+      await expect(service.deleteFile('f1', 'iv1')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should allow delete when interviewId matches', async () => {
+      mockFileRepo.findOne.mockResolvedValue({
+        id: 'f1',
+        interviewId: 'iv1',
+      });
+
+      await service.deleteFile('f1', 'iv1');
+
+      expect(fileRepo.remove).toHaveBeenCalled();
     });
   });
 

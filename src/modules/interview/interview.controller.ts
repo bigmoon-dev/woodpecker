@@ -225,6 +225,6 @@ export class InterviewController {
   @Delete(':id/files/:fileId')
   @SetMetadata(REQUIRE_PERMISSION, ['interview:write'])
   async deleteFile(@Param('id') id: string, @Param('fileId') fileId: string) {
-    return this.interviewService.deleteFile(fileId);
+    return this.interviewService.deleteFile(fileId, id);
   }
 }

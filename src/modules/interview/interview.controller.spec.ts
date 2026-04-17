@@ -11,6 +11,10 @@ import { SummaryExtractionService } from './summary-extraction.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RbacGuard } from '../auth/rbac.guard';
 
+async function flushMicrotasks(n = 10) {
+  for (let i = 0; i < n; i++) await Promise.resolve();
+}
+
 describe('InterviewController', () => {
   let controller: InterviewController;
   let interviewService: any;
@@ -238,7 +242,7 @@ describe('InterviewController', () => {
     );
   });
 
-  it('POST /:id/files returns interview file', async () => {
+  it('POST /:id/files returns interview file and triggers async OCR', async () => {
     const file = {
       id: 'f1',
       interviewId: 'iv1',
@@ -246,7 +250,16 @@ describe('InterviewController', () => {
       fileType: 'image',
     };
     interviewService.addFile.mockResolvedValueOnce(file);
-    mockOcrService.recognize.mockRejectedValueOnce(new Error('ocr fail'));
+    let ocrResolve: (v: any) => void;
+    const ocrPromise = new Promise((resolve) => {
+      ocrResolve = resolve;
+    });
+    mockOcrService.recognize.mockReturnValueOnce(ocrPromise);
+    interviewService.updateFileOcr.mockResolvedValueOnce({
+      id: 'f1',
+      ocrStatus: 'done',
+    });
+    interviewService.aggregateOcrText.mockResolvedValueOnce({ id: 'iv1' });
 
     const result = await controller.uploadFile('iv1', {
       path: '/upload/test.png',
@@ -259,6 +272,71 @@ describe('InterviewController', () => {
       'image',
     );
     expect(result).toEqual(file);
+
+    ocrResolve!({ text: 'ocr result' });
+    await flushMicrotasks();
+
+    expect(interviewService.updateFileOcr).toHaveBeenCalledWith(
+      'f1',
+      { text: 'ocr result' },
+      'done',
+    );
+    expect(interviewService.aggregateOcrText).toHaveBeenCalledWith('iv1');
+  });
+
+  it('POST /:id/files handles OCR failure gracefully', async () => {
+    const file = {
+      id: 'f1',
+      interviewId: 'iv1',
+      filePath: '/upload/test.png',
+      fileType: 'image',
+    };
+    interviewService.addFile.mockResolvedValueOnce(file);
+    let ocrReject: (e: any) => void;
+    const ocrPromise = new Promise((_, reject) => {
+      ocrReject = reject;
+    });
+    mockOcrService.recognize.mockReturnValueOnce(ocrPromise);
+    interviewService.updateFileOcr.mockResolvedValueOnce({
+      id: 'f1',
+      ocrStatus: 'failed',
+    });
+
+    await controller.uploadFile('iv1', {
+      path: '/upload/test.png',
+      mimetype: 'image/png',
+    } as Express.Multer.File);
+
+    ocrReject!(new Error('OCR failed'));
+    await flushMicrotasks();
+
+    expect(interviewService.updateFileOcr).toHaveBeenCalledWith(
+      'f1',
+      null,
+      'failed',
+    );
+  });
+
+  it('POST /:id/files classifies PDF mimetype correctly', async () => {
+    const file = {
+      id: 'f2',
+      interviewId: 'iv1',
+      filePath: '/upload/doc.pdf',
+      fileType: 'pdf',
+    };
+    interviewService.addFile.mockResolvedValueOnce(file);
+    mockOcrService.recognize.mockRejectedValueOnce(new Error('ocr fail'));
+
+    await controller.uploadFile('iv1', {
+      path: '/upload/doc.pdf',
+      mimetype: 'application/pdf',
+    } as Express.Multer.File);
+
+    expect(interviewService.addFile).toHaveBeenCalledWith(
+      'iv1',
+      '/upload/doc.pdf',
+      'pdf',
+    );
   });
 
   it('POST /:id/files throws BadRequestException when no file', async () => {
@@ -277,10 +355,10 @@ describe('InterviewController', () => {
     expect(result).toEqual(files);
   });
 
-  it('DELETE /:id/files/:fileId delegates to deleteFile', async () => {
+  it('DELETE /:id/files/:fileId delegates to deleteFile with interviewId', async () => {
     interviewService.deleteFile.mockResolvedValueOnce(undefined);
     await controller.deleteFile('iv1', 'f1');
-    expect(interviewService.deleteFile).toHaveBeenCalledWith('f1');
+    expect(interviewService.deleteFile).toHaveBeenCalledWith('f1', 'iv1');
   });
 
   it('PUT /:id/status delegates to updateStatus', async () => {
