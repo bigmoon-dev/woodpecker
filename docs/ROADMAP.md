@@ -119,6 +119,13 @@
 - POST extract-summary 端点 + structuredSummary (jsonb) 字段
 - 70 test suites, 708 tests, Interview 模块覆盖率 Stmts 98.9%
 
+### 访谈档案（前端）
+- 8个React页面：InterviewList, InterviewDetail, FileUpload, TemplateManage, FollowUpManage, OcrEditor, SummaryView, TimelineView
+- 5个路由集成到teacher和admin路由组
+- 菜单集成到TeacherLayout和AdminLayout
+- Vitest + React Testing Library测试环境，75个测试全通过
+- 代码覆盖率：Stmts 98.04%, Lines 98.96%
+
 ---
 
 ## 规划中
@@ -154,23 +161,24 @@
 > psych-scale-server 内嵌 NestJS 模块，复用 PostgreSQL + EncryptionService + RBAC 体系。
 > 产品定义（product_definition_v1）→ 系统设计（design_system_v2）→ 编码（coding_v1）全流程完成。
 
-- **访谈记录管理**（v0.20.0 后端已实现，UI 待开发）
+- **访谈记录管理**（v0.20.0 后端已实现，v0.22.0 前端已实现）
   - ~~为来访学生建立访谈档案~~（InterviewService CRUD + PII 加密存储）
   - ~~上传手写表格图片/PDF 扫描件~~（InterviewFile 实体 + OcrService）
   - ~~本地 OCR 提取文字~~（PaddleOCR 子进程，30s 超时 + 3 次重试 + mock 模式）
-  - OCR 结果校对编辑界面（待前端开发）
+  - ~~OCR 结果校对编辑界面~~（v0.22.0 OcrEditor 页面）
 
-- **访谈模板**（v0.20.0 后端已实现，UI 待开发）
+- **访谈模板**（v0.20.0 后端已实现，v0.22.0 前端已实现）
   - ~~老师上传电子版模板~~（TemplateService CRUD）
+  - ~~模板管理页~~（v0.22.0 TemplateManage 页面 + JSON字段验证）
   - 上传扫描件时自动匹配模板提取字段（待开发）
 
-- **时间线关联**（v0.20.0 后端已实现，UI 待开发）
+- **时间线关联**（v0.20.0 后端已实现，v0.22.0 前端已实现）
   - ~~时间线视图：访谈记录 ↔ 量表测评 ↔ 预警事件~~（TimelineService）
-  - 前端时间线组件（待开发）
+  - ~~前端时间线组件~~（v0.22.0 TimelineView 页面）
 
-- **随访提醒**（v0.20.0 后端已实现，UI 待开发）
+- **随访提醒**（v0.20.0 后端已实现，v0.22.0 前端已实现）
   - ~~创建/查询/完成随访提醒~~（FollowUpService）
-  - 前端提醒管理界面（待开发）
+  - ~~前端提醒管理界面~~（v0.22.0 FollowUpManage 页面）
 
 - **隐私控制**（v0.20.0 已实现）
   - 访谈内容仅心理老师和 admin 可见，班主任不可见
@@ -182,11 +190,16 @@
   - 从 OCR 文本中按大纲自动提取摘要
   - 提取大纲可配置（后续集成本地小模型自动生成）
 
-- **前端页面**（待开发）
-  - 访谈列表页
-  - OCR 校对编辑页
-  - 模板管理页
-  - 时间线视图组件
+- **前端页面**（v0.22.0 已实现）
+  - ~~访谈列表页~~（InterviewList + ProTable）
+  - ~~访谈详情页~~（InterviewDetail + Tabs布局）
+  - ~~文件上传页~~（FileUpload + Upload.Dragger）
+  - ~~OCR 校对编辑页~~（OcrEditor）
+  - ~~模板管理页~~（TemplateManage + JSON验证）
+  - ~~随访提醒页~~（FollowUpManage + Tabs）
+  - ~~时间线视图组件~~（TimelineView）
+  - ~~结构化摘要页~~（SummaryView）
+  - 75个测试用例，98%+代码覆盖率
 
 ### 移动端适配
 - 响应式布局优化

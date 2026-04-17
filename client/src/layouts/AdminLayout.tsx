@@ -23,6 +23,13 @@ const menuRoutes = [
   { path: '/admin/grades', name: '年级管理' },
   { path: '/admin/classes', name: '班级管理' },
   { path: '/admin/students', name: '学生管理' },
+  { path: '/admin/interviews', name: '访谈档案',
+    routes: [
+      { path: '/admin/interviews', name: '访谈列表' },
+      { path: '/admin/interviews/templates', name: '模板管理' },
+      { path: '/admin/interviews/follow-ups', name: '随访提醒' },
+    ],
+  },
 ];
 
 export default function AdminLayout() {
