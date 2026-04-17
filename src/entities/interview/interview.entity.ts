@@ -41,6 +41,9 @@ export class Interview {
   @Column({ type: 'uuid', nullable: true })
   templateId: string;
 
+  @Column({ type: 'jsonb', nullable: true })
+  structuredSummary: Record<string, unknown> | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

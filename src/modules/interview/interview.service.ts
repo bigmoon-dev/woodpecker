@@ -1,5 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Interview } from '../../entities/interview/interview.entity';
@@ -11,6 +15,13 @@ import { User } from '../../entities/auth/user.entity';
 import { Role } from '../../entities/auth/role.entity';
 import { EncryptionService } from '../core/encryption.service';
 import { DataScopeFilter, DataScope } from '../auth/data-scope-filter';
+import {
+  RISK_LEVELS,
+  INTERVIEW_STATUSES,
+  VALID_TRANSITIONS,
+  InterviewStatus,
+  RiskLevel,
+} from './interview.types';
 
 @Injectable()
 export class InterviewService {
@@ -35,6 +46,19 @@ export class InterviewService {
 
   async create(dto: any): Promise<Interview> {
     const data: Partial<Interview> = { ...dto };
+    if (dto.riskLevel && !RISK_LEVELS.includes(dto.riskLevel as RiskLevel)) {
+      throw new BadRequestException(
+        `Invalid riskLevel: ${dto.riskLevel}. Valid values: ${RISK_LEVELS.join(', ')}`,
+      );
+    }
+    if (
+      dto.status &&
+      !INTERVIEW_STATUSES.includes(dto.status as InterviewStatus)
+    ) {
+      throw new BadRequestException(
+        `Invalid status: ${dto.status}. Valid values: ${INTERVIEW_STATUSES.join(', ')}`,
+      );
+    }
     if (dto.content) {
       data.encryptedContent = await this.encryptionService.encrypt(
         dto.content as string,
@@ -125,6 +149,12 @@ export class InterviewService {
     const interview = await this.interviewRepo.findOne({ where: { id } });
     if (!interview) throw new NotFoundException(`Interview ${id} not found`);
 
+    if (dto.riskLevel && !RISK_LEVELS.includes(dto.riskLevel as RiskLevel)) {
+      throw new BadRequestException(
+        `Invalid riskLevel: ${dto.riskLevel}. Valid values: ${RISK_LEVELS.join(', ')}`,
+      );
+    }
+
     const data: Partial<Interview> = { ...dto };
     if (dto.content) {
       data.encryptedContent = await this.encryptionService.encrypt(
@@ -139,6 +169,27 @@ export class InterviewService {
     }
 
     Object.assign(interview, data);
+    return this.interviewRepo.save(interview);
+  }
+
+  async updateStatus(id: string, newStatus: string): Promise<Interview> {
+    const interview = await this.interviewRepo.findOne({ where: { id } });
+    if (!interview) throw new NotFoundException(`Interview ${id} not found`);
+
+    if (!INTERVIEW_STATUSES.includes(newStatus as InterviewStatus)) {
+      throw new BadRequestException(
+        `Invalid status: ${newStatus}. Valid values: ${INTERVIEW_STATUSES.join(', ')}`,
+      );
+    }
+
+    const allowed = VALID_TRANSITIONS[interview.status] ?? [];
+    if (!allowed.includes(newStatus)) {
+      throw new BadRequestException(
+        `Cannot transition from '${interview.status}' to '${newStatus}'. Allowed: [${allowed.join(', ')}]`,
+      );
+    }
+
+    interview.status = newStatus;
     return this.interviewRepo.save(interview);
   }
 
@@ -157,6 +208,12 @@ export class InterviewService {
     return this.fileRepo.save(file);
   }
 
+  async deleteFile(fileId: string): Promise<void> {
+    const file = await this.fileRepo.findOne({ where: { id: fileId } });
+    if (!file) throw new NotFoundException(`File ${fileId} not found`);
+    await this.fileRepo.remove(file);
+  }
+
   async updateFileOcr(
     fileId: string,
     ocrResult: any,
@@ -171,5 +228,22 @@ export class InterviewService {
 
   async getFiles(interviewId: string): Promise<InterviewFile[]> {
     return this.fileRepo.find({ where: { interviewId } });
+  }
+
+  async aggregateOcrText(interviewId: string): Promise<Interview> {
+    const interview = await this.interviewRepo.findOne({
+      where: { id: interviewId },
+    });
+    if (!interview)
+      throw new NotFoundException(`Interview ${interviewId} not found`);
+    const files = await this.fileRepo.find({
+      where: { interviewId },
+      order: { createdAt: 'ASC' },
+    });
+    const texts = files
+      .filter((f) => f.ocrResult?.text)
+      .map((f) => (f.ocrResult as Record<string, unknown>).text as string);
+    interview.ocrText = texts.join('\n');
+    return this.interviewRepo.save(interview);
   }
 }

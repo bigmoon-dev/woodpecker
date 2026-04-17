@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { InterviewService } from './interview.service';
 import { Interview } from '../../entities/interview/interview.entity';
 import { InterviewFile } from '../../entities/interview/interview-file.entity';
@@ -32,6 +32,7 @@ describe('InterviewService', () => {
     findOne: jest.fn(),
     create: jest.fn((d) => d),
     save: jest.fn((d) => Promise.resolve(d)),
+    remove: jest.fn(),
   };
   const mockTemplateRepo = { find: jest.fn() };
   const mockReminderRepo = { find: jest.fn() };
@@ -386,6 +387,181 @@ describe('InterviewService', () => {
       const result = await service.getFiles('iv1');
 
       expect(result).toEqual(files);
+    });
+  });
+
+  describe('create (enum validation)', () => {
+    it('should reject invalid riskLevel', async () => {
+      await expect(
+        service.create({
+          studentId: 's1',
+          psychologistId: 'p1',
+          interviewDate: '2024-01-01',
+          riskLevel: 'extreme',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should reject invalid status', async () => {
+      await expect(
+        service.create({
+          studentId: 's1',
+          psychologistId: 'p1',
+          interviewDate: '2024-01-01',
+          status: 'unknown',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should accept valid riskLevel', async () => {
+      mockInterviewRepo.save.mockResolvedValue({
+        id: 'iv1',
+        riskLevel: 'warning',
+      });
+
+      await service.create({
+        studentId: 's1',
+        psychologistId: 'p1',
+        interviewDate: '2024-01-01',
+        riskLevel: 'warning',
+      });
+
+      expect(interviewRepo.save).toHaveBeenCalled();
+    });
+  });
+
+  describe('update (riskLevel validation)', () => {
+    it('should reject invalid riskLevel on update', async () => {
+      mockInterviewRepo.findOne.mockResolvedValue({
+        id: 'iv1',
+        status: 'draft',
+      });
+
+      await expect(
+        service.update('iv1', { riskLevel: 'extreme' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('updateStatus', () => {
+    it('should transition draft → reviewed', async () => {
+      mockInterviewRepo.findOne.mockResolvedValue({
+        id: 'iv1',
+        status: 'draft',
+      });
+      mockInterviewRepo.save.mockImplementation((d) => Promise.resolve(d));
+
+      const result = await service.updateStatus('iv1', 'reviewed');
+
+      expect(result.status).toBe('reviewed');
+    });
+
+    it('should transition reviewed → completed', async () => {
+      mockInterviewRepo.findOne.mockResolvedValue({
+        id: 'iv1',
+        status: 'reviewed',
+      });
+      mockInterviewRepo.save.mockImplementation((d) => Promise.resolve(d));
+
+      const result = await service.updateStatus('iv1', 'completed');
+
+      expect(result.status).toBe('completed');
+    });
+
+    it('should reject invalid transition draft → completed', async () => {
+      mockInterviewRepo.findOne.mockResolvedValue({
+        id: 'iv1',
+        status: 'draft',
+      });
+
+      await expect(service.updateStatus('iv1', 'completed')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should reject transition from completed', async () => {
+      mockInterviewRepo.findOne.mockResolvedValue({
+        id: 'iv1',
+        status: 'completed',
+      });
+
+      await expect(service.updateStatus('iv1', 'draft')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should reject invalid status value', async () => {
+      mockInterviewRepo.findOne.mockResolvedValue({
+        id: 'iv1',
+        status: 'draft',
+      });
+
+      await expect(service.updateStatus('iv1', 'unknown')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw NotFoundException when interview not found', async () => {
+      mockInterviewRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.updateStatus('missing', 'reviewed')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('deleteFile', () => {
+    it('should delete a file', async () => {
+      mockFileRepo.findOne.mockResolvedValue({ id: 'f1' });
+
+      await service.deleteFile('f1');
+
+      expect(fileRepo.remove).toHaveBeenCalledWith({ id: 'f1' });
+    });
+
+    it('should throw NotFoundException when file not found', async () => {
+      mockFileRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.deleteFile('missing')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('aggregateOcrText', () => {
+    it('should aggregate OCR text from files', async () => {
+      mockInterviewRepo.findOne.mockResolvedValue({ id: 'iv1', ocrText: '' });
+      mockFileRepo.find.mockResolvedValue([
+        { ocrResult: { text: 'page 1' } },
+        { ocrResult: { text: 'page 2' } },
+      ]);
+      mockInterviewRepo.save.mockImplementation((d) => Promise.resolve(d));
+
+      const result = await service.aggregateOcrText('iv1');
+
+      expect(result.ocrText).toBe('page 1\npage 2');
+    });
+
+    it('should skip files without OCR text', async () => {
+      mockInterviewRepo.findOne.mockResolvedValue({ id: 'iv1', ocrText: '' });
+      mockFileRepo.find.mockResolvedValue([
+        { ocrResult: { text: 'page 1' } },
+        { ocrResult: null },
+        { ocrResult: {} },
+      ]);
+      mockInterviewRepo.save.mockImplementation((d) => Promise.resolve(d));
+
+      const result = await service.aggregateOcrText('iv1');
+
+      expect(result.ocrText).toBe('page 1');
+    });
+
+    it('should throw NotFoundException when interview not found', async () => {
+      mockInterviewRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.aggregateOcrText('missing')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

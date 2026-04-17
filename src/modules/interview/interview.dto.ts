@@ -5,7 +5,9 @@ import {
   IsString,
   IsNotEmpty,
   IsArray,
+  IsIn,
 } from 'class-validator';
+import { InterviewStatus } from './interview.types';
 
 export class CreateInterviewDto {
   @IsUUID()
@@ -82,4 +84,24 @@ export class CreateFollowUpDto {
   @IsOptional()
   @IsString()
   notes?: string;
+}
+
+export class UpdateStatusDto {
+  @IsIn(Object.values(InterviewStatus))
+  status: string;
+}
+
+export class UpdateTemplateDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsArray()
+  fields?: any[];
 }

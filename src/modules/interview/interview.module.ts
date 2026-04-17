@@ -15,6 +15,7 @@ import { OcrService } from './ocr.service';
 import { TemplateService } from './template.service';
 import { TimelineService } from './timeline.service';
 import { FollowUpService } from './follow-up.service';
+import { SummaryExtractionService } from './summary-extraction.service';
 import { CoreModule } from '../core/core.module';
 import { AuthModule } from '../auth/auth.module';
 
@@ -41,12 +42,14 @@ import { AuthModule } from '../auth/auth.module';
     TemplateService,
     TimelineService,
     FollowUpService,
+    SummaryExtractionService,
   ],
   exports: [
     InterviewService,
     TemplateService,
     TimelineService,
     FollowUpService,
+    SummaryExtractionService,
   ],
 })
 export class InterviewModule {}

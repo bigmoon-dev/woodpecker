@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
 import { InterviewController } from './interview.controller';
 import { InterviewService } from './interview.service';
 import { TemplateService } from './template.service';
 import { TimelineService } from './timeline.service';
 import { FollowUpService } from './follow-up.service';
 import { OcrService } from './ocr.service';
+import { SummaryExtractionService } from './summary-extraction.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RbacGuard } from '../auth/rbac.guard';
 
@@ -16,6 +18,7 @@ describe('InterviewController', () => {
   let timelineService: any;
   let followUpService: any;
   let ocrService: any;
+  let summaryExtractionService: any;
 
   const mockInterviewService = {
     findAll: jest.fn(),
@@ -25,10 +28,17 @@ describe('InterviewController', () => {
     delete: jest.fn(),
     getFiles: jest.fn(),
     updateFileOcr: jest.fn(),
+    addFile: jest.fn(),
+    deleteFile: jest.fn(),
+    updateStatus: jest.fn(),
+    aggregateOcrText: jest.fn(),
   };
   const mockTemplateService = {
     findAll: jest.fn(),
+    findOne: jest.fn(),
     create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
   };
   const mockTimelineService = {
     getTimeline: jest.fn(),
@@ -41,6 +51,9 @@ describe('InterviewController', () => {
   const mockOcrService = {
     recognize: jest.fn(),
   };
+  const mockSummaryExtractionService = {
+    extract: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -52,6 +65,10 @@ describe('InterviewController', () => {
         { provide: TimelineService, useValue: mockTimelineService },
         { provide: FollowUpService, useValue: mockFollowUpService },
         { provide: OcrService, useValue: mockOcrService },
+        {
+          provide: SummaryExtractionService,
+          useValue: mockSummaryExtractionService,
+        },
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -66,6 +83,7 @@ describe('InterviewController', () => {
     timelineService = module.get(TimelineService);
     followUpService = module.get(FollowUpService);
     ocrService = module.get(OcrService);
+    summaryExtractionService = module.get(SummaryExtractionService);
   });
 
   it('GET / delegates to findAll', async () => {
@@ -127,6 +145,26 @@ describe('InterviewController', () => {
     templateService.findAll.mockResolvedValueOnce([]);
     await controller.findAllTemplates();
     expect(templateService.findAll).toHaveBeenCalled();
+  });
+
+  it('GET /templates/:id delegates to findOneTemplate', async () => {
+    templateService.findOne.mockResolvedValueOnce({ id: 't1', name: 'T1' });
+    await controller.findOneTemplate('t1');
+    expect(templateService.findOne).toHaveBeenCalledWith('t1');
+  });
+
+  it('PUT /templates/:id delegates to updateTemplate', async () => {
+    templateService.update.mockResolvedValueOnce({ id: 't1', name: 'Updated' });
+    await controller.updateTemplate('t1', { name: 'Updated' } as any);
+    expect(templateService.update).toHaveBeenCalledWith('t1', {
+      name: 'Updated',
+    });
+  });
+
+  it('DELETE /templates/:id delegates to deleteTemplate', async () => {
+    templateService.delete.mockResolvedValueOnce(undefined);
+    await controller.deleteTemplate('t1');
+    expect(templateService.delete).toHaveBeenCalledWith('t1');
   });
 
   it('POST /templates delegates to createTemplate', async () => {
@@ -192,11 +230,77 @@ describe('InterviewController', () => {
     expect((result as any).text).toBe('result');
   });
 
-  it('POST /:id/files/:fileId/ocr returns error when file not found', async () => {
+  it('POST /:id/files/:fileId/ocr throws BadRequestException when file not found', async () => {
     interviewService.getFiles.mockResolvedValueOnce([]);
 
-    const result = await controller.triggerOcr('iv1', 'f1');
+    await expect(controller.triggerOcr('iv1', 'f1')).rejects.toThrow(
+      BadRequestException,
+    );
+  });
 
-    expect(result).toEqual({ error: 'File not found' });
+  it('POST /:id/files returns interview file', async () => {
+    const file = {
+      id: 'f1',
+      interviewId: 'iv1',
+      filePath: '/upload/test.png',
+      fileType: 'image',
+    };
+    interviewService.addFile.mockResolvedValueOnce(file);
+    mockOcrService.recognize.mockRejectedValueOnce(new Error('ocr fail'));
+
+    const result = await controller.uploadFile('iv1', {
+      path: '/upload/test.png',
+      mimetype: 'image/png',
+    } as Express.Multer.File);
+
+    expect(interviewService.addFile).toHaveBeenCalledWith(
+      'iv1',
+      '/upload/test.png',
+      'image',
+    );
+    expect(result).toEqual(file);
+  });
+
+  it('POST /:id/files throws BadRequestException when no file', async () => {
+    await expect(controller.uploadFile('iv1', undefined)).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('GET /:id/files delegates to getFiles', async () => {
+    const files = [{ id: 'f1', interviewId: 'iv1' }];
+    interviewService.getFiles.mockResolvedValueOnce(files);
+
+    const result = await controller.getFiles('iv1');
+
+    expect(interviewService.getFiles).toHaveBeenCalledWith('iv1');
+    expect(result).toEqual(files);
+  });
+
+  it('DELETE /:id/files/:fileId delegates to deleteFile', async () => {
+    interviewService.deleteFile.mockResolvedValueOnce(undefined);
+    await controller.deleteFile('iv1', 'f1');
+    expect(interviewService.deleteFile).toHaveBeenCalledWith('f1');
+  });
+
+  it('PUT /:id/status delegates to updateStatus', async () => {
+    interviewService.updateStatus.mockResolvedValueOnce({
+      id: 'iv1',
+      status: 'reviewed',
+    });
+    await controller.updateStatus('iv1', { status: 'reviewed' } as any);
+    expect(interviewService.updateStatus).toHaveBeenCalledWith(
+      'iv1',
+      'reviewed',
+    );
+  });
+
+  it('POST /:id/extract-summary delegates to summaryExtractionService', async () => {
+    summaryExtractionService.extract.mockResolvedValueOnce({
+      id: 'iv1',
+      structuredSummary: { name: 'test' },
+    });
+    await controller.extractSummary('iv1');
+    expect(summaryExtractionService.extract).toHaveBeenCalledWith('iv1');
   });
 });

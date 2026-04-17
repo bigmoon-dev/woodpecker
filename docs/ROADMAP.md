@@ -112,7 +112,12 @@
 - OcrService（PaddleOCR 子进程 + mock 模式 + 30s 超时 + 3 次重试）
 - TimelineService（学生全维度时间线：访谈 ↔ 测评 ↔ 预警）
 - 角色数据隔离（班主任不可见访谈内容）
-- 69 test suites, 673 tests, Interview 模块覆盖率 Stmts 98.9%
+- RiskLevel enum (normal/attention/warning/crisis) + InterviewStatus enum (draft/reviewed/completed) + 状态机校验
+- 模板 CRUD 路由补全（GET/PUT/DELETE /templates/:id）
+- 文件上传（Multer FileInterceptor, 10MB）+ 自动 OCR + 聚合
+- SummaryExtractionService: 从 OCR 文本按模板字段提取结构化摘要
+- POST extract-summary 端点 + structuredSummary (jsonb) 字段
+- 70 test suites, 708 tests, Interview 模块覆盖率 Stmts 98.9%
 
 ---
 
