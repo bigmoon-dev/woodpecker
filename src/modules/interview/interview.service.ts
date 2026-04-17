@@ -208,9 +208,14 @@ export class InterviewService {
     return this.fileRepo.save(file);
   }
 
-  async deleteFile(fileId: string): Promise<void> {
+  async deleteFile(fileId: string, interviewId?: string): Promise<void> {
     const file = await this.fileRepo.findOne({ where: { id: fileId } });
     if (!file) throw new NotFoundException(`File ${fileId} not found`);
+    if (interviewId && file.interviewId !== interviewId) {
+      throw new BadRequestException(
+        `File ${fileId} does not belong to interview ${interviewId}`,
+      );
+    }
     await this.fileRepo.remove(file);
   }
 

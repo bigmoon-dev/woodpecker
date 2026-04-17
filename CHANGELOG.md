@@ -2,6 +2,17 @@
 
 All notable changes to **啄木鸟心理预警辅助系统 (Woodpecker)**.
 
+## [0.21.1] - 2026-04-17
+
+### Fixed
+
+#### 审计修复（P1 issues from cross-phase audit）
+
+- 注册 MulterModule 到 InterviewModule，配置上传目录 `./public/uploads/interviews`
+- DELETE /:id/files/:fileId 添加 interviewId 属主校验，防止越权删除
+- 补充 async OCR 管道测试：成功路径（updateFileOcr + aggregateOcrText）、失败路径（status='failed'）
+- 补充 PDF mimetype 分类测试
+
 ## [0.21.0] - 2026-04-17
 
 ### Added

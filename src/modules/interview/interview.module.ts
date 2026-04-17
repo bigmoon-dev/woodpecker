@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { MulterModule } from '@nestjs/platform-express';
 import { Interview } from '../../entities/interview/interview.entity';
 import { InterviewFile } from '../../entities/interview/interview-file.entity';
 import { InterviewTemplate } from '../../entities/interview/interview-template.entity';
@@ -21,6 +22,7 @@ import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
+    MulterModule.register({ dest: './public/uploads/interviews' }),
     TypeOrmModule.forFeature([
       Interview,
       InterviewFile,
