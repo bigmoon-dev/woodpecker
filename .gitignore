@@ -6,3 +6,6 @@ public/assets/
 .env
 .env.*
 !.env.example
+node_modules/**/linux-*
+data/
+*.tar.gz
