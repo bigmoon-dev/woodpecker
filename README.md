@@ -24,6 +24,8 @@
 - **审计日志** — 全局操作审计拦截器，记录关键操作轨迹
 - **插件系统** — 核心功能不可插拔，扩展功能（Excel 导入、报告导出）通过插件实现
 - **单进程部署** — 前端 Vite 构建输出至 `public/`，NestJS 单进程同时服务 API 和静态文件
+- **桌面单机版** — Windows/macOS 一键安装包，内嵌 PostgreSQL，无需配置即可使用
+- **访谈档案** — 支持心理老师创建访谈记录、文件上传、OCR 文字识别、结构化摘要
 
 ## 技术栈
 
@@ -73,6 +75,7 @@
 | `admin` | `src/modules/admin/` | 角色/权限/用户管理 |
 | `consent` | `src/modules/consent/` | 知情同意签署与验证 |
 | `audit` | `src/modules/audit/` | 操作审计日志、数据脱敏定时任务 |
+| `interview` | `src/modules/interview/` | 访谈档案管理、OCR、结构化摘要 |
 | `plugin` | `src/modules/plugin/` | 插件注册/启用/禁用、Hook 总线 |
 | `core` | `src/modules/core/` | 加密工具服务 |
 
@@ -82,7 +85,7 @@
 |------|------|
 | 登录 | `/login` |
 | 学生 | 任务列表、在线答题、我的结果、知情同意 |
-| 教师/心理师 | 量表管理、任务管理、班级/年级结果、预警处理 |
+| 教师/心理师 | 量表管理、任务管理、班级/年级结果、预警处理、访谈档案 |
 | 管理员 | 角色管理、用户管理、插件管理、年级/班级/学生管理 |
 
 ## 快速开始
@@ -150,6 +153,47 @@ npm run start:prod
 ```
 
 服务启动后访问 `http://localhost:3000`。
+
+## 桌面单机版
+
+面向无技术背景的终端用户，无需安装 Node.js 或 PostgreSQL，双击即可使用。
+
+### 支持平台
+
+| 平台 | 架构 | 文件 |
+|------|------|------|
+| Windows 11 | x64 | `woodpecker-win32-x64.zip` |
+| macOS (M 系列) | arm64 | `woodpecker-darwin-arm64.tar.gz` |
+| Linux | x64 | `woodpecker-linux-x64.tar.gz` |
+
+### 使用方法
+
+1. 解压安装包
+2. **Windows**: 双击 `start.bat`；**macOS/Linux**: 运行 `./start.sh`
+3. 首次启动自动初始化内置数据库和表结构（约 10 秒）
+4. 浏览器自动打开 `http://localhost:3000`
+5. 默认账号 `admin`，默认密码 `admin123`
+
+### 技术方案
+
+- **embedded-postgres** — 自动下载对应平台 PostgreSQL 二进制，解压即用
+- **bcryptjs** — 纯 JS 实现，消除 C++ 编译依赖
+- **Node.js 捆绑** — 内含 Node.js 运行时，无需额外安装
+- **DB_SYNC 模式** — 使用 TypeORM synchronize 从实体自动生成 schema（避免迁移兼容问题）
+
+### 构建桌面版
+
+```bash
+# 构建全部三个平台
+bash scripts/build-desktop.sh
+
+# 构建指定平台
+bash scripts/build-desktop.sh darwin   # macOS arm64
+bash scripts/build-desktop.sh win32    # Windows x64
+bash scripts/build-desktop.sh linux    # Linux x64
+```
+
+构建产物输出到 `build/desktop/`。
 
 ## API 概览
 
@@ -251,11 +295,16 @@ psych-scale-server/
 │   │   ├── scale/           # 量表管理
 │   │   ├── scoring/         # 计分引擎
 │   │   └── task/            # 测评任务
+│   │   └── interview/       # 访谈档案
 │   ├── entities/            # TypeORM 实体
 │   ├── plugins/             # 插件实现
 │   ├── common/              # 公共工具
 │   ├── migrations/          # 数据库迁移
 │   └── main.ts              # 入口文件
+├── desktop/                 # 桌面版启动入口
+│   └── start-desktop.js
+├── scripts/                 # 构建/部署脚本
+│   └── build-desktop.sh
 ├── public/                  # 前端构建输出
 ├── test/                    # E2E 测试
 └── package.json
