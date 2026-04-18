@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="0.22.1"
+VERSION=$(node -p "require('./package.json').version")
 NODE_VERSION="v20.11.1"
 BASE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD_DIR="$BASE_DIR/build/desktop"

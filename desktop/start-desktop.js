@@ -3,6 +3,8 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const http = require('http');
+const readline = require('readline');
+const ota = require('./ota-client');
 
 const APP_DIR = path.resolve(__dirname, '..');
 const DATA_DIR = path.join(APP_DIR, 'data');
@@ -47,6 +49,80 @@ function openBrowser(url) {
 
 async function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function askQuestion(query) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  return new Promise((resolve) => {
+    rl.question(query, (answer) => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+async function checkAndApplyOta() {
+  try {
+    const updateInfo = await ota.checkForUpdate();
+    if (!updateInfo) {
+      console.log('  ✅ 当前已是最新版本');
+      return false;
+    }
+
+    if (updateInfo.needsFullUpdate) {
+      console.log(`  ⚠️  发现新版本 ${updateInfo.version}，需要下载全量安装包`);
+      return false;
+    }
+
+    const sizeInfo = updateInfo.size?.common ? ` (${formatBytes(updateInfo.size.common)})` : '';
+    console.log(`  📦 发现新版本 ${updateInfo.version}（当前 ${ota.getCurrentVersion()}）${sizeInfo}`);
+    if (updateInfo.notes) {
+      console.log(`     更新说明: ${updateInfo.notes}`);
+    }
+
+    const answer = await askQuestion('  是否更新? [Y/n] ');
+    if (answer && answer.toLowerCase() !== 'y') {
+      console.log('  已跳过更新');
+      return false;
+    }
+
+    const { manifest, diff } = await ota.getUpdateFiles(updateInfo.manifestUrl);
+    if (diff.length === 0) {
+      console.log('  ✅ 所有文件已是最新');
+      ota.setCurrentVersion(updateInfo.version);
+      return false;
+    }
+
+    const diffSize = diff.reduce((s, f) => s + f.size, 0);
+    console.log(`  备份当前版本...`);
+    ota.backupCurrent(diff);
+
+    console.log(`  下载更新 (${diff.length} 个文件)...`);
+    const buffers = await ota.downloadFiles(updateInfo.version, diff, (downloaded, total) => {
+      const pct = total > 0 ? Math.round((downloaded / total) * 100) : 0;
+      const bar = '█'.repeat(Math.floor(pct / 5)) + '░'.repeat(20 - Math.floor(pct / 5));
+      process.stdout.write(`\r  [${bar}] ${pct}% (${formatBytes(downloaded)}/${formatBytes(total)})`);
+    });
+    console.log('');
+
+    console.log('  应用更新...');
+    ota.applyUpdate(buffers);
+    ota.setPendingVersion(updateInfo.version);
+    console.log('  ✅ 更新已应用');
+    return true;
+  } catch (err) {
+    console.log(`  ⚠️  更新检查失败: ${err.message}`);
+    return false;
+  }
 }
 
 async function ensureDatabase() {
@@ -134,7 +210,7 @@ async function main() {
     fs.mkdirSync(DB_DATA_DIR, { recursive: true });
   }
 
-  console.log('[1/4] 启动内置数据库...');
+  console.log('[1/5] 启动内置数据库...');
   const pg = new EmbeddedPostgres({
     database: 'postgres',
     port: PG_PORT,
@@ -149,6 +225,11 @@ async function main() {
     await pg.initialise();
   }
   await pg.start();
+
+  const finalized = ota.finalizePendingVersion();
+  if (finalized) {
+    console.log(`  ✅ OTA 更新已完成: v${finalized}`);
+  }
 
   let waited = 0;
   while (waited < 10) {
@@ -165,11 +246,14 @@ async function main() {
   }
   console.log('  ✅ 数据库引擎就绪');
 
-  console.log('[2/4] 准备数据库...');
+  console.log('[2/5] 准备数据库...');
   await ensureDatabase();
   console.log('  ✅ 数据库就绪');
 
-  console.log('[3/4] 启动应用服务...');
+  console.log('[3/5] 检查更新...');
+  const needsRestart = await checkAndApplyOta();
+
+  console.log('[4/5] 启动应用服务...');
   const env = {
     ...process.env,
     PORT: String(APP_PORT),
@@ -216,7 +300,7 @@ async function main() {
     }
   });
 
-  console.log('[4/4] 等待应用就绪...');
+  console.log('[5/5] 等待应用就绪...');
   const appUrl = `http://localhost:${APP_PORT}`;
   try {
     await waitUntilReady(`${appUrl}/health`, 60);

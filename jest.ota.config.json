@@ -1,0 +1,26 @@
+{
+  "testEnvironment": "node",
+  "testMatch": [
+    "<rootDir>/desktop/__tests__/**/*.test.js",
+    "<rootDir>/scripts/__tests__/**/*.test.js"
+  ],
+  "collectCoverageFrom": [
+    "desktop/ota-client.js",
+    "scripts/publish-ota.js"
+  ],
+  "coverageDirectory": "coverage/ota",
+  "coverageThreshold": {
+    "./desktop/ota-client.js": {
+      "branches": 80,
+      "functions": 90,
+      "lines": 90,
+      "statements": 90
+    },
+    "./scripts/publish-ota.js": {
+      "branches": 25,
+      "functions": 75,
+      "lines": 25,
+      "statements": 25
+    }
+  }
+}
