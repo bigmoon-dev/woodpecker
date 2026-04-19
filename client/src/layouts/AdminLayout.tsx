@@ -16,6 +16,7 @@ const menuRoutes = [
   },
   { path: '/admin/tasks', name: '任务管理' },
   { path: '/admin/alerts', name: '预警管理' },
+  { path: '/admin/followup', name: '随访工作台' },
   { path: '/admin/results', name: '测评结果' },
   { path: '/admin/roles', name: '角色管理' },
   { path: '/admin/users', name: '用户管理' },

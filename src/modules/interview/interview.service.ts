@@ -71,7 +71,21 @@ export class InterviewService {
       );
     }
     const interview = this.interviewRepo.create(data);
-    return this.interviewRepo.save(interview);
+    const saved = await this.interviewRepo.save(interview);
+
+    if (dto.alertId) {
+      await this.reminderRepo
+        .createQueryBuilder()
+        .update(FollowUpReminder)
+        .set({ interviewId: saved.id })
+        .where('studentId = :studentId', { studentId: dto.studentId })
+        .andWhere('interviewId IS NULL')
+        .andWhere('completed = false')
+        .execute()
+        .catch(() => {});
+    }
+
+    return saved;
   }
 
   async findAll(

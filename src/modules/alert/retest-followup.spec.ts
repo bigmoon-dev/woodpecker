@@ -13,6 +13,7 @@ import { User } from '../../entities/auth/user.entity';
 import { Role } from '../../entities/auth/role.entity';
 import { TaskResult } from '../../entities/task/task-result.entity';
 import { TaskAnswer } from '../../entities/task/task-answer.entity';
+import { FollowUpReminder } from '../../entities/interview/follow-up-reminder.entity';
 import { ResultService } from '../result/result.service';
 import { HookBus } from '../plugin/hook-bus';
 import { DataScopeFilter } from '../auth/data-scope-filter';
@@ -45,7 +46,11 @@ describe('Alert Followup Retest Comparison', () => {
         { provide: getRepositoryToken(AlertRecord), useValue: alertRepo },
         {
           provide: getRepositoryToken(AlertHandlingRecord),
-          useValue: { create: jest.fn((d) => d), save: jest.fn((d) => Promise.resolve(d)), find: jest.fn() },
+          useValue: {
+            create: jest.fn((d) => d),
+            save: jest.fn((d) => Promise.resolve(d)),
+            find: jest.fn(),
+          },
         },
         {
           provide: getRepositoryToken(AlertNotification),
@@ -63,6 +68,13 @@ describe('Alert Followup Retest Comparison', () => {
         { provide: getRepositoryToken(Role), useValue: { find: jest.fn() } },
         { provide: getRepositoryToken(TaskResult), useValue: resultRepo },
         { provide: getRepositoryToken(TaskAnswer), useValue: answerRepo },
+        {
+          provide: getRepositoryToken(FollowUpReminder),
+          useValue: {
+            create: jest.fn((d) => d),
+            save: jest.fn((d) => Promise.resolve(d)),
+          },
+        },
         { provide: HookBus, useValue: mockHookBus },
         { provide: DataScopeFilter, useValue: mockDataScopeFilter },
         { provide: ResultService, useValue: mockResultService },

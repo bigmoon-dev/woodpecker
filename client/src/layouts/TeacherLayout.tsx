@@ -18,6 +18,7 @@ const menuRoutes = [
   { path: '/teacher/tasks', name: '测评任务' },
   { path: '/teacher/results', name: '结果查看' },
   { path: '/teacher/alerts', name: '预警管理' },
+  { path: '/teacher/followup', name: '随访工作台' },
   { path: '/teacher/interviews', name: '访谈档案',
     routes: [
       { path: '/teacher/interviews', name: '访谈列表' },

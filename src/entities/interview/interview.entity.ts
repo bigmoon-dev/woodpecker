@@ -4,7 +4,10 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { AlertRecord } from '../audit/alert-record.entity';
 
 @Entity('interviews')
 export class Interview {
@@ -16,6 +19,13 @@ export class Interview {
 
   @Column({ type: 'uuid' })
   psychologistId: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  alertId: string | null;
+
+  @ManyToOne(() => AlertRecord)
+  @JoinColumn({ name: 'alertId' })
+  alert: AlertRecord;
 
   @Column({ type: 'timestamp' })
   interviewDate: Date;

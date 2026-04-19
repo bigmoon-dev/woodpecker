@@ -11,8 +11,8 @@ export class FollowUpReminder {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid' })
-  interviewId: string;
+  @Column({ type: 'uuid', nullable: true })
+  interviewId: string | null;
 
   @Column({ type: 'uuid' })
   studentId: string;

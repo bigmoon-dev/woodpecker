@@ -35,7 +35,10 @@ describe('InterviewService', () => {
     remove: jest.fn(),
   };
   const mockTemplateRepo = { find: jest.fn() };
-  const mockReminderRepo = { find: jest.fn() };
+  const mockReminderRepo = {
+    find: jest.fn(),
+    createQueryBuilder: jest.fn(),
+  };
   const mockStudentRepo = { findOne: jest.fn() };
   const mockUserRepo = { findOne: jest.fn() };
   const mockRoleRepo = { findOne: jest.fn() };
@@ -118,6 +121,43 @@ describe('InterviewService', () => {
       await service.create(dto);
 
       expect(encryptionService.encrypt).not.toHaveBeenCalled();
+    });
+
+    it('should update FollowUpReminder when alertId is provided', async () => {
+      const dto = {
+        studentId: 's1',
+        psychologistId: 'p1',
+        interviewDate: '2024-01-01',
+        alertId: 'a1',
+      };
+      mockInterviewRepo.save.mockResolvedValue({ ...dto, id: 'iv1' });
+      const mockQb = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      };
+      mockReminderRepo.createQueryBuilder.mockReturnValue(mockQb);
+
+      await service.create(dto);
+
+      expect(mockReminderRepo.createQueryBuilder).toHaveBeenCalled();
+      expect(mockQb.set).toHaveBeenCalledWith({ interviewId: 'iv1' });
+      expect(mockQb.execute).toHaveBeenCalled();
+    });
+
+    it('should not update FollowUpReminder when alertId is not provided', async () => {
+      const dto = {
+        studentId: 's1',
+        psychologistId: 'p1',
+        interviewDate: '2024-01-01',
+      };
+      mockInterviewRepo.save.mockResolvedValue({ ...dto, id: 'iv1' });
+
+      await service.create(dto);
+
+      expect(mockReminderRepo.createQueryBuilder).not.toHaveBeenCalled();
     });
   });
 

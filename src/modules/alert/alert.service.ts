@@ -4,6 +4,7 @@ import { Repository, In } from 'typeorm';
 import { AlertRecord } from '../../entities/audit/alert-record.entity';
 import { AlertHandlingRecord } from '../../entities/audit/alert-handling-record.entity';
 import { AlertNotification } from '../../entities/audit/alert-notification.entity';
+import { FollowUpReminder } from '../../entities/interview/follow-up-reminder.entity';
 import { Student } from '../../entities/org/student.entity';
 import { Class } from '../../entities/org/class.entity';
 import { User } from '../../entities/auth/user.entity';
@@ -41,6 +42,8 @@ export class AlertService {
     private resultRepo: Repository<TaskResult>,
     @InjectRepository(TaskAnswer)
     private answerRepo: Repository<TaskAnswer>,
+    @InjectRepository(FollowUpReminder)
+    private followupRepo: Repository<FollowUpReminder>,
     private hookBus: HookBus,
     private dataScopeFilter: DataScopeFilter,
     private resultService: ResultService,
@@ -190,6 +193,16 @@ export class AlertService {
     } catch {
       retestComparisonUrl = null;
     }
+
+    const reminderDate = new Date(Date.now() + 7 * 24 * 3600 * 1000);
+    await this.followupRepo.save(
+      this.followupRepo.create({
+        studentId: saved.studentId,
+        interviewId: null,
+        reminderDate,
+        notes: `预警随访: ${handleNote}`,
+      }),
+    );
 
     return { alert: saved, retestComparisonUrl };
   }

@@ -21,6 +21,7 @@ import { ExportModule } from './modules/export/export.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { HealthModule } from './modules/health/health.module';
 import { InterviewModule } from './modules/interview/interview.module';
+import { StudentModule } from './modules/student/student.module';
 import {
   Scale,
   ScaleItem,
@@ -124,6 +125,7 @@ import {
     DashboardModule,
     HealthModule,
     InterviewModule,
+    StudentModule,
   ],
   providers: [
     {

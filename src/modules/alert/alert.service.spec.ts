@@ -6,6 +6,7 @@ import { AlertService } from './alert.service';
 import { AlertRecord } from '../../entities/audit/alert-record.entity';
 import { AlertHandlingRecord } from '../../entities/audit/alert-handling-record.entity';
 import { AlertNotification } from '../../entities/audit/alert-notification.entity';
+import { FollowUpReminder } from '../../entities/interview/follow-up-reminder.entity';
 import { Student } from '../../entities/org/student.entity';
 import { Class } from '../../entities/org/class.entity';
 import { User } from '../../entities/auth/user.entity';
@@ -56,6 +57,10 @@ describe('AlertService', () => {
   const mockEncryptionService = {
     batchDecrypt: jest.fn().mockResolvedValue(new Map()),
   };
+  const mockFollowupRepo = {
+    create: jest.fn((d) => d),
+    save: jest.fn((d) => Promise.resolve(d)),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -84,6 +89,10 @@ describe('AlertService', () => {
         { provide: DataScopeFilter, useValue: mockDataScopeFilter },
         { provide: ResultService, useValue: mockResultService },
         { provide: EncryptionService, useValue: mockEncryptionService },
+        {
+          provide: getRepositoryToken(FollowUpReminder),
+          useValue: mockFollowupRepo,
+        },
       ],
     }).compile();
 
@@ -348,6 +357,35 @@ describe('AlertService', () => {
       const result = await service.followup('a1', 'u1', 'note');
 
       expect(result.retestComparisonUrl).toBeNull();
+    });
+
+    it('should create a FollowUpReminder on followup', async () => {
+      mockAlertRepo.findOne.mockResolvedValue({
+        id: 'a1',
+        resultId: 'r1',
+        studentId: 's1',
+        status: 'handled',
+      });
+      mockAlertRepo.save.mockResolvedValue({
+        id: 'a1',
+        resultId: 'r1',
+        studentId: 's1',
+        status: 'followup',
+        handledById: 'u1',
+        handleNote: 'note',
+      });
+      mockResultRepo.findOne.mockResolvedValue(null);
+
+      await service.followup('a1', 'u1', 'note');
+
+      expect(mockFollowupRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          studentId: 's1',
+          interviewId: null,
+          notes: '预警随访: note',
+        }),
+      );
+      expect(mockFollowupRepo.save).toHaveBeenCalled();
     });
   });
 

@@ -30,6 +30,10 @@ export class CreateInterviewDto {
   @IsOptional()
   @IsUUID()
   templateId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  alertId?: string;
 }
 
 export class UpdateInterviewDto {
