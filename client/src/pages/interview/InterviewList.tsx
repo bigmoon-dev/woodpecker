@@ -25,12 +25,21 @@ export default function InterviewList() {
   const navigate = useNavigate();
   const location = useLocation();
   const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/teacher';
+  const locationState = location.state as { studentId?: string; studentName?: string } | null;
 
   useEffect(() => {
     request.get('/interviews/templates/all').then((res: any) => {
       const list = res.data || res;
       setTemplates(Array.isArray(list) ? list : []);
     });
+    if (locationState?.studentId) {
+      setOpen(true);
+      setTimeout(() => {
+        form.setFieldsValue({
+          studentId: locationState.studentId,
+        });
+      }, 100);
+    }
   }, []);
 
   const handleCreate = async (values: any) => {

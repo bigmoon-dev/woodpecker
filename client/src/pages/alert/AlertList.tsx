@@ -1,10 +1,15 @@
 import { useRef, useState } from 'react';
 import { ProTable, type ActionType, type ProColumns } from '@ant-design/pro-components';
-import { Button, Modal, Form, Input, message, Tag, Descriptions, Timeline, Spin } from 'antd';
+import { Button, Modal, Form, Input, message, Tag, Descriptions, Timeline, Spin, Tooltip } from 'antd';
+import { SafetyCertificateOutlined } from '@ant-design/icons';
+import { useNavigate, useLocation } from 'react-router-dom';
 import request from '../../utils/request';
 
 export default function AlertList() {
   const actionRef = useRef<ActionType>();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/teacher';
   const [handleOpen, setHandleOpen] = useState(false);
   const [followupOpen, setFollowupOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -113,6 +118,16 @@ export default function AlertList() {
           return { data: res.data || res, total: res.total, success: true };
         }}
         search={false}
+        toolBarRender={() => [
+          <Tooltip title="统一管理待随访学生" key="followup">
+            <Button
+              icon={<SafetyCertificateOutlined />}
+              onClick={() => navigate(`${basePath}/followup`)}
+            >
+              随访工作台
+            </Button>
+          </Tooltip>,
+        ]}
       />
       <Modal title="处理预警" open={handleOpen} onCancel={() => setHandleOpen(false)} onOk={() => doAction('handle')}>
         <Form form={form} layout="vertical">
@@ -140,7 +155,18 @@ export default function AlertList() {
         ) : detail ? (
           <>
             <Descriptions column={2} size="small" bordered style={{ marginBottom: 16 }}>
-              <Descriptions.Item label="学生">{detail.studentName || detail.studentId}</Descriptions.Item>
+              <Descriptions.Item label="学生">
+                {detail.studentName || detail.studentId}
+                {detail.studentId && (
+                  <Button
+                    type="link"
+                    size="small"
+                    onClick={() => navigate(`${basePath}/students/${detail.studentId}/profile`)}
+                  >
+                    查看档案
+                  </Button>
+                )}
+              </Descriptions.Item>
               <Descriptions.Item label="等级">
                 <Tag color={{ red: 'red', yellow: 'orange', green: 'green' }[detail.level] || 'default'}>
                   {{ red: '红色预警', yellow: '黄色预警', green: '正常' }[detail.level] || detail.level}
