@@ -91,7 +91,9 @@ function main() {
   const VERSION_DIR = path.join(UPDATE_DIR, NEW_VERSION);
   const FILES_DIR = path.join(VERSION_DIR, 'files');
   const PRIVATE_KEY_PATH = path.join(__dirname, 'ota-keys', 'private.key');
-  const OTA_BASE_URL = 'https://bigmoon.top/woodpecker/updates';
+  const OTA_BASE_URL = process.env.OTA_BASE_URL || '';
+  const OTA_REMOTE_HOST = process.env.OTA_REMOTE_HOST || '';
+  const OTA_REMOTE_PATH = process.env.OTA_REMOTE_PATH || '';
 
   if (!validateSemver(NEW_VERSION)) {
     console.error(`错误: 无效版本号格式 "${NEW_VERSION}"，需要 semver (x.y.z)`);
@@ -176,9 +178,13 @@ function main() {
   console.log('  ✅ version.json 已生成\n');
 
   if (!SKIP_UPLOAD) {
+    if (!OTA_REMOTE_HOST || !OTA_REMOTE_PATH) {
+      console.error('  错误: 需要设置 OTA_REMOTE_HOST 和 OTA_REMOTE_PATH 环境变量');
+      process.exit(1);
+    }
     step(++currentStep, TOTAL_STEPS, '上传到服务器');
-    const remoteBase = 'root@bigmoon.top:/var/www/woodpecker/updates';
-    execSync(`ssh root@bigmoon.top "mkdir -p /var/www/woodpecker/updates/${NEW_VERSION}/files"`, { stdio: 'inherit' });
+    const remoteBase = `${OTA_REMOTE_HOST}:${OTA_REMOTE_PATH}`;
+    execSync(`ssh ${OTA_REMOTE_HOST} "mkdir -p ${OTA_REMOTE_PATH}/${NEW_VERSION}/files"`, { stdio: 'inherit' });
     execSync(`scp ${UPDATE_DIR}/version.json ${remoteBase}/version.json`, { stdio: 'inherit' });
     execSync(`scp ${VERSION_DIR}/manifest.json ${remoteBase}/${NEW_VERSION}/manifest.json`, { stdio: 'inherit' });
     execSync(`scp -r ${FILES_DIR}/* ${remoteBase}/${NEW_VERSION}/files/`, { stdio: 'inherit' });

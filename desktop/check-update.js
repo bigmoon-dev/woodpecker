@@ -38,7 +38,7 @@ async function main() {
 
   if (updateInfo.needsFullUpdate) {
     console.log(`发现新版本 ${updateInfo.version}，但当前版本过低，需要下载全量安装包`);
-    console.log(`请访问 https://bigmoon.top/woodpecker 下载最新版本`);
+    console.log(`请访问项目主页下载最新版本`);
     return;
   }
 

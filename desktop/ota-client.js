@@ -6,7 +6,7 @@ const http = require('http');
 
 const _config = {
   appDir: path.resolve(__dirname, '..'),
-  baseUrl: 'https://bigmoon.top/woodpecker/updates',
+  baseUrl: process.env.OTA_BASE_URL || '',
   scanDirs: ['dist', 'public', 'desktop'],
   maxBackups: 2,
   defaultTimeout: 10000,

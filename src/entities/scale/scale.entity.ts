@@ -42,7 +42,7 @@ export class Scale {
   @Column({ type: 'uuid', nullable: true })
   parentScaleId: string | null;
 
-  @Column({ length: 20, default: 'draft' })
+  @Column({ length: 20, default: 'draft', nullable: true })
   versionStatus: string;
 
   @Column({ type: 'timestamp', nullable: true })
