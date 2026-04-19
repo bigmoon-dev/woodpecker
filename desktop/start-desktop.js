@@ -4,6 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const http = require('http');
 const readline = require('readline');
+const crypto = require('crypto');
 const ota = require('./ota-client');
 
 const APP_DIR = path.resolve(__dirname, '..');
@@ -291,7 +292,7 @@ async function main() {
     DB_DATABASE: DB_NAME,
     DB_SYNC: 'true',
     DB_LOGGING: 'false',
-    JWT_SECRET: 'woodpecker-desktop-jwt-secret',
+    JWT_SECRET: crypto.randomBytes(32).toString('hex'),
     ENCRYPTION_KEY: 'woodpecker-desktop-encryption-key',
     AUDIT_HMAC_SECRET: 'woodpecker-desktop-hmac-secret',
     NODE_ENV: 'production',
