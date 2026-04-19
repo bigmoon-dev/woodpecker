@@ -12,9 +12,16 @@ const _config = {
   defaultTimeout: 10000,
 };
 
-function _versionFile() { return path.join(_config.appDir, 'version.json'); }
-function _pendingFile() { return path.join(_config.appDir, '.pending-version'); }
-function _backupDir() { return path.join(_config.appDir, 'backup'); }
+function _getConfig() {
+  if (!_config.baseUrl && process.env.OTA_BASE_URL) {
+    _config.baseUrl = process.env.OTA_BASE_URL;
+  }
+  return _config;
+}
+
+function _versionFile() { return path.join(_getConfig().appDir, 'version.json'); }
+function _pendingFile() { return path.join(_getConfig().appDir, '.pending-version'); }
+function _backupDir() { return path.join(_getConfig().appDir, 'backup'); }
 
 function configure(opts) {
   Object.assign(_config, opts);
@@ -39,7 +46,7 @@ function getCurrentVersion() {
     }
   } catch {}
   try {
-    const pkg = JSON.parse(fs.readFileSync(path.join(_config.appDir, 'package.json'), 'utf8'));
+    const pkg = JSON.parse(fs.readFileSync(path.join(_getConfig().appDir, 'package.json'), 'utf8'));
     return pkg.version || null;
   } catch {}
   return null;
@@ -58,9 +65,9 @@ function setCurrentVersion(version, extra) {
 function fetchJson(url, timeout) {
   return new Promise((resolve, reject) => {
     const mod = url.startsWith('https') ? https : http;
-    const req = mod.get(url, { timeout: timeout || _config.defaultTimeout }, (res) => {
-      if (res.statusCode === 301 || res.statusCode === 302) {
-        fetchJson(res.headers.location, timeout).then(resolve).catch(reject);
+  const req = mod.get(url, { timeout: timeout || _getConfig().defaultTimeout }, (res) => {
+    if (res.statusCode === 301 || res.statusCode === 302) {
+      fetchJson(res.headers.location, timeout).then(resolve).catch(reject);
         return;
       }
       if (res.statusCode !== 200) {
@@ -89,9 +96,9 @@ function fetchJson(url, timeout) {
 function fetchBinary(url, timeout) {
   return new Promise((resolve, reject) => {
     const mod = url.startsWith('https') ? https : http;
-    const req = mod.get(url, { timeout: timeout || _config.defaultTimeout }, (res) => {
-      if (res.statusCode === 301 || res.statusCode === 302) {
-        fetchBinary(res.headers.location, timeout).then(resolve).catch(reject);
+  const req = mod.get(url, { timeout: timeout || _getConfig().defaultTimeout }, (res) => {
+    if (res.statusCode === 301 || res.statusCode === 302) {
+      fetchBinary(res.headers.location, timeout).then(resolve).catch(reject);
         return;
       }
       if (res.statusCode !== 200) {
@@ -129,8 +136,8 @@ function computeFileHash(filePath) {
 
 function getLocalFileHashes() {
   const hashes = {};
-  for (const dir of _config.scanDirs) {
-    const fullDir = path.join(_config.appDir, dir);
+  for (const dir of _getConfig().scanDirs) {
+    const fullDir = path.join(_getConfig().appDir, dir);
     if (!fs.existsSync(fullDir)) continue;
     _scanDir(fullDir, dir, hashes);
   }
@@ -166,7 +173,7 @@ function computeDiff(localHashes, remoteManifest) {
 async function checkForUpdate() {
   const currentVersion = getCurrentVersion();
   if (!currentVersion) return null;
-  const versionInfo = await fetchJson(`${_config.baseUrl}/version.json`);
+  const versionInfo = await fetchJson(`${_getConfig().baseUrl}/version.json`);
   if (!versionInfo || !versionInfo.version) return null;
   if (compareVersions(versionInfo.version, currentVersion) <= 0) return null;
   if (versionInfo.minVersion && compareVersions(currentVersion, versionInfo.minVersion) < 0) {
@@ -188,9 +195,9 @@ async function getUpdateFiles(manifestUrl) {
 function fetchBinaryWithProgress(url, timeout, onChunk) {
   return new Promise((resolve, reject) => {
     const mod = url.startsWith('https') ? https : http;
-    const req = mod.get(url, { timeout: timeout || _config.defaultTimeout }, (res) => {
-      if (res.statusCode === 301 || res.statusCode === 302) {
-        fetchBinaryWithProgress(res.headers.location, timeout, onChunk).then(resolve).catch(reject);
+  const req = mod.get(url, { timeout: timeout || _getConfig().defaultTimeout }, (res) => {
+    if (res.statusCode === 301 || res.statusCode === 302) {
+      fetchBinaryWithProgress(res.headers.location, timeout, onChunk).then(resolve).catch(reject);
         return;
       }
       if (res.statusCode !== 200) {
@@ -219,8 +226,8 @@ async function downloadFiles(version, diffFiles, onProgress) {
   const totalSize = diffFiles.reduce((s, f) => s + f.size, 0);
 
   for (const file of diffFiles) {
-    const url = `${_config.baseUrl}/${version}/files/${file.path}`;
-    const buf = await fetchBinaryWithProgress(url, _config.defaultTimeout, (chunkSize) => {
+    const url = `${_getConfig().baseUrl}/${version}/files/${file.path}`;
+    const buf = await fetchBinaryWithProgress(url, _getConfig().defaultTimeout, (chunkSize) => {
       downloaded += chunkSize;
       if (onProgress) onProgress(downloaded, totalSize, file.path);
     });
@@ -242,7 +249,7 @@ function backupCurrent(diffFiles) {
   fs.mkdirSync(backupPath, { recursive: true });
 
   for (const file of diffFiles) {
-    const srcPath = path.join(_config.appDir, file.path);
+    const srcPath = path.join(_getConfig().appDir, file.path);
     if (fs.existsSync(srcPath)) {
       const destPath = path.join(backupPath, file.path);
       fs.mkdirSync(path.dirname(destPath), { recursive: true });
@@ -264,7 +271,7 @@ function _cleanupOldBackups() {
     })
     .sort((a, b) => compareVersions(b, a));
 
-  while (versions.length > _config.maxBackups) {
+  while (versions.length > _getConfig().maxBackups) {
     const old = versions.pop();
     fs.rmSync(path.join(bdir, old), { recursive: true });
   }
@@ -272,7 +279,7 @@ function _cleanupOldBackups() {
 
 function applyUpdate(buffers) {
   for (const { path: relPath, buffer } of buffers) {
-    const destPath = path.join(_config.appDir, relPath);
+    const destPath = path.join(_getConfig().appDir, relPath);
     fs.mkdirSync(path.dirname(destPath), { recursive: true });
     fs.writeFileSync(destPath, buffer);
   }
@@ -298,7 +305,7 @@ function rollback(backupVersion) {
   if (!fs.existsSync(backupPath)) {
     throw new Error(`Backup not found: ${backupVersion}`);
   }
-  _restoreDir(backupPath, _config.appDir);
+  _restoreDir(backupPath, _getConfig().appDir);
   setCurrentVersion(backupVersion);
 }
 

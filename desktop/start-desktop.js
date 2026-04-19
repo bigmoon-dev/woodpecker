@@ -288,6 +288,13 @@ async function main() {
   console.log('  ✅ 数据库就绪');
 
   console.log('[3/5] 检查更新...');
+  const otaConfigPath = path.join(APP_DIR, 'desktop', 'ota-config.json');
+  if (fs.existsSync(otaConfigPath)) {
+    try {
+      const otaConfig = JSON.parse(fs.readFileSync(otaConfigPath, 'utf8'));
+      if (otaConfig.baseUrl) ota.configure({ baseUrl: otaConfig.baseUrl });
+    } catch {}
+  }
   const needsRestart = await checkAndApplyOta();
 
   console.log('[4/5] 启动应用服务...');

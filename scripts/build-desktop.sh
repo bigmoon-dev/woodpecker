@@ -98,19 +98,40 @@ title 啄木鸟心理预警辅助系统
 "%~dp0node\node.exe" "%~dp0desktop\start-desktop.js"
 pause
 BATEOF
-    sed -i 's/$/\r/' "$target/start.bat"
-  else
-    cat > "$target/start.sh" <<'SHEOF'
+     sed -i 's/$/\r/' "$target/start.bat"
+   else
+     cat > "$target/start.sh" <<'SHEOF'
 #!/bin/bash
 DIR="$(cd "$(dirname "$0")" && pwd)"
 exec "$DIR/node/node" "$DIR/desktop/start-desktop.js"
 SHEOF
-    chmod +x "$target/start.sh"
-  fi
+     chmod +x "$target/start.sh"
+   fi
+
+   # Generate OTA config from env var
+   if [ -n "$OTA_BASE_URL" ]; then
+     echo "{\"baseUrl\":\"$OTA_BASE_URL\"}" > "$target/desktop/ota-config.json"
+     echo "  ✅ OTA config generated (baseUrl: $OTA_BASE_URL)"
+   fi
 
   local size
   size=$(du -sh "$target" 2>/dev/null | cut -f1)
   echo "  ✅ ${platform}-${arch} 构建完成 ($size)"
+
+  echo "  打包压缩..."
+  local archive_ext="tar.gz"
+  local archive_name="woodpecker-v${VERSION}-${platform}-${arch}"
+  if [ "$platform" = "win32" ]; then
+    archive_ext="zip"
+    cd "$target"
+    zip -r -q "$BUILD_DIR/${archive_name}.zip" .
+    cd "$BASE_DIR"
+  else
+    tar czf "$BUILD_DIR/${archive_name}.tar.gz" -C "$target" .
+  fi
+  local archive_size
+  archive_size=$(ls -lh "$BUILD_DIR/${archive_name}.${archive_ext}" | awk '{print $5}')
+  echo "  ✅ 压缩包: $BUILD_DIR/${archive_name}.${archive_ext} ($archive_size)"
 }
 
 mkdir -p "$BUILD_DIR"

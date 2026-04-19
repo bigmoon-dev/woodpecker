@@ -10,3 +10,4 @@ node_modules/**/linux-*
 data/
 *.tar.gz
 scripts/ota-keys/private.key
+desktop/ota-config.json
