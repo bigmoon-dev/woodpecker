@@ -38,13 +38,33 @@ export class AlertController {
     @Req() req: AuthenticatedRequest,
     @Query() pagination: PaginationQueryDto,
     @Query('status') status?: string,
+    @Query('studentId') studentId?: string,
   ) {
+    if (studentId) {
+      return this.alertService.findByStudent(
+        studentId,
+        pagination.page,
+        pagination.pageSize,
+      );
+    }
     return this.alertService.findAll(
       req.dataScope,
       status,
       pagination.page,
       pagination.pageSize,
     );
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    const alert = await this.alertService.findOne(id);
+    const history = await this.alertService.findHandlingHistory(id);
+    return { ...alert, handlingHistory: history };
+  }
+
+  @Get(':id/history')
+  async getHistory(@Param('id') id: string) {
+    return this.alertService.findHandlingHistory(id);
   }
 
   @Post(':id/handle')

@@ -166,17 +166,13 @@ function computeDiff(localHashes, remoteManifest) {
 async function checkForUpdate() {
   const currentVersion = getCurrentVersion();
   if (!currentVersion) return null;
-  try {
-    const versionInfo = await fetchJson(`${_config.baseUrl}/version.json`);
-    if (!versionInfo || !versionInfo.version) return null;
-    if (compareVersions(versionInfo.version, currentVersion) <= 0) return null;
-    if (versionInfo.minVersion && compareVersions(currentVersion, versionInfo.minVersion) < 0) {
-      return { ...versionInfo, needsFullUpdate: true };
-    }
-    return { ...versionInfo, needsFullUpdate: false };
-  } catch {
-    return null;
+  const versionInfo = await fetchJson(`${_config.baseUrl}/version.json`);
+  if (!versionInfo || !versionInfo.version) return null;
+  if (compareVersions(versionInfo.version, currentVersion) <= 0) return null;
+  if (versionInfo.minVersion && compareVersions(currentVersion, versionInfo.minVersion) < 0) {
+    return { ...versionInfo, needsFullUpdate: true };
   }
+  return { ...versionInfo, needsFullUpdate: false };
 }
 
 async function getUpdateFiles(manifestUrl) {
@@ -189,6 +185,34 @@ async function getUpdateFiles(manifestUrl) {
   return { manifest, diff };
 }
 
+function fetchBinaryWithProgress(url, timeout, onChunk) {
+  return new Promise((resolve, reject) => {
+    const mod = url.startsWith('https') ? https : http;
+    const req = mod.get(url, { timeout: timeout || _config.defaultTimeout }, (res) => {
+      if (res.statusCode === 301 || res.statusCode === 302) {
+        fetchBinaryWithProgress(res.headers.location, timeout, onChunk).then(resolve).catch(reject);
+        return;
+      }
+      if (res.statusCode !== 200) {
+        reject(new Error(`HTTP ${res.statusCode}`));
+        return;
+      }
+      const chunks = [];
+      res.on('data', (c) => {
+        chunks.push(c);
+        if (onChunk) onChunk(c.length);
+      });
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+      res.on('error', reject);
+    });
+    req.on('error', reject);
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Request timeout'));
+    });
+  });
+}
+
 async function downloadFiles(version, diffFiles, onProgress) {
   const buffers = [];
   let downloaded = 0;
@@ -196,14 +220,15 @@ async function downloadFiles(version, diffFiles, onProgress) {
 
   for (const file of diffFiles) {
     const url = `${_config.baseUrl}/${version}/files/${file.path}`;
-    const buf = await fetchBinary(url);
+    const buf = await fetchBinaryWithProgress(url, _config.defaultTimeout, (chunkSize) => {
+      downloaded += chunkSize;
+      if (onProgress) onProgress(downloaded, totalSize, file.path);
+    });
     const hash = crypto.createHash('sha256').update(buf).digest('hex');
     if (hash !== file.hash) {
       throw new Error(`Hash mismatch for ${file.path}: expected ${file.hash}, got ${hash}`);
     }
     buffers.push({ path: file.path, buffer: buf });
-    downloaded += file.size;
-    if (onProgress) onProgress(downloaded, totalSize);
   }
   return buffers;
 }

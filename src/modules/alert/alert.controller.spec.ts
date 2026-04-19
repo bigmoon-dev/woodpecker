@@ -15,6 +15,9 @@ describe('AlertController', () => {
     followup: jest.fn(),
     findNotifications: jest.fn(),
     markNotificationRead: jest.fn(),
+    findOne: jest.fn(),
+    findHandlingHistory: jest.fn(),
+    findByStudent: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -38,13 +41,53 @@ describe('AlertController', () => {
       dataScope: { scope: 'all', userId: 'u1' },
     } as any;
     alertService.findAll.mockResolvedValueOnce({ data: [], total: 0 });
-    await controller.findAll(req, { page: 1, pageSize: 20 } as any, undefined);
+    await controller.findAll(
+      req,
+      { page: 1, pageSize: 20 } as any,
+      undefined,
+      undefined,
+    );
     expect(alertService.findAll).toHaveBeenCalledWith(
       { scope: 'all', userId: 'u1' },
       undefined,
       1,
       20,
     );
+  });
+
+  it('GET /?studentId= delegates to findByStudent', async () => {
+    const req = {
+      dataScope: { scope: 'all', userId: 'u1' },
+    } as any;
+    alertService.findByStudent.mockResolvedValueOnce({ data: [], total: 0 });
+    await controller.findAll(
+      req,
+      { page: 1, pageSize: 20 } as any,
+      undefined,
+      's1',
+    );
+    expect(alertService.findByStudent).toHaveBeenCalledWith('s1', 1, 20);
+    expect(alertService.findAll).not.toHaveBeenCalled();
+  });
+
+  it('GET /:id returns alert with handling history', async () => {
+    alertService.findOne.mockResolvedValueOnce({ id: 'a1', status: 'handled' });
+    alertService.findHandlingHistory.mockResolvedValueOnce([
+      { id: 'h1', action: 'handle', note: 'note1' },
+    ]);
+    const result = await controller.findOne('a1');
+    expect(result).toEqual({
+      id: 'a1',
+      status: 'handled',
+      handlingHistory: [{ id: 'h1', action: 'handle', note: 'note1' }],
+    });
+  });
+
+  it('GET /:id/history returns handling history', async () => {
+    const history = [{ id: 'h1', action: 'handle', note: 'note1' }];
+    alertService.findHandlingHistory.mockResolvedValueOnce(history);
+    const result = await controller.getHistory('a1');
+    expect(result).toEqual(history);
   });
 
   it('POST /:id/handle delegates to handle with req.user.id', async () => {

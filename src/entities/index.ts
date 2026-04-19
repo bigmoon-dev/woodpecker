@@ -18,6 +18,7 @@ export { Plugin } from './plugin/plugin.entity';
 export { ConsentRecord } from './consent/consent-record.entity';
 export { AuditLog } from './audit/audit-log.entity';
 export { AlertRecord } from './audit/alert-record.entity';
+export { AlertHandlingRecord } from './audit/alert-handling-record.entity';
 export { AlertNotification } from './audit/alert-notification.entity';
 export { PluginHook } from './plugin/plugin-hook.entity';
 export { PluginLog } from './plugin/plugin-log.entity';

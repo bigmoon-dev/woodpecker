@@ -5,6 +5,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { AlertService } from './alert.service';
 import { AlertController } from './alert.controller';
 import { AlertRecord } from '../../entities/audit/alert-record.entity';
+import { AlertHandlingRecord } from '../../entities/audit/alert-handling-record.entity';
 import { AlertNotification } from '../../entities/audit/alert-notification.entity';
 import { Student } from '../../entities/org/student.entity';
 import { Class } from '../../entities/org/class.entity';
@@ -42,6 +43,10 @@ describe('Alert Followup Retest Comparison', () => {
       providers: [
         AlertService,
         { provide: getRepositoryToken(AlertRecord), useValue: alertRepo },
+        {
+          provide: getRepositoryToken(AlertHandlingRecord),
+          useValue: { create: jest.fn((d) => d), save: jest.fn((d) => Promise.resolve(d)), find: jest.fn() },
+        },
         {
           provide: getRepositoryToken(AlertNotification),
           useValue: { findOne: jest.fn(), save: jest.fn() },

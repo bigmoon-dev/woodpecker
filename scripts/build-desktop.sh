@@ -98,6 +98,7 @@ title 啄木鸟心理预警辅助系统
 "%~dp0node\node.exe" "%~dp0desktop\start-desktop.js"
 pause
 BATEOF
+    sed -i 's/$/\r/' "$target/start.bat"
   else
     cat > "$target/start.sh" <<'SHEOF'
 #!/bin/bash

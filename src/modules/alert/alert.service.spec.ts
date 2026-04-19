@@ -4,6 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { AlertService } from './alert.service';
 import { AlertRecord } from '../../entities/audit/alert-record.entity';
+import { AlertHandlingRecord } from '../../entities/audit/alert-handling-record.entity';
 import { AlertNotification } from '../../entities/audit/alert-notification.entity';
 import { Student } from '../../entities/org/student.entity';
 import { Class } from '../../entities/org/class.entity';
@@ -19,6 +20,7 @@ import { EncryptionService } from '../core/encryption.service';
 describe('AlertService', () => {
   let service: AlertService;
   let alertRepo: any;
+  let handlingRepo: any;
   let notificationRepo: any;
   let hookBus: any;
   let dataScopeFilter: any;
@@ -28,6 +30,11 @@ describe('AlertService', () => {
     findOne: jest.fn(),
     create: jest.fn((d) => d),
     save: jest.fn((d) => Promise.resolve({ ...d, id: d.id || 'alert1' })),
+  };
+  const mockHandlingRepo = {
+    create: jest.fn((d) => d),
+    save: jest.fn((d) => Promise.resolve(d)),
+    find: jest.fn(),
   };
   const mockNotificationRepo = {
     findAndCount: jest.fn(),
@@ -60,6 +67,10 @@ describe('AlertService', () => {
           useValue: mockAlertRepo,
         },
         {
+          provide: getRepositoryToken(AlertHandlingRecord),
+          useValue: mockHandlingRepo,
+        },
+        {
           provide: getRepositoryToken(AlertNotification),
           useValue: mockNotificationRepo,
         },
@@ -78,6 +89,7 @@ describe('AlertService', () => {
 
     service = module.get<AlertService>(AlertService);
     alertRepo = module.get(getRepositoryToken(AlertRecord));
+    handlingRepo = module.get(getRepositoryToken(AlertHandlingRecord));
     notificationRepo = module.get(getRepositoryToken(AlertNotification));
     hookBus = module.get(HookBus);
     dataScopeFilter = module.get(DataScopeFilter);
@@ -173,10 +185,16 @@ describe('AlertService', () => {
   });
 
   describe('handle', () => {
-    it('should handle an alert', async () => {
+    it('should handle an alert and save history', async () => {
       mockAlertRepo.findOne.mockResolvedValue({
         id: 'a1',
         status: 'pending',
+      });
+      mockAlertRepo.save.mockResolvedValue({
+        id: 'a1',
+        status: 'handled',
+        handledById: 'u1',
+        handleNote: 'handled note',
       });
 
       await service.handle('a1', 'u1', 'handled note');
@@ -188,6 +206,13 @@ describe('AlertService', () => {
           handleNote: 'handled note',
         }),
       );
+      expect(handlingRepo.create).toHaveBeenCalledWith({
+        alertId: 'a1',
+        handledById: 'u1',
+        action: 'handle',
+        note: 'handled note',
+      });
+      expect(handlingRepo.save).toHaveBeenCalled();
     });
 
     it('should emit on:alert.resolved after handle', async () => {
@@ -232,12 +257,20 @@ describe('AlertService', () => {
   });
 
   describe('followup', () => {
-    it('should followup an alert', async () => {
+    it('should followup an alert and save history', async () => {
       mockAlertRepo.findOne.mockResolvedValue({
         id: 'a1',
         resultId: 'r1',
         studentId: 's1',
         status: 'handled',
+      });
+      mockAlertRepo.save.mockResolvedValue({
+        id: 'a1',
+        resultId: 'r1',
+        studentId: 's1',
+        status: 'followup',
+        handledById: 'u1',
+        handleNote: 'followup note',
       });
       mockResultRepo.findOne.mockResolvedValue(null);
 
@@ -250,6 +283,13 @@ describe('AlertService', () => {
           handleNote: 'followup note',
         }),
       );
+      expect(handlingRepo.create).toHaveBeenCalledWith({
+        alertId: 'a1',
+        handledById: 'u1',
+        action: 'followup',
+        note: 'followup note',
+      });
+      expect(handlingRepo.save).toHaveBeenCalled();
       expect(result.retestComparisonUrl).toBeNull();
     });
 
@@ -289,6 +329,14 @@ describe('AlertService', () => {
         studentId: 's1',
         status: 'handled',
       });
+      mockAlertRepo.save.mockResolvedValue({
+        id: 'a1',
+        resultId: 'r1',
+        studentId: 's1',
+        status: 'followup',
+        handledById: 'u1',
+        handleNote: 'note',
+      });
       mockResultRepo.findOne.mockResolvedValue({ id: 'r1', answerId: 'a1' });
       const mockQb = {
         innerJoinAndSelect: jest.fn().mockReturnThis(),
@@ -300,6 +348,68 @@ describe('AlertService', () => {
       const result = await service.followup('a1', 'u1', 'note');
 
       expect(result.retestComparisonUrl).toBeNull();
+    });
+  });
+
+  describe('findHandlingHistory', () => {
+    it('should return handling history for an alert', async () => {
+      const history = [
+        {
+          id: 'h1',
+          alertId: 'a1',
+          action: 'handle',
+          note: 'first',
+          createdAt: new Date(),
+        },
+        {
+          id: 'h2',
+          alertId: 'a1',
+          action: 'followup',
+          note: 'second',
+          createdAt: new Date(),
+        },
+      ];
+      mockHandlingRepo.find.mockResolvedValue(history);
+
+      const result = await service.findHandlingHistory('a1');
+
+      expect(result).toEqual(history);
+      expect(handlingRepo.find).toHaveBeenCalledWith({
+        where: { alertId: 'a1' },
+        order: { createdAt: 'ASC' },
+      });
+    });
+
+    it('should return empty array when no history', async () => {
+      mockHandlingRepo.find.mockResolvedValue([]);
+
+      const result = await service.findHandlingHistory('a1');
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('findByStudent', () => {
+    it('should return alerts for a student with pagination', async () => {
+      const alerts = [{ id: 'a1', studentId: 's1' }];
+      mockAlertRepo.findAndCount.mockResolvedValue([alerts, 1]);
+
+      const result = await service.findByStudent('s1', 1, 20);
+
+      expect(result).toEqual({ data: alerts, total: 1 });
+      expect(alertRepo.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { studentId: 's1' },
+        }),
+      );
+    });
+
+    it('should return empty when student has no alerts', async () => {
+      mockAlertRepo.findAndCount.mockResolvedValue([[], 0]);
+
+      const result = await service.findByStudent('s_noalert');
+
+      expect(result).toEqual({ data: [], total: 0 });
     });
   });
 

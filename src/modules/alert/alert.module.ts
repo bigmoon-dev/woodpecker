@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AlertRecord } from '../../entities/audit/alert-record.entity';
+import { AlertHandlingRecord } from '../../entities/audit/alert-handling-record.entity';
 import { AlertNotification } from '../../entities/audit/alert-notification.entity';
 import { Student } from '../../entities/org/student.entity';
 import { Class } from '../../entities/org/class.entity';
@@ -17,6 +18,7 @@ import { ResultModule } from '../result/result.module';
   imports: [
     TypeOrmModule.forFeature([
       AlertRecord,
+      AlertHandlingRecord,
       AlertNotification,
       Student,
       Class,

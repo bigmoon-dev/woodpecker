@@ -72,7 +72,18 @@ function formatBytes(bytes) {
 
 async function checkAndApplyOta() {
   try {
-    const updateInfo = await ota.checkForUpdate();
+    console.log('  正在检查更新...');
+    const currentVersion = ota.getCurrentVersion();
+    console.log(`  当前版本: ${currentVersion || '未知'}`);
+
+    let updateInfo;
+    try {
+      updateInfo = await ota.checkForUpdate();
+    } catch (err) {
+      console.log(`  ⚠️  检查更新失败: ${err.message}`);
+      return false;
+    }
+
     if (!updateInfo) {
       console.log('  ✅ 当前已是最新版本');
       return false;
@@ -95,32 +106,48 @@ async function checkAndApplyOta() {
       return false;
     }
 
+    console.log('  正在获取更新清单...');
     const { manifest, diff } = await ota.getUpdateFiles(updateInfo.manifestUrl);
     if (diff.length === 0) {
-      console.log('  ✅ 所有文件已是最新');
+      console.log('  ✅ 所有文件已是最新，更新版本号');
       ota.setCurrentVersion(updateInfo.version);
       return false;
     }
 
     const diffSize = diff.reduce((s, f) => s + f.size, 0);
-    console.log(`  备份当前版本...`);
-    ota.backupCurrent(diff);
+    console.log(`  📋 需要更新 ${diff.length} 个文件 (${formatBytes(diffSize)})`);
 
-    console.log(`  下载更新 (${diff.length} 个文件)...`);
-    const buffers = await ota.downloadFiles(updateInfo.version, diff, (downloaded, total) => {
+    console.log('  💾 正在备份当前版本...');
+    ota.backupCurrent(diff);
+    console.log('  ✅ 备份完成');
+
+    console.log(`  ⬇️  正在下载更新...`);
+    let lastFile = '';
+    const buffers = await ota.downloadFiles(updateInfo.version, diff, (downloaded, total, currentFile) => {
       const pct = total > 0 ? Math.round((downloaded / total) * 100) : 0;
       const bar = '█'.repeat(Math.floor(pct / 5)) + '░'.repeat(20 - Math.floor(pct / 5));
-      process.stdout.write(`\r  [${bar}] ${pct}% (${formatBytes(downloaded)}/${formatBytes(total)})`);
+      const shortFile = currentFile ? currentFile.replace(/^.*[\/]/, '') : '';
+      process.stdout.write(`\r  [${bar}] ${pct}% (${formatBytes(downloaded)}/${formatBytes(total)}) ${shortFile}          `);
     });
     console.log('');
+    console.log('  ✅ 下载完成');
 
-    console.log('  应用更新...');
-    ota.applyUpdate(buffers);
-    ota.setPendingVersion(updateInfo.version);
+    console.log('  📝 正在应用更新...');
+    for (let i = 0; i < buffers.length; i++) {
+      const shortPath = buffers[i].path.replace(/^.*[\/]/, '');
+      process.stdout.write(`\r  写入文件 (${i + 1}/${buffers.length}): ${shortPath}          `);
+      fs.mkdirSync(path.dirname(path.join(APP_DIR, buffers[i].path)), { recursive: true });
+      fs.writeFileSync(path.join(APP_DIR, buffers[i].path), buffers[i].buffer);
+    }
+    console.log('');
     console.log('  ✅ 更新已应用');
+
+    ota.setPendingVersion(updateInfo.version);
+    console.log(`  🎉 已更新到 v${updateInfo.version}，正在重启服务...`);
     return true;
   } catch (err) {
-    console.log(`  ⚠️  更新检查失败: ${err.message}`);
+    console.log('');
+    console.log(`  ❌ 更新失败: ${err.message}`);
     return false;
   }
 }

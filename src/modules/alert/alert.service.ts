@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { AlertRecord } from '../../entities/audit/alert-record.entity';
+import { AlertHandlingRecord } from '../../entities/audit/alert-handling-record.entity';
 import { AlertNotification } from '../../entities/audit/alert-notification.entity';
 import { Student } from '../../entities/org/student.entity';
 import { Class } from '../../entities/org/class.entity';
@@ -24,6 +25,8 @@ export class AlertService {
   constructor(
     @InjectRepository(AlertRecord)
     private alertRepo: Repository<AlertRecord>,
+    @InjectRepository(AlertHandlingRecord)
+    private handlingRepo: Repository<AlertHandlingRecord>,
     @InjectRepository(AlertNotification)
     private notificationRepo: Repository<AlertNotification>,
     @InjectRepository(Student)
@@ -118,6 +121,16 @@ export class AlertService {
     alert.handleNote = handleNote;
     alert.handledAt = new Date();
     const saved = await this.alertRepo.save(alert);
+
+    await this.handlingRepo.save(
+      this.handlingRepo.create({
+        alertId: saved.id,
+        handledById,
+        action: 'handle',
+        note: handleNote,
+      }),
+    );
+
     await this.hookBus
       .emit('on:alert.resolved', {
         alertId: saved.id,
@@ -140,6 +153,16 @@ export class AlertService {
     alert.handleNote = handleNote;
     alert.handledAt = new Date();
     const saved = await this.alertRepo.save(alert);
+
+    await this.handlingRepo.save(
+      this.handlingRepo.create({
+        alertId: saved.id,
+        handledById,
+        action: 'followup',
+        note: handleNote,
+      }),
+    );
+
     await this.hookBus
       .emit('on:alert.resolved', {
         alertId: saved.id,
@@ -249,5 +272,28 @@ export class AlertService {
     if (!notif) throw new NotFoundException(`Notification ${id} not found`);
     notif.read = true;
     return this.notificationRepo.save(notif);
+  }
+
+  async findHandlingHistory(alertId: string): Promise<AlertHandlingRecord[]> {
+    return this.handlingRepo.find({
+      where: { alertId },
+      order: { createdAt: 'ASC' },
+    });
+  }
+
+  async findByStudent(
+    studentId: string,
+    page = 1,
+    pageSize = 20,
+  ): Promise<{ data: any[]; total: number }> {
+    const [records, total] = await this.alertRepo.findAndCount({
+      where: { studentId },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      order: { createdAt: 'DESC' },
+    });
+
+    const data = records.map((r) => ({ ...r }));
+    return { data, total };
   }
 }
