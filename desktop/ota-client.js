@@ -7,7 +7,7 @@ const http = require('http');
 const _config = {
   appDir: path.resolve(__dirname, '..'),
   baseUrl: 'https://bigmoon.top/woodpecker/updates',
-  scanDirs: ['dist', 'public'],
+  scanDirs: ['dist', 'public', 'desktop'],
   maxBackups: 2,
   defaultTimeout: 10000,
 };

@@ -3,7 +3,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { execSync } = require('child_process');
 
-const SCAN_DIRS = ['dist', 'public'];
+const SCAN_DIRS = ['dist', 'public', 'desktop'];
 
 function validateSemver(version) {
   return /^\d+\.\d+\.\d+$/.test(version);
