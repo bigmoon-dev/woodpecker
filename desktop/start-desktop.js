@@ -207,12 +207,20 @@ async function seedIfEmpty() {
       ON CONFLICT ("username") DO NOTHING
     `);
 
-    const roles = ['系统管理员', '心理老师', '班主任', '学生'];
-    for (const name of roles) {
-      await client.query(`INSERT INTO "roles" ("id", "name", "description", "isSystem") VALUES (gen_random_uuid(), $1, $1, true) ON CONFLICT ("name") DO NOTHING`, [name]);
+    const roles = [
+      { name: '系统管理员', code: 'admin' },
+      { name: '心理老师', code: 'psychologist' },
+      { name: '班主任', code: 'teacher' },
+      { name: '学生', code: 'student' },
+    ];
+    for (const role of roles) {
+      await client.query(
+        `INSERT INTO "roles" ("id", "name", "description", "isSystem") VALUES (gen_random_uuid(), $1, $2, true) ON CONFLICT ("name") DO NOTHING`,
+        [role.code, role.name]
+      );
     }
 
-    const adminRole = await client.query(`SELECT "id" FROM "roles" WHERE "name" = '系统管理员' LIMIT 1`);
+    const adminRole = await client.query(`SELECT "id" FROM "roles" WHERE "name" = 'admin' LIMIT 1`);
     const adminUser = await client.query(`SELECT "id" FROM "users" WHERE "username" = 'admin' LIMIT 1`);
     if (adminRole.rows.length > 0 && adminUser.rows.length > 0) {
       await client.query(`INSERT INTO "user_roles" ("userId", "roleId") VALUES ($1, $2) ON CONFLICT ("userId", "roleId") DO NOTHING`, [adminUser.rows[0].id, adminRole.rows[0].id]);
