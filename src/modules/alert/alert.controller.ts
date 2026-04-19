@@ -55,6 +55,23 @@ export class AlertController {
     );
   }
 
+  @Get('notifications')
+  async findNotifications(
+    @Req() req: AuthenticatedRequest,
+    @Query() pagination: PaginationQueryDto,
+  ) {
+    return this.alertService.findNotifications(
+      req.user.id,
+      pagination.page,
+      pagination.pageSize,
+    );
+  }
+
+  @Post('notifications/:id/read')
+  async markNotificationRead(@Param('id') id: string) {
+    return this.alertService.markNotificationRead(id);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const alert = await this.alertService.findOne(id);
@@ -85,22 +102,5 @@ export class AlertController {
     @Req() req: AuthenticatedRequest,
   ): Promise<FollowupResponse> {
     return this.alertService.followup(id, req.user.id, dto.handleNote);
-  }
-
-  @Get('notifications')
-  async findNotifications(
-    @Req() req: AuthenticatedRequest,
-    @Query() pagination: PaginationQueryDto,
-  ) {
-    return this.alertService.findNotifications(
-      req.user.id,
-      pagination.page,
-      pagination.pageSize,
-    );
-  }
-
-  @Post('notifications/:id/read')
-  async markNotificationRead(@Param('id') id: string) {
-    return this.alertService.markNotificationRead(id);
   }
 }
