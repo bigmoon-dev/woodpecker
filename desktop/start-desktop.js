@@ -108,7 +108,8 @@ async function checkAndApplyOta() {
     }
 
     console.log('  正在获取更新清单...');
-    const { manifest, diff } = await ota.getUpdateFiles(updateInfo.manifestUrl);
+    const manifestUrl = `${ota._config.baseUrl}/${updateInfo.version}/manifest.json`;
+    const { manifest, diff } = await ota.getUpdateFiles(manifestUrl);
     if (diff.length === 0) {
       console.log('  ✅ 所有文件已是最新，更新版本号');
       ota.setCurrentVersion(updateInfo.version);

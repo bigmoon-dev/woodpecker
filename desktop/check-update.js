@@ -62,7 +62,8 @@ async function main() {
 
   try {
     console.log('获取更新清单...');
-    const { manifest, diff } = await ota.getUpdateFiles(updateInfo.manifestUrl);
+    const manifestUrl = `${ota._config.baseUrl}/${updateInfo.version}/manifest.json`;
+    const { manifest, diff } = await ota.getUpdateFiles(manifestUrl);
 
     if (diff.length === 0) {
       console.log('所有文件已是最新，无需更新');
