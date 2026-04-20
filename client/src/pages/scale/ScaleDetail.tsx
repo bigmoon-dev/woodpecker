@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Card, Button, Input, Spin, Form, Space, Divider, Popconfirm, message, Select, Switch, InputNumber } from 'antd';
+import { useEffect, useRef, useState } from 'react';
+import { Card, Button, Input, Spin, Form, Space, Divider, Popconfirm, message, Select, Switch, InputNumber, Tag, Modal } from 'antd';
 import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import request from '../../utils/request';
@@ -40,6 +40,8 @@ export default function ScaleDetail() {
   const [version, setVersion] = useState('1.0');
   const [description, setDescription] = useState('');
   const [items, setItems] = useState<ScaleItem[]>([]);
+  const [dimensions, setDimensions] = useState<string[]>([]);
+  const dimInputRef = useRef<Input>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -63,6 +65,16 @@ export default function ScaleDetail() {
             })),
           })),
         );
+        if (res.dimensions && res.dimensions.length > 0) {
+          setDimensions(res.dimensions);
+        } else {
+          const dims = [...new Set(
+            (res.items || [])
+              .map((item: any) => (item.dimension || '').trim())
+              .filter(Boolean),
+          )];
+          setDimensions(dims);
+        }
       })
       .finally(() => setLoading(false));
   }, [id]);
@@ -75,6 +87,7 @@ export default function ScaleDetail() {
         name,
         version,
         description,
+        dimensions: dimensions.length > 0 ? dimensions : undefined,
         items: items.map((item, idx) => ({
           itemText: item.itemText,
           itemType: item.itemType,
@@ -137,6 +150,40 @@ export default function ScaleDetail() {
     );
   };
 
+  const addDimension = (value: string) => {
+    const val = value.trim();
+    if (!val) return;
+    if (dimensions.some((d) => d.toLowerCase() === val.toLowerCase())) {
+      message.warning('维度名称已存在');
+      return;
+    }
+    if (dimensions.length >= 10) {
+      message.warning('最多支持10个维度');
+      return;
+    }
+    setDimensions((prev) => [...prev, val]);
+  };
+
+  const removeDimension = (dim: string) => {
+    const inUse = items.filter((i) => i.dimension === dim).length;
+    const doRemove = () => {
+      setDimensions((prev) => prev.filter((d) => d !== dim));
+      setItems((prev) =>
+        prev.map((item) =>
+          item.dimension === dim ? { ...item, dimension: '' } : item,
+        ),
+      );
+    };
+    if (inUse > 0) {
+      Modal.confirm({
+        content: `有${inUse}道题目使用了此维度，删除后这些题目将变为无维度，确认删除？`,
+        onOk: doRemove,
+      });
+    } else {
+      doRemove();
+    }
+  };
+
   if (loading) return <Spin />;
   if (!id) return <Card>未找到量表</Card>;
 
@@ -164,6 +211,50 @@ export default function ScaleDetail() {
             </Form.Item>
           </Space>
         </Form>
+
+        <Divider>维度定义</Divider>
+        <div style={{ marginBottom: 16 }}>
+          <p style={{ color: '#888', fontSize: 13, marginBottom: 8 }}>
+            定义量表维度后，可为每道题目指定所属维度，作答后按维度统计分数
+          </p>
+          {dimensions.map((dim, idx) => (
+            <Tag
+              key={idx}
+              closable
+              onClose={() => removeDimension(dim)}
+              style={{ marginBottom: 4 }}
+            >
+              {dim}
+            </Tag>
+          ))}
+          <Space>
+            <Input
+              ref={dimInputRef}
+              placeholder="输入维度名称"
+              style={{ width: 160 }}
+              maxLength={20}
+              onPressEnter={(e) => {
+                const val = (e.target as HTMLInputElement).value.trim();
+                if (val) {
+                  addDimension(val);
+                  if (dimInputRef.current) dimInputRef.current.setValue('');
+                }
+              }}
+            />
+            <Button
+              icon={<PlusOutlined />}
+              onClick={() => {
+                const val = dimInputRef.current?.input?.value?.trim();
+                if (val) {
+                  addDimension(val);
+                  if (dimInputRef.current) dimInputRef.current.setValue('');
+                }
+              }}
+            >
+              添加
+            </Button>
+          </Space>
+        </div>
 
         <Divider>题目列表（{items.length} 题）</Divider>
 
@@ -196,11 +287,14 @@ export default function ScaleDetail() {
               autoSize={{ minRows: 1 }}
               style={{ marginBottom: 8 }}
             />
-            <Input
-              value={item.dimension}
-              onChange={(e) => updateItem(idx, 'dimension', e.target.value)}
-              placeholder="维度（可选）"
+            <Select
+              value={item.dimension || undefined}
+              onChange={(v) => updateItem(idx, 'dimension', v || '')}
+              placeholder={dimensions.length > 0 ? '选择维度（可选）' : '请先添加维度'}
+              allowClear
+              disabled={dimensions.length === 0}
               style={{ width: 200, marginBottom: 8 }}
+              options={dimensions.map((d) => ({ label: d, value: d }))}
             />
             {item.itemType !== 'text' && (
               <>

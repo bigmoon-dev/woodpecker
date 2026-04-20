@@ -384,4 +384,199 @@ describe('ScaleService', () => {
       );
     });
   });
+
+  describe('dimensions validation', () => {
+    it('should create with valid dimensions', async () => {
+      const dto: CreateScaleDto = {
+        name: 'SCL-90',
+        items: [
+          { itemText: 'Q1', sortOrder: 0, dimension: '躯体化', options: [{ optionText: 'A', scoreValue: 1, sortOrder: 0 }] },
+        ],
+        dimensions: ['躯体化', '强迫', '焦虑'],
+      };
+
+      await service.create(dto);
+
+      expect(dataSource.transaction).toHaveBeenCalled();
+      expect(mockEntityManager.create).toHaveBeenCalledWith(
+        Scale,
+        expect.objectContaining({ dimensions: ['躯体化', '强迫', '焦虑'] }),
+      );
+    });
+
+    it('should deduplicate and trim dimensions on create', async () => {
+      const dto: CreateScaleDto = {
+        name: 'Test',
+        items: [],
+        dimensions: ['A', ' A', 'B'],
+      };
+
+      await service.create(dto);
+
+      expect(mockEntityManager.create).toHaveBeenCalledWith(
+        Scale,
+        expect.objectContaining({ dimensions: ['A', 'B'] }),
+      );
+    });
+
+    it('should filter empty strings from dimensions on create', async () => {
+      const dto: CreateScaleDto = {
+        name: 'Test',
+        items: [],
+        dimensions: ['A', '', 'B', '  '],
+      };
+
+      await service.create(dto);
+
+      expect(mockEntityManager.create).toHaveBeenCalledWith(
+        Scale,
+        expect.objectContaining({ dimensions: ['A', 'B'] }),
+      );
+    });
+
+    it('should reject create when item dimension not in list', async () => {
+      const dto: CreateScaleDto = {
+        name: 'Test',
+        items: [
+          { itemText: 'Q1', sortOrder: 0, dimension: 'X', options: [{ optionText: 'A', scoreValue: 0, sortOrder: 0 }] },
+        ],
+        dimensions: ['A', 'B'],
+      };
+
+      await expect(service.create(dto)).rejects.toThrow('不在预定义维度列表中');
+    });
+
+    it('should allow create with no dimensions (backward compat)', async () => {
+      const dto: CreateScaleDto = {
+        name: 'Old Scale',
+        items: [
+          { itemText: 'Q1', sortOrder: 0, dimension: 'anything', options: [{ optionText: 'A', scoreValue: 0, sortOrder: 0 }] },
+        ],
+      };
+
+      await service.create(dto);
+
+      expect(mockEntityManager.create).toHaveBeenCalledWith(
+        Scale,
+        expect.objectContaining({ dimensions: [] }),
+      );
+    });
+
+    it('should allow create with dimensions but items having no dimension', async () => {
+      const dto: CreateScaleDto = {
+        name: 'Test',
+        items: [
+          { itemText: 'Q1', sortOrder: 0, options: [{ optionText: 'A', scoreValue: 0, sortOrder: 0 }] },
+        ],
+        dimensions: ['A', 'B'],
+      };
+
+      await service.create(dto);
+
+      expect(mockEntityManager.create).toHaveBeenCalledWith(
+        Scale,
+        expect.objectContaining({ dimensions: ['A', 'B'] }),
+      );
+    });
+
+    it('should update dimensions', async () => {
+      const existingScale = {
+        id: 'scale-1', name: 'Old', version: '1.0', description: '', source: '', validationInfo: null,
+        versionStatus: 'draft', isLibrary: false, items: [], scoringRules: [], scoreRanges: [],
+      };
+      mockEntityManager.findOne.mockResolvedValueOnce(existingScale);
+      mockEntityManager.save.mockResolvedValueOnce({ ...existingScale, dimensions: ['X'] });
+
+      await service.update('scale-1', { dimensions: ['X'] });
+
+      expect(mockEntityManager.save).toHaveBeenCalledWith(
+        Scale,
+        expect.objectContaining({ dimensions: ['X'] }),
+      );
+    });
+
+    it('should clear dimensions on update', async () => {
+      const existingScale = {
+        id: 'scale-1', name: 'Old', version: '1.0', description: '', source: '', validationInfo: null,
+        versionStatus: 'draft', isLibrary: false, items: [], scoringRules: [], scoreRanges: [], dimensions: ['A'],
+      };
+      mockEntityManager.findOne.mockResolvedValueOnce(existingScale);
+      mockEntityManager.save.mockResolvedValueOnce({ ...existingScale, dimensions: [] });
+
+      await service.update('scale-1', { dimensions: [] });
+
+      expect(mockEntityManager.save).toHaveBeenCalledWith(
+        Scale,
+        expect.objectContaining({ dimensions: [] }),
+      );
+    });
+
+    it('should reject update when item dimension not in list', async () => {
+      const existingScale = {
+        id: 'scale-1', name: 'Old', version: '1.0', description: '', source: '', validationInfo: null,
+        versionStatus: 'draft', isLibrary: false, items: [], scoringRules: [], scoreRanges: [],
+      };
+      mockEntityManager.findOne.mockResolvedValueOnce(existingScale);
+
+      await expect(
+        service.update('scale-1', {
+          dimensions: ['A'],
+          items: [{ itemText: 'Q1', sortOrder: 0, dimension: 'Z', options: [{ optionText: 'X', scoreValue: 0, sortOrder: 0 }] }],
+        }),
+      ).rejects.toThrow('不在预定义维度列表中');
+    });
+
+    it('should clone dimensions from library scale', async () => {
+      const libraryScale = {
+        id: 'lib-1', name: 'PHQ-9', version: '1.0', description: '', items: [], scoringRules: [], scoreRanges: [],
+        dimensions: ['躯体化', '焦虑'],
+      };
+      scaleRepo.findOne.mockResolvedValueOnce(libraryScale);
+      mockEntityManager.save.mockResolvedValueOnce({ id: 'clone-1' });
+
+      await service.cloneFromLibrary('lib-1');
+
+      expect(mockEntityManager.create).toHaveBeenCalledWith(
+        Scale,
+        expect.objectContaining({ dimensions: ['躯体化', '焦虑'] }),
+      );
+    });
+
+    it('should clone with empty dimensions (backward compat)', async () => {
+      const libraryScale = {
+        id: 'lib-1', name: 'PHQ-9', version: '1.0', description: '', items: [], scoringRules: [], scoreRanges: [],
+      };
+      scaleRepo.findOne.mockResolvedValueOnce(libraryScale);
+      mockEntityManager.save.mockResolvedValueOnce({ id: 'clone-2' });
+
+      await service.cloneFromLibrary('lib-1');
+
+      expect(mockEntityManager.create).toHaveBeenCalledWith(
+        Scale,
+        expect.objectContaining({ dimensions: [] }),
+      );
+    });
+
+    it('should reject scoringRule dimension not in list', async () => {
+      const dto: CreateScaleDto = {
+        name: 'Test',
+        items: [],
+        dimensions: ['A'],
+        scoringRules: [{ dimension: 'Z', formulaType: 'sum', weight: 1 }],
+      };
+
+      await expect(service.create(dto)).rejects.toThrow('评分规则的维度"Z"不在预定义维度列表中');
+    });
+
+    it('should reject scoreRange dimension not in list', async () => {
+      const dto: CreateScaleDto = {
+        name: 'Test',
+        items: [],
+        dimensions: ['A'],
+        scoreRanges: [{ dimension: 'Z', minScore: 0, maxScore: 10, level: 'low', color: 'green', suggestion: 'OK' }],
+      };
+
+      await expect(service.create(dto)).rejects.toThrow('分数范围的维度"Z"不在预定义维度列表中');
+    });
+  });
 });

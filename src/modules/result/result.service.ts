@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { TaskResult } from '../../entities/task/task-result.entity';
@@ -19,6 +23,8 @@ export interface ResultWithContext {
   taskTitle: string;
   scaleName: string;
 }
+
+export type ResultDetail = ResultWithContext;
 
 export interface RetestComparison {
   studentId: string;
@@ -161,6 +167,51 @@ export class ResultService {
     return this.resultRepo.find({
       where: answerIds.map((id) => ({ answerId: id })),
     });
+  }
+
+  async findOne(resultId: string, dataScope: DataScope): Promise<ResultDetail> {
+    const result = await this.resultRepo.findOne({ where: { id: resultId } });
+    if (!result) throw new NotFoundException(`Result ${resultId} not found`);
+
+    const answer = await this.answerRepo.findOne({
+      where: { id: result.answerId },
+      relations: ['task', 'task.scale'],
+    });
+    if (!answer)
+      throw new NotFoundException(`Answer for result ${resultId} not found`);
+
+    const studentId = answer.studentId;
+
+    if (dataScope.scope !== 'all') {
+      const allowedIds = await this.dataScopeFilter.getStudentIds(dataScope);
+      if (!allowedIds.includes(studentId)) {
+        throw new ForbiddenException('You do not have access to this result');
+      }
+    }
+
+    const pii = await this.encryptionService.batchDecrypt([studentId]);
+    const studentData = pii.get(studentId);
+
+    const student = await this.studentRepo.findOne({
+      where: { id: studentId },
+    });
+    const classEntity = student
+      ? await this.classRepo.findOne({ where: { id: student.classId } })
+      : null;
+    const gradeEntity = classEntity
+      ? await this.gradeRepo.findOne({ where: { id: classEntity.gradeId } })
+      : null;
+
+    return {
+      result,
+      studentId,
+      studentName: studentData?.name ?? '',
+      studentNumber: studentData?.studentNumber ?? '',
+      className: classEntity?.name ?? '',
+      gradeName: gradeEntity?.name ?? '',
+      taskTitle: answer.task?.title ?? '',
+      scaleName: answer.task?.scale?.name ?? '',
+    };
   }
 
   async findByClass(

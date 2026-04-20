@@ -17,13 +17,11 @@ const menuRoutes = [
   },
   { path: '/teacher/tasks', name: '测评任务' },
   { path: '/teacher/results', name: '结果查看' },
-  { path: '/teacher/alerts', name: '预警管理' },
-  { path: '/teacher/followup', name: '随访工作台' },
-  { path: '/teacher/interviews', name: '访谈档案',
+  { path: '/teacher/interviews', name: '访谈管理',
     routes: [
       { path: '/teacher/interviews', name: '访谈列表' },
       { path: '/teacher/interviews/templates', name: '模板管理' },
-      { path: '/teacher/interviews/follow-ups', name: '随访提醒' },
+      { path: '/teacher/interviews/followup-manage', name: '随访管理' },
     ],
   },
 ];

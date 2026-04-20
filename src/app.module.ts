@@ -22,6 +22,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { HealthModule } from './modules/health/health.module';
 import { InterviewModule } from './modules/interview/interview.module';
 import { StudentModule } from './modules/student/student.module';
+import { FollowupManageModule } from './modules/followup/followup-manage.module';
 import {
   Scale,
   ScaleItem,
@@ -126,6 +127,7 @@ import {
     HealthModule,
     InterviewModule,
     StudentModule,
+    FollowupManageModule,
   ],
   providers: [
     {

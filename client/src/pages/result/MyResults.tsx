@@ -1,9 +1,12 @@
 import { useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ProTable, type ActionType, type ProColumns } from '@ant-design/pro-components';
+import { Button } from 'antd';
 import request from '../../utils/request';
 
 export default function MyResults() {
   const actionRef = useRef<ActionType>();
+  const navigate = useNavigate();
 
   const isStudent = (() => {
     try {
@@ -14,20 +17,75 @@ export default function MyResults() {
     }
   })();
 
+  const basePath = location.pathname.startsWith('/admin') ? '/admin/results' : '/teacher/results';
+
   const columns: ProColumns[] = [
-    { title: '总分', dataIndex: 'totalScore', key: 'totalScore' },
-    { title: '等级', dataIndex: 'level', key: 'level' },
+    ...(!isStudent
+      ? [
+          { title: '学生姓名', dataIndex: 'studentName', key: 'studentName' },
+          { title: '班级', dataIndex: 'className', key: 'className' },
+          { title: '量表', dataIndex: 'scaleName', key: 'scaleName' },
+        ]
+      : []),
+    {
+      title: '总分',
+      dataIndex: ['result', 'totalScore'],
+      key: 'totalScore',
+      render: (_: any, record: any) => record.result?.totalScore ?? record.totalScore,
+    },
+    {
+      title: '等级',
+      dataIndex: ['result', 'level'],
+      key: 'level',
+      render: (_: any, record: any) => record.result?.level ?? record.level,
+    },
     {
       title: '颜色',
-      dataIndex: 'color',
       key: 'color',
       render: (_: any, record: any) => {
-        const colorMap: Record<string, string> = { red: '红色', yellow: '黄色', green: '绿色', gray: '灰色' };
-        return colorMap[record.color] || record.color;
+        const color = record.result?.color ?? record.color;
+        const colorMap: Record<string, string> = {
+          red: '红色',
+          yellow: '黄色',
+          green: '绿色',
+          gray: '灰色',
+        };
+        return colorMap[color] || color;
       },
     },
-    { title: '建议', dataIndex: 'suggestion', key: 'suggestion', ellipsis: true },
-    { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', render: (_: any, record: any) => record.createdAt ? new Date(record.createdAt).toLocaleString() : '-' },
+    {
+      title: '建议',
+      key: 'suggestion',
+      ellipsis: true,
+      render: (_: any, record: any) => record.result?.suggestion ?? record.suggestion,
+    },
+    {
+      title: '创建时间',
+      key: 'createdAt',
+      render: (_: any, record: any) => {
+        const date = record.result?.createdAt ?? record.createdAt;
+        return date ? new Date(date).toLocaleString() : '-';
+      },
+    },
+    ...(!isStudent
+      ? [
+          {
+            title: '操作',
+            key: 'action',
+            width: 100,
+            render: (_: any, record: any) => (
+              <Button
+                type="link"
+                onClick={() =>
+                  navigate(`${basePath}/${record.result?.id ?? record.id}`)
+                }
+              >
+                查看详情
+              </Button>
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (

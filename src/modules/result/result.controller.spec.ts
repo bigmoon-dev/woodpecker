@@ -19,7 +19,8 @@ describe('ResultController', () => {
     findByStudent: jest.fn(),
     findByClass: jest.fn(),
     findByGrade: jest.fn(),
-    findByScope: jest.fn(),
+    findByFilter: jest.fn(),
+    findOne: jest.fn(),
     compareResults: jest.fn(),
   };
 
@@ -103,12 +104,26 @@ describe('ResultController', () => {
     expect(resultService.findByGrade).toHaveBeenCalledWith('g1', 3, 5);
   });
 
-  it('findByScope uses req.dataScope', async () => {
-    resultService.findByScope.mockResolvedValueOnce([]);
+  it('findByFilter uses req.dataScope', async () => {
+    resultService.findByFilter.mockResolvedValueOnce([]);
     const dataScope = { scope: 'all' as const, userId: 'u1' };
     const req = { dataScope } as any;
-    await controller.findByScope(req);
-    expect(resultService.findByScope).toHaveBeenCalledWith(dataScope);
+    await controller.findByFilter(req);
+    expect(resultService.findByFilter).toHaveBeenCalledWith({ dataScope });
+  });
+
+  describe('findOne', () => {
+    it('should call resultService.findOne with id and dataScope', async () => {
+      const detail = { result: { id: 'r1' }, studentName: 'Zhang' };
+      resultService.findOne.mockResolvedValueOnce(detail);
+      const dataScope = { scope: 'all' as const, userId: 'u1' };
+      const req = { dataScope } as any;
+
+      const result = await controller.findOne('r1', req);
+
+      expect(resultService.findOne).toHaveBeenCalledWith('r1', dataScope);
+      expect(result).toEqual(detail);
+    });
   });
 
   describe('intervention endpoints', () => {

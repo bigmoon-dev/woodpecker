@@ -15,22 +15,20 @@ const menuRoutes = [
     ],
   },
   { path: '/admin/tasks', name: '任务管理' },
-  { path: '/admin/alerts', name: '预警管理' },
-  { path: '/admin/followup', name: '随访工作台' },
   { path: '/admin/results', name: '测评结果' },
+  { path: '/admin/interviews', name: '访谈管理',
+    routes: [
+      { path: '/admin/interviews', name: '访谈列表' },
+      { path: '/admin/interviews/templates', name: '模板管理' },
+      { path: '/admin/interviews/followup-manage', name: '随访管理' },
+    ],
+  },
   { path: '/admin/roles', name: '角色管理' },
   { path: '/admin/users', name: '用户管理' },
   { path: '/admin/plugins', name: '插件管理' },
   { path: '/admin/grades', name: '年级管理' },
   { path: '/admin/classes', name: '班级管理' },
   { path: '/admin/students', name: '学生管理' },
-  { path: '/admin/interviews', name: '访谈档案',
-    routes: [
-      { path: '/admin/interviews', name: '访谈列表' },
-      { path: '/admin/interviews/templates', name: '模板管理' },
-      { path: '/admin/interviews/follow-ups', name: '随访提醒' },
-    ],
-  },
 ];
 
 export default function AdminLayout() {

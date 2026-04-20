@@ -27,6 +27,8 @@ export class ScaleService {
   ) {}
 
   async create(dto: CreateScaleDto): Promise<Scale> {
+    const normalizedDimensions = this.validateAndNormalizeDimensions(dto);
+
     return this.dataSource.transaction(async (manager) => {
       const scale = manager.create(Scale, {
         name: dto.name,
@@ -35,6 +37,7 @@ export class ScaleService {
         source: dto.source,
         validationInfo: dto.validationInfo,
         status: 'active',
+        dimensions: normalizedDimensions || [],
         items: dto.items.map((item) => ({
           itemText: item.itemText,
           itemType: item.itemType || 'single_choice',
@@ -123,6 +126,7 @@ export class ScaleService {
         source: `library:${source.id}`,
         status: 'draft',
         isLibrary: false,
+        dimensions: source.dimensions || [],
         items: source.items.map((item) => ({
           itemText: item.itemText,
           itemType: item.itemType,
@@ -201,6 +205,10 @@ export class ScaleService {
       scale.source = dto.source ?? scale.source;
       scale.validationInfo = dto.validationInfo ?? scale.validationInfo;
 
+      if (dto.dimensions !== undefined) {
+        scale.dimensions = this.validateAndNormalizeDimensions(dto) || [];
+      }
+
       if (dto.items) {
         for (const oldItem of scale.items) {
           await manager.remove(ScaleItem, oldItem);
@@ -267,5 +275,47 @@ export class ScaleService {
   async remove(id: string): Promise<void> {
     await this.scaleRepo.delete(id);
     this.scaleCacheService.invalidate(id);
+  }
+
+  private validateAndNormalizeDimensions(
+    dto: Partial<CreateScaleDto>,
+  ): string[] | undefined {
+    if (!dto.dimensions || dto.dimensions.length === 0) return undefined;
+
+    const normalized = [
+      ...new Set(dto.dimensions.map((d) => d.trim()).filter(Boolean)),
+    ];
+
+    if (dto.items) {
+      for (const item of dto.items) {
+        if (item.dimension && !normalized.includes(item.dimension.trim())) {
+          throw new BadRequestException(
+            `题目的维度"${item.dimension}"不在预定义维度列表中`,
+          );
+        }
+      }
+    }
+
+    if (dto.scoringRules) {
+      for (const rule of dto.scoringRules) {
+        if (rule.dimension && !normalized.includes(rule.dimension.trim())) {
+          throw new BadRequestException(
+            `评分规则的维度"${rule.dimension}"不在预定义维度列表中`,
+          );
+        }
+      }
+    }
+
+    if (dto.scoreRanges) {
+      for (const range of dto.scoreRanges) {
+        if (range.dimension && !normalized.includes(range.dimension.trim())) {
+          throw new BadRequestException(
+            `分数范围的维度"${range.dimension}"不在预定义维度列表中`,
+          );
+        }
+      }
+    }
+
+    return normalized;
   }
 }

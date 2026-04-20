@@ -54,6 +54,9 @@ export class Scale {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  @Column({ type: 'jsonb', default: '[]' })
+  dimensions: string[];
+
   @ManyToOne(() => Scale, { nullable: true })
   @JoinColumn({ name: 'parentScaleId' })
   parentScale: Scale | null;

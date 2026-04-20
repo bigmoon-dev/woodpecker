@@ -80,8 +80,8 @@ export class ResultController {
   }
 
   @Get()
-  async findByScope(@Req() req: AuthenticatedRequest) {
-    return this.resultService.findByScope(req.dataScope);
+  async findByFilter(@Req() req: AuthenticatedRequest) {
+    return this.resultService.findByFilter({ dataScope: req.dataScope });
   }
 
   @Get('intervention-comparison')
@@ -145,5 +145,10 @@ export class ResultController {
     @Query('taskId') taskId: string,
   ) {
     return this.reportGeneratorService.generateGroupReport(templateId, taskId);
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.resultService.findOne(id, req.dataScope);
   }
 }

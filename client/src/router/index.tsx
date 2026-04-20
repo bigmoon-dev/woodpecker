@@ -8,6 +8,7 @@ import ScaleDetail from '../pages/scale/ScaleDetail';
 import TaskList from '../pages/task/TaskList';
 import Assessment from '../pages/task/Assessment';
 import MyResults from '../pages/result/MyResults';
+import ResultDetail from '../pages/result/ResultDetail';
 import ClassResults from '../pages/result/ClassResults';
 import GradeResults from '../pages/result/GradeResults';
 import AlertList from '../pages/alert/AlertList';
@@ -23,9 +24,8 @@ import Dashboard from '../pages/dashboard/Dashboard';
 import InterviewList from '../pages/interview/InterviewList';
 import InterviewDetail from '../pages/interview/InterviewDetail';
 import TemplateManage from '../pages/interview/TemplateManage';
-import FollowUpManage from '../pages/interview/FollowUpManage';
 import TimelineView from '../pages/interview/TimelineView';
-import FollowupWorkbench from '../pages/followup/FollowupWorkbench';
+import FollowupManageNew from '../pages/followup/FollowupManage';
 import StudentProfile from '../pages/student/StudentProfile';
 
 export const routeConfigs: RouteConfig[] = [
@@ -53,15 +53,15 @@ export const routeConfigs: RouteConfig[] = [
       { path: 'tasks', component: TaskList },
       { path: 'assessment/:id', component: Assessment },
       { path: 'results', component: MyResults },
+      { path: 'results/:id', component: ResultDetail },
       { path: 'results/class/:classId', component: ClassResults },
       { path: 'results/grade/:gradeId', component: GradeResults },
       { path: 'alerts', component: AlertList },
-      { path: 'followup', component: FollowupWorkbench },
       { path: 'students/:id/profile', component: StudentProfile },
       { path: 'interviews', component: InterviewList },
       { path: 'interviews/:id', component: InterviewDetail },
       { path: 'interviews/templates', component: TemplateManage },
-      { path: 'interviews/follow-ups', component: FollowUpManage },
+      { path: 'interviews/followup-manage', component: FollowupManageNew },
       { path: 'interviews/timeline/:studentId', component: TimelineView },
     ],
   },
@@ -76,15 +76,15 @@ export const routeConfigs: RouteConfig[] = [
       { path: 'scales/:id', component: ScaleDetail },
       { path: 'tasks', component: TaskList },
       { path: 'alerts', component: AlertList },
-      { path: 'followup', component: FollowupWorkbench },
       { path: 'students/:id/profile', component: StudentProfile },
       { path: 'results', component: MyResults },
+      { path: 'results/:id', component: ResultDetail },
       { path: 'results/class/:classId', component: ClassResults },
       { path: 'results/grade/:gradeId', component: GradeResults },
       { path: 'interviews', component: InterviewList },
       { path: 'interviews/:id', component: InterviewDetail },
       { path: 'interviews/templates', component: TemplateManage },
-      { path: 'interviews/follow-ups', component: FollowUpManage },
+      { path: 'interviews/followup-manage', component: FollowupManageNew },
       { path: 'interviews/timeline/:studentId', component: TimelineView },
       { path: 'roles', component: RoleManage },
       { path: 'users', component: UserManage },

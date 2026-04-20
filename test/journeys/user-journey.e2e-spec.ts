@@ -265,6 +265,67 @@ describe('Black-box E2E — Isolated Test DB', () => {
     });
   });
 
+  describe('Result Detail (GET /api/results/:id)', () => {
+    it('should return 404 for non-existent result', async () => {
+      await request(ctx.server)
+        .get('/api/results/non-existent-id')
+        .set(authHeader(accessToken))
+        .expect(404);
+    });
+  });
+
+  describe('Followup Manage', () => {
+    it('GET /followup-manage/config returns threshold', async () => {
+      const res = await request(ctx.server)
+        .get('/api/followup-manage/config')
+        .set(authHeader(accessToken))
+        .expect(200);
+      expect(res.body.threshold).toBeDefined();
+      expect(['yellow', 'red']).toContain(res.body.threshold);
+    });
+
+    it('GET /followup-manage/students returns paginated data', async () => {
+      const res = await request(ctx.server)
+        .get('/api/followup-manage/students')
+        .set(authHeader(accessToken))
+        .expect(200);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(typeof res.body.total).toBe('number');
+    });
+
+    it('GET /followup-manage/students with pagination', async () => {
+      const res = await request(ctx.server)
+        .get('/api/followup-manage/students?page=1&pageSize=5')
+        .set(authHeader(accessToken))
+        .expect(200);
+      expect(Array.isArray(res.body.data)).toBe(true);
+    });
+
+    it('PUT /followup-manage/config rejects invalid threshold', async () => {
+      await request(ctx.server)
+        .put('/api/followup-manage/config')
+        .set(authHeader(accessToken))
+        .send({ threshold: 'green' })
+        .expect(400);
+    });
+
+    it('PUT /followup-manage/config accepts valid threshold', async () => {
+      const res = await request(ctx.server)
+        .put('/api/followup-manage/config')
+        .set(authHeader(accessToken))
+        .send({ threshold: 'red' })
+        .expect(200);
+      expect(res.body.threshold).toBe('red');
+      expect(res.body.oldValue).toBeDefined();
+
+      await request(ctx.server)
+        .put('/api/followup-manage/config')
+        .set(authHeader(accessToken))
+        .send({ threshold: 'yellow' })
+        .expect(200);
+    });
+  });
+
   describe('Auth: Refresh + Logout', () => {
     it('rotates refresh token', async () => {
       const res = await request(ctx.server)

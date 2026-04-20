@@ -84,6 +84,11 @@ export class CreateScaleDto {
   @ValidateNested({ each: true })
   @Type(() => CreateScoreRangeDto)
   scoreRanges?: CreateScoreRangeDto[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  dimensions?: string[];
 }
 
 export class CreateScaleItemDto {

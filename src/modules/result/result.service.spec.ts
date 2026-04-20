@@ -16,11 +16,15 @@ describe('ResultService', () => {
   let answerRepo: any;
   let dataScopeFilter: any;
 
-  const mockResultRepo = { find: jest.fn() };
-  const mockAnswerRepo = { find: jest.fn(), createQueryBuilder: jest.fn() };
-  const mockStudentRepo = { find: jest.fn() };
-  const mockClassRepo = { find: jest.fn() };
-  const mockGradeRepo = { find: jest.fn() };
+  const mockResultRepo = { find: jest.fn(), findOne: jest.fn() };
+  const mockAnswerRepo = {
+    find: jest.fn(),
+    createQueryBuilder: jest.fn(),
+    findOne: jest.fn(),
+  };
+  const mockStudentRepo = { find: jest.fn(), findOne: jest.fn() };
+  const mockClassRepo = { find: jest.fn(), findOne: jest.fn() };
+  const mockGradeRepo = { find: jest.fn(), findOne: jest.fn() };
   const mockDataScopeFilter = {
     getStudentIds: jest.fn().mockResolvedValue([]),
   };
@@ -109,6 +113,149 @@ describe('ResultService', () => {
         userId: 'u1',
       });
       expect(actual).toEqual([]);
+    });
+  });
+
+  describe('findOne', () => {
+    it('should return ResultDetail with student info', async () => {
+      const result = {
+        id: 'r1',
+        answerId: 'a1',
+        totalScore: 80,
+        level: 'normal',
+        color: 'green',
+      };
+      const answer = {
+        id: 'a1',
+        studentId: 's1',
+        task: { title: 'Task1', scale: { name: 'Scale1' } },
+      };
+      const student = { id: 's1', classId: 'c1' };
+      const cls = { id: 'c1', name: 'Class1', gradeId: 'g1' };
+      const grade = { id: 'g1', name: 'Grade1' };
+      const piiMap = new Map([
+        ['s1', { name: 'Zhang San', studentNumber: '2024001' }],
+      ]);
+
+      mockResultRepo.findOne.mockResolvedValue(result);
+      mockAnswerRepo.findOne.mockResolvedValue(answer);
+      mockDataScopeFilter.getStudentIds.mockResolvedValue(['s1']);
+      mockEncryptionService.batchDecrypt.mockResolvedValue(piiMap);
+      mockStudentRepo.findOne.mockResolvedValue(student);
+      mockClassRepo.findOne.mockResolvedValue(cls);
+      mockGradeRepo.findOne.mockResolvedValue(grade);
+
+      const actual = await service.findOne('r1', {
+        scope: 'all',
+        userId: 'u1',
+      });
+
+      expect(actual.result).toEqual(result);
+      expect(actual.studentName).toBe('Zhang San');
+      expect(actual.studentNumber).toBe('2024001');
+      expect(actual.className).toBe('Class1');
+      expect(actual.gradeName).toBe('Grade1');
+      expect(actual.taskTitle).toBe('Task1');
+      expect(actual.scaleName).toBe('Scale1');
+    });
+
+    it('should throw NotFoundException when result not found', async () => {
+      mockResultRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.findOne('missing', { scope: 'all', userId: 'u1' }),
+      ).rejects.toThrow('Result missing not found');
+    });
+
+    it('should throw NotFoundException when answer not found', async () => {
+      mockResultRepo.findOne.mockResolvedValue({ id: 'r1', answerId: 'a1' });
+      mockAnswerRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.findOne('r1', { scope: 'all', userId: 'u1' }),
+      ).rejects.toThrow('Answer for result r1 not found');
+    });
+
+    it('should throw ForbiddenException when dataScope denies access', async () => {
+      mockResultRepo.findOne.mockResolvedValue({ id: 'r1', answerId: 'a1' });
+      mockAnswerRepo.findOne.mockResolvedValue({
+        id: 'a1',
+        studentId: 's-outside',
+      });
+      mockDataScopeFilter.getStudentIds.mockResolvedValue(['s1', 's2']);
+
+      await expect(
+        service.findOne('r1', { scope: 'class', userId: 'u1', classId: 'c1' }),
+      ).rejects.toThrow('You do not have access to this result');
+    });
+
+    it('should allow access when dataScope.scope is all', async () => {
+      const result = { id: 'r1', answerId: 'a1' };
+      const answer = {
+        id: 'a1',
+        studentId: 's1',
+        task: { title: 'T', scale: { name: 'S' } },
+      };
+      mockResultRepo.findOne.mockResolvedValue(result);
+      mockAnswerRepo.findOne.mockResolvedValue(answer);
+      mockEncryptionService.batchDecrypt.mockResolvedValue(new Map());
+      mockStudentRepo.findOne.mockResolvedValue(null);
+
+      const actual = await service.findOne('r1', {
+        scope: 'all',
+        userId: 'u1',
+      });
+
+      expect(dataScopeFilter.getStudentIds).not.toHaveBeenCalled();
+      expect(actual.result).toEqual(result);
+    });
+
+    it('should decrypt PII for student name and number', async () => {
+      const result = { id: 'r1', answerId: 'a1' };
+      const answer = {
+        id: 'a1',
+        studentId: 's1',
+        task: { title: 'T', scale: { name: 'S' } },
+      };
+      const piiMap = new Map([
+        ['s1', { name: 'Li Si', studentNumber: 'SN001' }],
+      ]);
+      mockResultRepo.findOne.mockResolvedValue(result);
+      mockAnswerRepo.findOne.mockResolvedValue(answer);
+      mockEncryptionService.batchDecrypt.mockResolvedValue(piiMap);
+      mockStudentRepo.findOne.mockResolvedValue(null);
+
+      const actual = await service.findOne('r1', {
+        scope: 'all',
+        userId: 'u1',
+      });
+
+      expect(mockEncryptionService.batchDecrypt).toHaveBeenCalledWith(['s1']);
+      expect(actual.studentName).toBe('Li Si');
+      expect(actual.studentNumber).toBe('SN001');
+    });
+
+    it('should handle missing student/class/grade gracefully', async () => {
+      const result = { id: 'r1', answerId: 'a1' };
+      const answer = {
+        id: 'a1',
+        studentId: 's1',
+        task: { title: 'T', scale: { name: 'S' } },
+      };
+      mockResultRepo.findOne.mockResolvedValue(result);
+      mockAnswerRepo.findOne.mockResolvedValue(answer);
+      mockEncryptionService.batchDecrypt.mockResolvedValue(new Map());
+      mockStudentRepo.findOne.mockResolvedValue(null);
+
+      const actual = await service.findOne('r1', {
+        scope: 'all',
+        userId: 'u1',
+      });
+
+      expect(actual.studentName).toBe('');
+      expect(actual.studentNumber).toBe('');
+      expect(actual.className).toBe('');
+      expect(actual.gradeName).toBe('');
     });
   });
 
