@@ -49,7 +49,8 @@ export class RbacGuard implements CanActivate {
       (r) => r.permissions?.map((p) => p.code) || [],
     );
 
-    const hasAll = required.every((p) => userPerms.includes(p));
+    const hasAdminAll = userPerms.includes('admin:all');
+    const hasAll = hasAdminAll || required.every((p) => userPerms.includes(p));
     if (!hasAll) throw new ForbiddenException('Insufficient permissions');
 
     let scope: 'own' | 'class' | 'grade' | 'all' = 'own';

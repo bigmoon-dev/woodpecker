@@ -118,6 +118,7 @@ describe('JwtStrategy', () => {
     });
     expect(userRepo.findOne).toHaveBeenCalledWith({
       where: { id: 'user-1' },
+      relations: ['roles', 'roles.permissions'],
     });
   });
 

@@ -37,6 +37,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload) {
     const user = await this.userRepo.findOne({
       where: { id: payload.sub },
+      relations: ['roles', 'roles.permissions'],
     });
     if (!user) return null;
 
@@ -44,9 +45,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       id: user.id,
       username: user.username,
       studentId: user.studentId,
-      roles: user.roles.map((r) => ({
+      roles: (user.roles || []).map((r) => ({
         name: r.name,
-        permissions: r.permissions.map((p) => ({ code: p.code })),
+        permissions: (r.permissions || []).map((p) => ({ code: p.code })),
       })),
     };
   }
