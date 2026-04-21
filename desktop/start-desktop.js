@@ -8,8 +8,23 @@ const crypto = require('crypto');
 const ota = require('./ota-client');
 
 const APP_DIR = path.resolve(__dirname, '..');
-const DATA_DIR = path.join(APP_DIR, 'data');
+
+function getUserDataDir() {
+  const platform = os.platform();
+  let base;
+  if (platform === 'win32') {
+    base = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
+  } else if (platform === 'darwin') {
+    base = path.join(os.homedir(), 'Library', 'Application Support');
+  } else {
+    base = process.env.XDG_DATA_HOME || path.join(os.homedir(), '.local', 'share');
+  }
+  return path.join(base, 'woodpecker');
+}
+
+const DATA_DIR = getUserDataDir();
 const DB_DATA_DIR = path.join(DATA_DIR, 'db');
+const MIGRATION_MARKER = path.join(DATA_DIR, '.data-dir-migrated');
 const PG_PORT = 15432;
 const APP_PORT = 3000;
 const DB_NAME = 'psych_scale';
@@ -201,36 +216,135 @@ async function seedIfEmpty() {
 
     console.log('  首次启动，插入初始数据...');
 
-    await client.query(`
-      INSERT INTO "users" ("id", "username", "password", "displayName", "status")
-      VALUES (gen_random_uuid(), 'admin', '$2b$10$6fpCy6AzEnC0frnktI0HS./nAmn1OAPWxn/q7593h8w92LI83T8OS', '系统管理员', 'active')
-      ON CONFLICT ("username") DO NOTHING
-    `);
-
     const roles = [
-      { name: '系统管理员', code: 'admin' },
-      { name: '心理老师', code: 'psychologist' },
-      { name: '班主任', code: 'teacher' },
-      { name: '学生', code: 'student' },
+      { name: 'admin', desc: '系统管理员' },
+      { name: 'psychologist', desc: '心理老师' },
+      { name: 'teacher', desc: '班主任' },
+      { name: 'student', desc: '学生' },
     ];
+    const roleIds = {};
     for (const role of roles) {
+      const res = await client.query(
+        `INSERT INTO "roles" ("id", "name", "description", "isSystem") VALUES (gen_random_uuid(), $1, $2, true) ON CONFLICT ("name") DO UPDATE SET "description" = $2 RETURNING "id"`,
+        [role.name, role.desc]
+      );
+      roleIds[role.name] = res.rows[0].id;
+    }
+
+    const permissions = [
+      { code: 'scale:read', name: '查看量表', category: 'scale' },
+      { code: 'scale:write', name: '管理量表', category: 'scale' },
+      { code: 'scale:delete', name: '删除量表', category: 'scale' },
+      { code: 'task:read', name: '查看任务', category: 'task' },
+      { code: 'task:write', name: '管理任务', category: 'task' },
+      { code: 'task:delete', name: '删除任务', category: 'task' },
+      { code: 'result:read', name: '查看结果', category: 'result' },
+      { code: 'result:write', name: '管理结果', category: 'result' },
+      { code: 'alert:read', name: '查看预警', category: 'alert' },
+      { code: 'alert:write', name: '管理预警', category: 'alert' },
+      { code: 'followup:read', name: '查看随访', category: 'followup' },
+      { code: 'followup:write', name: '管理随访', category: 'followup' },
+      { code: 'admin:all', name: '全部管理权限', category: 'admin' },
+      { code: 'dashboard:read', name: '查看仪表盘', category: 'dashboard' },
+      { code: 'interview:read', name: '查看访谈', category: 'interview' },
+      { code: 'interview:write', name: '管理访谈', category: 'interview' },
+      { code: 'export:read', name: '数据导出', category: 'export' },
+      { code: 'student:read', name: '查看学生', category: 'student' },
+      { code: 'student:write', name: '管理学生', category: 'student' },
+      { code: 'user:read', name: '查看用户', category: 'user' },
+      { code: 'user:write', name: '管理用户', category: 'user' },
+      { code: 'role:read', name: '查看角色', category: 'role' },
+      { code: 'role:write', name: '管理角色', category: 'role' },
+      { code: 'plugin:read', name: '查看插件', category: 'plugin' },
+      { code: 'plugin:write', name: '管理插件', category: 'plugin' },
+      { code: 'config:read', name: '查看配置', category: 'config' },
+      { code: 'config:write', name: '管理配置', category: 'config' },
+      { code: 'consent:read', name: '查看知情同意', category: 'consent' },
+      { code: 'consent:write', name: '管理知情同意', category: 'consent' },
+      { code: 'audit:read', name: '查看审计日志', category: 'audit' },
+    ];
+    for (const perm of permissions) {
       await client.query(
-        `INSERT INTO "roles" ("id", "name", "description", "isSystem") VALUES (gen_random_uuid(), $1, $2, true) ON CONFLICT ("name") DO NOTHING`,
-        [role.code, role.name]
+        `INSERT INTO "permissions" ("id", "code", "name", "category") VALUES (gen_random_uuid(), $1, $2, $3) ON CONFLICT ("code") DO NOTHING`,
+        [perm.code, perm.name, perm.category]
       );
     }
 
-    const adminRole = await client.query(`SELECT "id" FROM "roles" WHERE "name" = 'admin' LIMIT 1`);
-    const adminUser = await client.query(`SELECT "id" FROM "users" WHERE "username" = 'admin' LIMIT 1`);
-    if (adminRole.rows.length > 0 && adminUser.rows.length > 0) {
-      await client.query(`INSERT INTO "user_roles" ("userId", "roleId") VALUES ($1, $2) ON CONFLICT ("userId", "roleId") DO NOTHING`, [adminUser.rows[0].id, adminRole.rows[0].id]);
+    const adminPerms = await client.query(`SELECT "id" FROM "permissions"`);
+    const psychologistPerms = await client.query(
+      `SELECT "id" FROM "permissions" WHERE "code" NOT IN ('admin:all', 'role:write', 'config:write', 'plugin:write')`
+    );
+
+    for (const permRow of adminPerms.rows) {
+      await client.query(
+        `INSERT INTO "role_permissions" ("roleId", "permissionId") VALUES ($1, $2) ON CONFLICT ("roleId", "permissionId") DO NOTHING`,
+        [roleIds['admin'], permRow.id]
+      );
+    }
+    for (const permRow of psychologistPerms.rows) {
+      await client.query(
+        `INSERT INTO "role_permissions" ("roleId", "permissionId") VALUES ($1, $2) ON CONFLICT ("roleId", "permissionId") DO NOTHING`,
+        [roleIds['psychologist'], permRow.id]
+      );
+    }
+
+    const users = [
+      { username: 'admin', password: '$2b$10$6fpCy6AzEnC0frnktI0HS./nAmn1OAPWxn/q7593h8w92LI83T8OS', displayName: '系统管理员' },
+      { username: '张毛毛', password: '$2b$10$6AENzM1tdUjK1JwFcUpvbOloyn9tPKpFscWoh/L22mIGqYkcWtzDy', displayName: '张毛毛' },
+    ];
+    const userIds = {};
+    for (const u of users) {
+      const res = await client.query(
+        `INSERT INTO "users" ("id", "username", "password", "displayName", "status") VALUES (gen_random_uuid(), $1, $2, $3, 'active') ON CONFLICT ("username") DO NOTHING RETURNING "id"`,
+        [u.username, u.password, u.displayName]
+      );
+      if (res.rows.length > 0) {
+        userIds[u.username] = res.rows[0].id;
+      }
+    }
+
+    if (userIds['admin'] && roleIds['admin']) {
+      await client.query(
+        `INSERT INTO "user_roles" ("userId", "roleId") VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+        [userIds['admin'], roleIds['admin']]
+      );
+    }
+    if (userIds['张毛毛'] && roleIds['psychologist']) {
+      await client.query(
+        `INSERT INTO "user_roles" ("userId", "roleId") VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+        [userIds['张毛毛'], roleIds['psychologist']]
+      );
     }
 
     console.log('  ✅ 初始数据已插入');
-  } catch {
-    // tables might not exist yet if DB_SYNC hasn't run
+    console.log('     管理员: admin / admin123');
+    console.log('     心理老师: 张毛毛 / Abc12345');
+  } catch (e) {
+    console.log('  ⚠️ 种子数据插入失败:', e.message);
   } finally {
     try { await client.end(); } catch {}
+  }
+}
+
+async function ensureDataDir() {
+  const oldDataDir = path.join(APP_DIR, 'data');
+  if (!fs.existsSync(MIGRATION_MARKER) && fs.existsSync(oldDataDir) && fs.existsSync(path.join(oldDataDir, 'db', 'PG_VERSION'))) {
+    console.log('  📦 检测到旧版数据目录，正在迁移...');
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    const entries = fs.readdirSync(oldDataDir);
+    for (const entry of entries) {
+      const src = path.join(oldDataDir, entry);
+      const dest = path.join(DATA_DIR, entry);
+      if (!fs.existsSync(dest)) {
+        fs.cpSync(src, dest, { recursive: true });
+      }
+    }
+    fs.writeFileSync(MIGRATION_MARKER, new Date().toISOString());
+    console.log(`  ✅ 数据已迁移到 ${DATA_DIR}`);
+  }
+
+  if (!fs.existsSync(DB_DATA_DIR)) {
+    fs.mkdirSync(DB_DATA_DIR, { recursive: true });
   }
 }
 
@@ -241,11 +355,10 @@ async function main() {
   console.log('╔══════════════════════════════════════════╗');
   console.log('║   啄木鸟心理预警辅助系统 - 正在启动...    ║');
   console.log('╚══════════════════════════════════════════╝');
+  console.log(`  数据目录: ${DATA_DIR}`);
   console.log('');
 
-  if (!fs.existsSync(DB_DATA_DIR)) {
-    fs.mkdirSync(DB_DATA_DIR, { recursive: true });
-  }
+  await ensureDataDir();
 
   console.log('[1/5] 启动内置数据库...');
   const pg = new EmbeddedPostgres({
@@ -253,7 +366,7 @@ async function main() {
     port: PG_PORT,
     user: 'postgres',
     password: 'postgres',
-    dataDir: DB_DATA_DIR,
+    databaseDir: DB_DATA_DIR,
   });
 
   const isFresh = !fs.existsSync(path.join(DB_DATA_DIR, 'PG_VERSION'));
@@ -355,8 +468,8 @@ async function main() {
     console.log('║          ✅ 启动成功！                    ║');
     console.log('╠══════════════════════════════════════════╣');
     console.log(`║  访问地址: ${appUrl.padEnd(28)}║`);
-    console.log('║  默认账号: admin                          ║');
-    console.log('║  默认密码: admin123                       ║');
+    console.log('║  管理员: admin / admin123                ║');
+    console.log('║  心理老师: 张毛毛 / Abc12345              ║');
     console.log('║  关闭此窗口将停止服务                     ║');
     console.log('╚══════════════════════════════════════════╝');
     console.log('');
@@ -364,7 +477,8 @@ async function main() {
     console.log('');
     console.log('  ⚠️  应用可能未完全启动');
     console.log(`  请手动访问: ${appUrl}`);
-    console.log('  账号: admin / admin123');
+    console.log('  管理员: admin / admin123');
+    console.log('  心理老师: 张毛毛 / Abc12345');
     console.log('');
   }
 
