@@ -180,16 +180,16 @@ describe('ReportGeneratorService', () => {
     it('should compute statistics from task results', async () => {
       dataSource.query.mockResolvedValueOnce([
         {
-          total_score: 10,
+          totalScore: 10,
           level: 'normal',
           color: 'green',
-          dimension_scores: JSON.stringify({ anxiety: 3, depression: 7 }),
+          dimensionScores: JSON.stringify({ anxiety: 3, depression: 7 }),
         },
         {
-          total_score: 20,
+          totalScore: 20,
           level: 'mild',
           color: 'yellow',
-          dimension_scores: JSON.stringify({ anxiety: 8, depression: 12 }),
+          dimensionScores: JSON.stringify({ anxiety: 8, depression: 12 }),
         },
       ]);
 
@@ -214,13 +214,13 @@ describe('ReportGeneratorService', () => {
       expect(result.avgScore).toBe(0);
     });
 
-    it('should handle null dimension_scores', async () => {
+    it('should handle null dimensionScores', async () => {
       dataSource.query.mockResolvedValueOnce([
         {
-          total_score: 10,
+          totalScore: 10,
           level: 'normal',
           color: 'green',
-          dimension_scores: null,
+          dimensionScores: null,
         },
       ]);
 
@@ -237,10 +237,10 @@ describe('ReportGeneratorService', () => {
       });
       dataSource.query.mockResolvedValueOnce([
         {
-          total_score: 10,
+          totalScore: 10,
           level: 'normal',
           color: 'green',
-          dimension_scores: null,
+          dimensionScores: null,
         },
       ]);
 

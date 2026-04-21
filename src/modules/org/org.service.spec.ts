@@ -8,6 +8,7 @@ import { Class } from '../../entities/org/class.entity';
 import { Student } from '../../entities/org/student.entity';
 import { HookBus } from '../plugin/hook-bus';
 import { DataScopeFilter } from '../auth/data-scope-filter';
+import { EncryptionService } from '../core/encryption.service';
 
 describe('OrgService', () => {
   let service: OrgService;
@@ -55,6 +56,12 @@ describe('OrgService', () => {
         { provide: getRepositoryToken(Student), useValue: mockStudentRepo },
         { provide: HookBus, useValue: mockHookBus },
         { provide: DataScopeFilter, useValue: mockDataScopeFilter },
+        {
+          provide: EncryptionService,
+          useValue: {
+            encrypt: jest.fn().mockResolvedValue(Buffer.from('enc')),
+          },
+        },
       ],
     }).compile();
 

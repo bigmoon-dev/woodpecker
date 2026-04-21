@@ -1,11 +1,20 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
+import * as crypto from 'crypto';
 import { Grade } from '../../entities/org/grade.entity';
 import { Class } from '../../entities/org/class.entity';
 import { Student } from '../../entities/org/student.entity';
 import { HookBus } from '../plugin/hook-bus';
 import { DataScopeFilter, DataScope } from '../auth/data-scope-filter';
+import { EncryptionService } from '../core/encryption.service';
+
+interface CreateStudentInput {
+  classId: string;
+  name?: string;
+  studentNumber?: string;
+  gender?: string;
+}
 
 @Injectable()
 export class OrgService {
@@ -18,6 +27,7 @@ export class OrgService {
     private studentRepo: Repository<Student>,
     private hookBus: HookBus,
     private dataScopeFilter: DataScopeFilter,
+    private encryptionService: EncryptionService,
   ) {}
 
   async createGrade(data: Partial<Grade>): Promise<Grade> {
@@ -147,8 +157,27 @@ export class OrgService {
     return this.classRepo.save(cls);
   }
 
-  async createStudent(data: Partial<Student>): Promise<Student> {
-    const student = this.studentRepo.create(data);
+  async createStudent(
+    data: Partial<Student> & { name?: string; studentNumber?: string },
+  ): Promise<Student> {
+    const input = data as unknown as CreateStudentInput;
+    const encryptedName = input.name
+      ? await this.encryptionService.encrypt(input.name)
+      : null;
+    const encryptedStudentNumber = input.studentNumber
+      ? await this.encryptionService.encrypt(input.studentNumber)
+      : null;
+    const studentNumberHash = input.studentNumber
+      ? crypto.createHash('sha256').update(input.studentNumber).digest('hex')
+      : null;
+
+    const student = this.studentRepo.create({
+      classId: data.classId,
+      gender: data.gender,
+      encryptedName,
+      encryptedStudentNumber,
+      studentNumberHash,
+    });
     const saved = await this.studentRepo.save(student);
     await this.hookBus
       .emit('on:student.imported', {

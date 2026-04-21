@@ -207,7 +207,7 @@ describe('ResultService - findByFilter', () => {
     });
 
     const andWhereCalls = mockQb.andWhere.mock.calls.map((c: any[]) => c[0]);
-    expect(andWhereCalls).toContain('ta.task_id = :taskId');
+    expect(andWhereCalls).toContain('ta.taskId = :taskId');
   });
 
   it('returns empty array when no submitted answers found', async () => {

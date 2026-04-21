@@ -69,10 +69,10 @@ export class ResultService {
       .createQueryBuilder('ta')
       .innerJoinAndSelect('ta.task', 'task')
       .leftJoinAndSelect('task.scale', 'scale')
-      .where('ta.student_id = :studentId', { studentId })
-      .andWhere('task.scale_id = :scaleId', { scaleId })
+      .where('ta.studentId = :studentId', { studentId })
+      .andWhere('task.scaleId = :scaleId', { scaleId })
       .andWhere('ta.status = :status', { status: 'submitted' })
-      .orderBy('ta.submitted_at', 'ASC')
+      .orderBy('ta.submittedAt', 'ASC')
       .getMany();
 
     if (answers.length === 0) {
@@ -338,12 +338,12 @@ export class ResultService {
       .leftJoinAndSelect('task.scale', 'scale');
 
     if (filter.taskId) {
-      answerQuery = answerQuery.andWhere('ta.task_id = :taskId', {
+      answerQuery = answerQuery.andWhere('ta.taskId = :taskId', {
         taskId: filter.taskId,
       });
     }
     if (studentIds.length > 0) {
-      answerQuery = answerQuery.andWhere('ta.student_id IN (:...studentIds)', {
+      answerQuery = answerQuery.andWhere('ta.studentId IN (:...studentIds)', {
         studentIds,
       });
     }

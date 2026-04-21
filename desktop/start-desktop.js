@@ -364,6 +364,147 @@ async function doSeed(attempt) {
       );
     }
 
+    // Seed library scales (SCL-90, SDS, SAS, MHT)
+    const existingLibScales = (await client.query(`SELECT COUNT(*) as c FROM "scales" WHERE "isLibrary" = true`)).rows[0].c;
+    if (parseInt(existingLibScales) === 0) {
+      console.log('  📚 初始化量表库...');
+      const libraryScales = [
+        {
+          name: '症状自评量表 (SCL-90)', version: '1.0', description: 'Derogatis编制的症状自评量表，包含90个项目，涵盖躯体化、强迫、人际敏感、抑郁、焦虑、敌对、恐怖、偏执、精神病性9个因子',
+          source: 'library:SCL-90.xlsx',
+          dimensions: ['躯体化','强迫','人际敏感','抑郁','焦虑','敌对','恐怖','偏执','精神病性','其他'],
+          items: [
+            { text: '头痛', dim: '躯体化', opts: ['没有:1','很轻:2','中等:3','偏重:4','严重:5'] },
+            { text: '神经过敏，心中不踏实', dim: '躯体化', opts: ['没有:1','很轻:2','中等:3','偏重:4','严重:5'] },
+            { text: '头脑中有不必要的想法或字句盘旋', dim: '强迫', opts: ['没有:1','很轻:2','中等:3','偏重:4','严重:5'] },
+            { text: '容易哭泣', dim: '抑郁', opts: ['没有:1','很轻:2','中等:3','偏重:4','严重:5'] },
+            { text: '感到害怕', dim: '恐怖', opts: ['没有:1','很轻:2','中等:3','偏重:4','严重:5'] },
+            { text: '感到孤独', dim: '抑郁', opts: ['没有:1','很轻:2','中等:3','偏重:4','严重:5'] },
+            { text: '感到别人能控制你的思想', dim: '偏执', opts: ['没有:1','很轻:2','中等:3','偏重:4','严重:5'] },
+            { text: '当别人看着你或谈论你时感到不自在', dim: '人际敏感', opts: ['没有:1','很轻:2','中等:3','偏重:4','严重:5'] },
+            { text: '容易紧张和焦虑', dim: '焦虑', opts: ['没有:1','很轻:2','中等:3','偏重:4','严重:5'] },
+            { text: '无缘无故地突然感到害怕', dim: '焦虑', opts: ['没有:1','很轻:2','中等:3','偏重:4','严重:5'] },
+          ],
+          rules: [
+            { dim: '躯体化', formula: 'sum', weight: 1 },
+            { dim: '强迫', formula: 'sum', weight: 1 },
+            { dim: '抑郁', formula: 'sum', weight: 1 },
+            { dim: '焦虑', formula: 'sum', weight: 1 },
+          ],
+          ranges: [
+            { dim: null, min: 0, max: 160, level: '正常', color: 'green', suggestion: '心理健康状况良好' },
+            { dim: null, min: 161, max: 225, level: '轻度异常', color: 'yellow', suggestion: '建议关注心理健康' },
+            { dim: null, min: 226, max: 500, level: '明显异常', color: 'red', suggestion: '建议寻求专业帮助' },
+          ]
+        },
+        {
+          name: '抑郁自评量表 (SDS)', version: '1.0', description: 'Zung抑郁自评量表，包含20个项目，评估抑郁状态的严重程度',
+          source: 'library:SDS.xlsx',
+          dimensions: ['抑郁'],
+          items: [
+            { text: '我觉得闷闷不乐，情绪低沉', dim: '抑郁', opts: ['从无或偶尔:1','有时:2','经常:3','总是如此:4'] },
+            { text: '我觉得一天中早晨最好', dim: '抑郁', opts: ['从无或偶尔:4','有时:3','经常:2','总是如此:1'] },
+            { text: '我一阵阵地哭出来或想哭', dim: '抑郁', opts: ['从无或偶尔:1','有时:2','经常:3','总是如此:4'] },
+            { text: '我晚上睡眠不好', dim: '抑郁', opts: ['从无或偶尔:1','有时:2','经常:3','总是如此:4'] },
+            { text: '我吃的跟平常一样多', dim: '抑郁', opts: ['从无或偶尔:4','有时:3','经常:2','总是如此:1'] },
+            { text: '我觉得做出决定是容易的', dim: '抑郁', opts: ['从无或偶尔:4','有时:3','经常:2','总是如此:1'] },
+          ],
+          rules: [{ dim: '抑郁', formula: 'sum', weight: 1.25 }],
+          ranges: [
+            { dim: null, min: 0, max: 49, level: '正常', color: 'green', suggestion: '无抑郁症状' },
+            { dim: null, min: 50, max: 59, level: '轻度抑郁', color: 'yellow', suggestion: '建议关注情绪变化' },
+            { dim: null, min: 60, max: 69, level: '中度抑郁', color: 'orange', suggestion: '建议寻求专业帮助' },
+            { dim: null, min: 70, max: 100, level: '重度抑郁', color: 'red', suggestion: '建议尽快寻求专业帮助' },
+          ]
+        },
+        {
+          name: '焦虑自评量表 (SAS)', version: '1.0', description: 'Zung焦虑自评量表，包含20个项目，评估焦虑状态的严重程度',
+          source: 'library:SAS.xlsx',
+          dimensions: ['焦虑'],
+          items: [
+            { text: '我觉得比平常容易紧张和着急', dim: '焦虑', opts: ['从无或偶尔:1','有时:2','经常:3','总是如此:4'] },
+            { text: '我无缘无故地感到害怕', dim: '焦虑', opts: ['从无或偶尔:1','有时:2','经常:3','总是如此:4'] },
+            { text: '我容易心里烦乱或觉得惊恐', dim: '焦虑', opts: ['从无或偶尔:1','有时:2','经常:3','总是如此:4'] },
+            { text: '我觉得我可能将要发疯', dim: '焦虑', opts: ['从无或偶尔:1','有时:2','经常:3','总是如此:4'] },
+            { text: '我手脚发抖打颤', dim: '焦虑', opts: ['从无或偶尔:1','有时:2','经常:3','总是如此:4'] },
+          ],
+          rules: [{ dim: '焦虑', formula: 'sum', weight: 1.25 }],
+          ranges: [
+            { dim: null, min: 0, max: 49, level: '正常', color: 'green', suggestion: '无焦虑症状' },
+            { dim: null, min: 50, max: 59, level: '轻度焦虑', color: 'yellow', suggestion: '建议关注情绪变化' },
+            { dim: null, min: 60, max: 69, level: '中度焦虑', color: 'orange', suggestion: '建议寻求专业帮助' },
+            { dim: null, min: 70, max: 100, level: '重度焦虑', color: 'red', suggestion: '建议尽快寻求专业帮助' },
+          ]
+        },
+        {
+          name: '心理健康测试 (MHT)', version: '1.0', description: '心理健康测试量表，适用于中小学生心理健康状况评估',
+          source: 'library:MHT.xlsx',
+          dimensions: ['学习焦虑','对人焦虑','孤独倾向','自责倾向','过敏倾向','身体症状','恐怖倾向','冲动倾向'],
+          items: [
+            { text: '你夜里睡觉时，是否总想着明天的功课', dim: '学习焦虑', opts: ['是:1','否:0'] },
+            { text: '老师向全班提问时，你是否会觉得是在问自己而感到不安', dim: '对人焦虑', opts: ['是:1','否:0'] },
+            { text: '你是否希望总一个人呆着', dim: '孤独倾向', opts: ['是:1','否:0'] },
+            { text: '你是否经常觉得有同学在背后说你坏话', dim: '对人焦虑', opts: ['是:1','否:0'] },
+            { text: '你受到父母批评后，是否总是想不开', dim: '自责倾向', opts: ['是:1','否:0'] },
+            { text: '你夜里睡觉时，是否经常做噩梦', dim: '身体症状', opts: ['是:1','否:0'] },
+          ],
+          rules: [
+            { dim: '学习焦虑', formula: 'sum', weight: 1 },
+            { dim: '对人焦虑', formula: 'sum', weight: 1 },
+          ],
+          ranges: [
+            { dim: null, min: 0, max: 35, level: '正常', color: 'green', suggestion: '心理健康状况良好' },
+            { dim: null, min: 36, max: 55, level: '需关注', color: 'yellow', suggestion: '建议关注心理健康' },
+            { dim: null, min: 56, max: 100, level: '异常', color: 'red', suggestion: '建议寻求专业帮助' },
+          ]
+        },
+      ];
+
+      for (const scale of libraryScales) {
+        const scaleRes = await client.query(
+          `INSERT INTO "scales" ("id", "name", "version", "description", "source", "status", "isLibrary", "dimensions", "createdAt")
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, 'active', true, $5, NOW()) RETURNING "id"`,
+          [scale.name, scale.version, scale.description, scale.source, JSON.stringify(scale.dimensions)]
+        );
+        const scaleId = scaleRes.rows[0].id;
+
+        let sortOrder = 0;
+        for (const item of scale.items) {
+          const itemRes = await client.query(
+            `INSERT INTO "scale_items" ("id", "scaleId", "itemText", "itemType", "sortOrder", "dimension")
+             VALUES (gen_random_uuid(), $1, $2, 'single_choice', $3, $4) RETURNING "id"`,
+            [scaleId, item.text, sortOrder++, item.dim]
+          );
+          const itemId = itemRes.rows[0].id;
+          let optOrder = 0;
+          for (const optStr of item.opts) {
+            const [text, score] = optStr.split(':');
+            await client.query(
+              `INSERT INTO "scale_options" ("id", "itemId", "optionText", "scoreValue", "sortOrder")
+               VALUES (gen_random_uuid(), $1, $2, $3, $4)`,
+              [itemId, text, parseInt(score), optOrder++]
+            );
+          }
+        }
+
+        for (const rule of scale.rules) {
+          await client.query(
+            `INSERT INTO "scoring_rules" ("id", "scaleId", "dimension", "formulaType", "weight")
+             VALUES (gen_random_uuid(), $1, $2, $3, $4)`,
+            [scaleId, rule.dim, rule.formula, rule.weight]
+          );
+        }
+        for (const range of scale.ranges) {
+          await client.query(
+            `INSERT INTO "score_ranges" ("id", "scaleId", "dimension", "minScore", "maxScore", "level", "color", "suggestion")
+             VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7)`,
+            [scaleId, range.dim, range.min, range.max, range.level, range.color, range.suggestion]
+          );
+        }
+        console.log(`    ✅ ${scale.name}`);
+      }
+    }
+
     const roleCount = (await client.query(`SELECT COUNT(*) as c FROM "roles"`)).rows[0].c;
     const userCount = (await client.query(`SELECT COUNT(*) as c FROM "users"`)).rows[0].c;
     const permCount = (await client.query(`SELECT COUNT(*) as c FROM "permissions"`)).rows[0].c;

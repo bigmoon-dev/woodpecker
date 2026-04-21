@@ -84,10 +84,10 @@ export class ReportGeneratorService {
 
   async getGroupStatistics(taskId: string): Promise<GroupStatistics> {
     const rows: any[] = await this.dataSource.query(
-      `SELECT tr.total_score, tr.level, tr.color, tr.dimension_scores
+      `SELECT tr."totalScore", tr.level, tr.color, tr."dimensionScores"
        FROM task_results tr
-       JOIN task_answers ta ON tr.answer_id = ta.id
-       WHERE ta.task_id = $1 AND ta.status = 'submitted'`,
+       JOIN task_answers ta ON tr."answerId" = ta.id
+       WHERE ta."taskId" = $1 AND ta.status = 'submitted'`,
       [taskId],
     );
 
@@ -103,7 +103,7 @@ export class ReportGeneratorService {
       };
     }
 
-    const scores = rows.map((r: any) => Number(r.total_score));
+    const scores = rows.map((r: any) => Number(r.totalScore));
     const avg =
       scores.reduce((s: number, v: number) => s + v, 0) / scores.length;
     const variance =
@@ -118,11 +118,11 @@ export class ReportGeneratorService {
       levelDistribution[row.level] = (levelDistribution[row.level] || 0) + 1;
       colorDistribution[row.color] = (colorDistribution[row.color] || 0) + 1;
 
-      if (row.dimension_scores) {
+      if (row.dimensionScores) {
         const ds =
-          typeof row.dimension_scores === 'string'
-            ? JSON.parse(row.dimension_scores)
-            : row.dimension_scores;
+          typeof row.dimensionScores === 'string'
+            ? JSON.parse(row.dimensionScores)
+            : row.dimensionScores;
         for (const [key, value] of Object.entries(ds)) {
           if (!dimensionScores[key]) dimensionScores[key] = [];
           dimensionScores[key].push(Number(value));

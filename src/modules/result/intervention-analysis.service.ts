@@ -232,12 +232,12 @@ export class InterventionAnalysisService {
     }[]
   > {
     const rows = await this.dataSource.query(
-      `SELECT ta.student_id AS "studentId", tr.total_score AS "totalScore",
-              tr.level, tr.color, tr.created_at AS "createdAt"
+      `SELECT ta."studentId" AS "studentId", tr."totalScore" AS "totalScore",
+              tr.level, tr.color, tr."createdAt" AS "createdAt"
        FROM task_results tr
-       JOIN task_answers ta ON tr.answer_id = ta.id
-       WHERE ta.task_id = $1 AND ta.status = 'submitted'
-       ORDER BY tr.created_at ASC`,
+       JOIN task_answers ta ON tr."answerId" = ta.id
+       WHERE ta."taskId" = $1 AND ta.status = 'submitted'
+       ORDER BY tr."createdAt" ASC`,
       [taskId],
     );
     return rows;
@@ -251,11 +251,11 @@ export class InterventionAnalysisService {
     const rows = await this.dataSource.query(
       `SELECT tr.level, tr.color
        FROM task_results tr
-       JOIN task_answers ta ON tr.answer_id = ta.id
-       JOIN tasks t ON ta.task_id = t.id
-       WHERE ta.student_id = $1 AND t.scale_id = $2 AND ta.status = 'submitted'
-         AND tr.created_at < $3
-       ORDER BY tr.created_at DESC
+       JOIN task_answers ta ON tr."answerId" = ta.id
+       JOIN tasks t ON ta."taskId" = t.id
+       WHERE ta."studentId" = $1 AND t."scaleId" = $2 AND ta.status = 'submitted'
+         AND tr."createdAt" < $3
+       ORDER BY tr."createdAt" DESC
        LIMIT 1`,
       [studentId, scaleId, beforeDate],
     );
