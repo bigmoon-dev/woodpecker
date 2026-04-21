@@ -196,6 +196,26 @@ async function ensureDatabase() {
 }
 
 async function seedIfEmpty() {
+  const MAX_RETRIES = 3;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const ok = await doSeed(attempt);
+      if (ok) return;
+      if (attempt < MAX_RETRIES) {
+        console.log(`  ⚠️ 种子数据验证失败，第 ${attempt} 次重试...`);
+        await sleep(2000);
+      }
+    } catch (e) {
+      const msg = `[${new Date().toISOString()}] seed attempt ${attempt} failed: ${e.message}\n`;
+      const logFile = path.join(DATA_DIR, 'seed-error.log');
+      fs.appendFileSync(logFile, msg);
+      console.log(`  ⚠️ 种子数据失败 (第${attempt}次): ${e.message}`);
+      if (attempt < MAX_RETRIES) await sleep(2000);
+    }
+  }
+}
+
+async function doSeed(attempt) {
   const { Client } = require('pg');
   const client = new Client({
     host: 'localhost',
@@ -209,9 +229,9 @@ async function seedIfEmpty() {
     await client.connect();
 
     const check = await client.query(`SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users' LIMIT 1`);
-    if (check.rows.length === 0) return;
+    if (check.rows.length === 0) return true;
 
-    console.log('  检查初始数据...');
+    if (attempt === 1) console.log('  检查初始数据...');
 
     const roles = [
       { name: 'admin', desc: '系统管理员' },
@@ -221,11 +241,16 @@ async function seedIfEmpty() {
     ];
     const roleIds = {};
     for (const role of roles) {
-      const res = await client.query(
-        `INSERT INTO "roles" ("id", "name", "description", "isSystem") VALUES (gen_random_uuid(), $1, $2, true) ON CONFLICT ("name") DO UPDATE SET "description" = $2 RETURNING "id"`,
-        [role.name, role.desc]
-      );
-      roleIds[role.name] = res.rows[0].id;
+      let res = await client.query(`SELECT "id" FROM "roles" WHERE "name" = $1`, [role.name]);
+      if (res.rows.length > 0) {
+        roleIds[role.name] = res.rows[0].id;
+      } else {
+        res = await client.query(
+          `INSERT INTO "roles" ("id", "name", "description", "isSystem") VALUES (gen_random_uuid(), $1, $2, true) RETURNING "id"`,
+          [role.name, role.desc]
+        );
+        roleIds[role.name] = res.rows[0].id;
+      }
     }
 
     const permissions = [
@@ -316,11 +341,17 @@ async function seedIfEmpty() {
       );
     }
 
-    console.log('  ✅ 初始数据已插入');
-    console.log('     管理员: admin / admin123');
-    console.log('     心理老师: 张毛毛 / Abc12345');
-  } catch (e) {
-    console.log('  ⚠️ 种子数据插入失败:', e.message);
+    const roleCount = (await client.query(`SELECT COUNT(*) as c FROM "roles"`)).rows[0].c;
+    const userCount = (await client.query(`SELECT COUNT(*) as c FROM "users"`)).rows[0].c;
+    const permCount = (await client.query(`SELECT COUNT(*) as c FROM "permissions"`)).rows[0].c;
+
+    if (parseInt(roleCount) >= 4 && parseInt(userCount) >= 2 && parseInt(permCount) >= 20) {
+      console.log('  ✅ 初始数据完整');
+      return true;
+    } else {
+      console.log(`  ⚠️ 数据不完整 roles=${roleCount} users=${userCount} perms=${permCount}`);
+      return false;
+    }
   } finally {
     try { await client.end(); } catch {}
   }
