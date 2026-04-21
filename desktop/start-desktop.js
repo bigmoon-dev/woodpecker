@@ -211,10 +211,7 @@ async function seedIfEmpty() {
     const check = await client.query(`SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users' LIMIT 1`);
     if (check.rows.length === 0) return;
 
-    const userCheck = await client.query(`SELECT 1 FROM "users" WHERE "username" = 'admin' LIMIT 1`);
-    if (userCheck.rows.length > 0) return;
-
-    console.log('  首次启动，插入初始数据...');
+    console.log('  检查初始数据...');
 
     const roles = [
       { name: 'admin', desc: '系统管理员' },
@@ -294,11 +291,14 @@ async function seedIfEmpty() {
     ];
     const userIds = {};
     for (const u of users) {
-      const res = await client.query(
-        `INSERT INTO "users" ("id", "username", "password", "displayName", "status") VALUES (gen_random_uuid(), $1, $2, $3, 'active') ON CONFLICT ("username") DO NOTHING RETURNING "id"`,
-        [u.username, u.password, u.displayName]
-      );
-      if (res.rows.length > 0) {
+      const existing = await client.query(`SELECT "id" FROM "users" WHERE "username" = $1`, [u.username]);
+      if (existing.rows.length > 0) {
+        userIds[u.username] = existing.rows[0].id;
+      } else {
+        const res = await client.query(
+          `INSERT INTO "users" ("id", "username", "password", "displayName", "status") VALUES (gen_random_uuid(), $1, $2, $3, 'active') RETURNING "id"`,
+          [u.username, u.password, u.displayName]
+        );
         userIds[u.username] = res.rows[0].id;
       }
     }
@@ -338,6 +338,10 @@ async function ensureDataDir() {
       if (!fs.existsSync(dest)) {
         fs.cpSync(src, dest, { recursive: true });
       }
+    }
+    const dbDir = path.join(DATA_DIR, 'db');
+    if (fs.existsSync(dbDir)) {
+      try { fs.chmodSync(dbDir, 0o700); } catch {}
     }
     fs.writeFileSync(MIGRATION_MARKER, new Date().toISOString());
     console.log(`  ✅ 数据已迁移到 ${DATA_DIR}`);
@@ -504,7 +508,7 @@ async function main() {
 
 main().catch((err) => {
   console.error('');
-  console.error('❌ 启动失败:', err.message);
+  console.error('❌ 启动失败:', err?.message || err);
   console.error('');
   process.exit(1);
 });
