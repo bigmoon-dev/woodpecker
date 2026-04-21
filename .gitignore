@@ -9,5 +9,8 @@ public/assets/
 node_modules/**/linux-*
 data/
 *.tar.gz
+*.zip
 scripts/ota-keys/private.key
 desktop/ota-config.json
+build/desktop/*/node/
+build/desktop/*/node_modules/
