@@ -10,8 +10,16 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 
 const indexHtmlPath = (() => {
-  const p = join(__dirname, '..', 'public', 'index.html');
-  return existsSync(p) ? p : null;
+  const candidates = [
+    join(__dirname, '..', 'public', 'index.html'),
+    join(__dirname, '..', '..', 'public', 'index.html'),
+  ];
+  for (const p of candidates) {
+    if (existsSync(p)) {
+      return p;
+    }
+  }
+  return null;
 })();
 
 @Catch()
