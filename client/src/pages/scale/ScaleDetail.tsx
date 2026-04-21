@@ -157,8 +157,8 @@ export default function ScaleDetail() {
       message.warning('维度名称已存在');
       return;
     }
-    if (dimensions.length >= 10) {
-      message.warning('最多支持10个维度');
+    if (dimensions.length >= 100) {
+      message.warning('最多支持100个维度');
       return;
     }
     setDimensions((prev) => [...prev, val]);

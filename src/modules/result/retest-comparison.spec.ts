@@ -9,6 +9,7 @@ import { Class } from '../../entities/org/class.entity';
 import { Grade } from '../../entities/org/grade.entity';
 import { DataScopeFilter } from '../auth/data-scope-filter';
 import { EncryptionService } from '../core/encryption.service';
+import { DataSource } from 'typeorm';
 
 describe('ResultService.compareResults', () => {
   let service: ResultService;
@@ -42,6 +43,7 @@ describe('ResultService.compareResults', () => {
         { provide: getRepositoryToken(Grade), useValue: mockGradeRepo },
         { provide: DataScopeFilter, useValue: mockDataScopeFilter },
         { provide: EncryptionService, useValue: mockEncryptionService },
+        { provide: DataSource, useValue: { query: jest.fn().mockImplementation((_sql: string, params: string[][]) => Promise.resolve((params?.[0] || []).map((id: string) => ({ id, studentId: id })))) } },
       ],
     }).compile();
     service = module.get(ResultService);

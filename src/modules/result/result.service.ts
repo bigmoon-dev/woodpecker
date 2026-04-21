@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, DataSource } from 'typeorm';
 import { TaskResult } from '../../entities/task/task-result.entity';
 import { TaskAnswer } from '../../entities/task/task-answer.entity';
 import { Student } from '../../entities/org/student.entity';
@@ -58,6 +58,7 @@ export class ResultService {
     private gradeRepo: Repository<Grade>,
     private dataScopeFilter: DataScopeFilter,
     private encryptionService: EncryptionService,
+    private dataSource: DataSource,
   ) {}
 
   async compareResults(
@@ -144,12 +145,46 @@ export class ResultService {
     };
   }
 
-  async findByStudent(studentId: string): Promise<TaskResult[]> {
-    const answers = await this.answerRepo.find({ where: { studentId } });
+  async findByStudent(studentId: string): Promise<ResultWithContext[]> {
+    const answers = await this.answerRepo.find({
+      where: { studentId },
+      relations: ['task', 'task.scale'],
+    });
     const answerIds = answers.map((a) => a.id);
     if (answerIds.length === 0) return [];
-    return this.resultRepo.find({
+
+    const results = await this.resultRepo.find({
       where: answerIds.map((id) => ({ answerId: id })),
+      order: { createdAt: 'DESC' },
+    });
+
+    const piiMap = await this.encryptionService.batchDecrypt([studentId]);
+    const pii = piiMap.get(studentId);
+
+    const student = await this.studentRepo.findOne({
+      where: { id: studentId },
+    });
+    const classEntity = student
+      ? await this.classRepo.findOne({ where: { id: student.classId } })
+      : null;
+    const gradeEntity = classEntity
+      ? await this.gradeRepo.findOne({ where: { id: classEntity.gradeId } })
+      : null;
+
+    const answerMap = new Map(answers.map((a) => [a.id, a]));
+
+    return results.map((r) => {
+      const answer = answerMap.get(r.answerId);
+      return {
+        result: r,
+        studentId,
+        studentName: pii?.name ?? '',
+        studentNumber: pii?.studentNumber ?? '',
+        className: classEntity?.name ?? '',
+        gradeName: gradeEntity?.name ?? '',
+        taskTitle: answer?.task?.title ?? '',
+        scaleName: answer?.task?.scale?.name ?? '',
+      };
     });
   }
 
@@ -305,12 +340,19 @@ export class ResultService {
     });
 
     const uniqueStudentIds = [...new Set(answers.map((a) => a.studentId))];
-    const piiMap = await this.encryptionService.batchDecrypt(uniqueStudentIds);
+    const userRows: { id: string; studentId: string }[] =
+      await this.dataSource.query(
+        'SELECT id, "studentId" FROM users WHERE id = ANY($1::uuid[])',
+        [uniqueStudentIds],
+      );
+    const userToStudent = new Map(userRows.map((r) => [r.id, r.studentId]));
+    const realStudentIds = [...new Set(userToStudent.values())].filter(Boolean);
+    const piiMap = await this.encryptionService.batchDecrypt(realStudentIds);
 
     const answerMap = new Map(answers.map((a) => [a.id, a]));
 
     const studentRecords = await this.studentRepo.find({
-      where: { id: In(uniqueStudentIds) },
+      where: { id: In(realStudentIds) },
     });
     const classIds = [...new Set(studentRecords.map((s) => s.classId))];
     const classRecords =
@@ -330,11 +372,12 @@ export class ResultService {
 
     return results.map((r) => {
       const answer = answerMap.get(r.answerId);
-      const pii = answer ? piiMap.get(answer.studentId) : undefined;
+      const realId = answer
+        ? userToStudent.get(answer.studentId) ?? answer.studentId
+        : '';
+      const pii = piiMap.get(realId);
       const taskEntity = answer?.task;
-      const studentClassId = answer
-        ? studentClassMap.get(answer.studentId)
-        : undefined;
+      const studentClassId = realId ? studentClassMap.get(realId) : undefined;
       const classEntity = studentClassId
         ? classMap.get(studentClassId)
         : undefined;
@@ -343,7 +386,7 @@ export class ResultService {
         : undefined;
       return {
         result: r,
-        studentId: answer?.studentId ?? '',
+        studentId: realId,
         studentName: pii?.name ?? '',
         studentNumber: pii?.studentNumber ?? '',
         className: classEntity?.name ?? '',

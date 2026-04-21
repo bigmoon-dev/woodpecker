@@ -9,6 +9,7 @@ import { Class } from '../../entities/org/class.entity';
 import { Grade } from '../../entities/org/grade.entity';
 import { DataScopeFilter } from '../auth/data-scope-filter';
 import { EncryptionService } from '../core/encryption.service';
+import { DataSource } from 'typeorm';
 
 describe('ResultService', () => {
   let service: ResultService;
@@ -44,7 +45,7 @@ describe('ResultService', () => {
         { provide: getRepositoryToken(Grade), useValue: mockGradeRepo },
         { provide: DataScopeFilter, useValue: mockDataScopeFilter },
         { provide: EncryptionService, useValue: mockEncryptionService },
-      ],
+        { provide: DataSource, useValue: { query: jest.fn().mockImplementation((_sql: string, params: string[][]) => Promise.resolve((params?.[0] || []).map((id: string) => ({ id, studentId: id })))) } },
     }).compile();
 
     service = module.get<ResultService>(ResultService);
@@ -54,21 +55,31 @@ describe('ResultService', () => {
   });
 
   describe('findByStudent', () => {
-    it('should return results by studentId', async () => {
-      const answers = [{ id: 'a1' }, { id: 'a2' }];
-      const results = [{ id: 'r1' }, { id: 'r2' }];
+    it('should return results with context by studentId', async () => {
+      const answers = [
+        { id: 'a1', task: { title: 'T1', scale: { name: 'S1' } } },
+        { id: 'a2', task: { title: 'T2', scale: { name: 'S2' } } },
+      ];
+      const results = [{ id: 'r1', answerId: 'a1' }, { id: 'r2', answerId: 'a2' }];
       mockAnswerRepo.find.mockResolvedValue(answers);
       mockResultRepo.find.mockResolvedValue(results);
+      mockEncryptionService.batchDecrypt.mockResolvedValue(
+        new Map([['student1', { name: 'Zhang', studentNumber: '001' }]]),
+      );
+      mockStudentRepo.findOne.mockResolvedValue({ id: 'student1', classId: 'c1' });
+      mockClassRepo.findOne.mockResolvedValue({ id: 'c1', name: 'C1', gradeId: 'g1' });
+      mockGradeRepo.findOne.mockResolvedValue({ id: 'g1', name: 'G1' });
 
       const actual = await service.findByStudent('student1');
 
       expect(answerRepo.find).toHaveBeenCalledWith({
         where: { studentId: 'student1' },
+        relations: ['task', 'task.scale'],
       });
-      expect(resultRepo.find).toHaveBeenCalledWith({
-        where: [{ answerId: 'a1' }, { answerId: 'a2' }],
-      });
-      expect(actual).toEqual(results);
+      expect(actual.length).toBe(2);
+      expect(actual[0].studentName).toBe('Zhang');
+      expect(actual[0].className).toBe('C1');
+      expect(actual[0].scaleName).toBe('S1');
     });
 
     it('should return empty array when no answers found', async () => {

@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, DataSource } from 'typeorm';
 import { TaskResult } from '../../entities/task/task-result.entity';
 import { TaskAnswer } from '../../entities/task/task-answer.entity';
 import { Interview } from '../../entities/interview/interview.entity';
@@ -46,6 +46,7 @@ export class FollowupManageService {
     private dataScopeFilter: DataScopeFilter,
     private encryptionService: EncryptionService,
     private configService: ConfigReloadService,
+    private dataSource: DataSource,
   ) {}
 
   async getStudents(
@@ -65,53 +66,65 @@ export class FollowupManageService {
       if (scopeStudentIds.length === 0) return { data: [], total: 0 };
     }
 
-    const riskAnswers = await this.answerRepo
-      .createQueryBuilder('ta')
-      .getMany();
+    const riskQuery = this.resultRepo
+      .createQueryBuilder('tr')
+      .innerJoin('tr.answer', 'ta')
+      .select('ta.studentId', 'studentId')
+      .addSelect('tr.color', 'color')
+      .addSelect('tr.level', 'level')
+      .where('tr.color IN (:...colors)', { colors: colorSet })
+      .andWhere('ta.status = :status', { status: 'submitted' });
 
-    const riskAnswerIds = riskAnswers.map((a) => a.id);
-    const riskResults =
-      riskAnswerIds.length > 0
-        ? await this.resultRepo.find({
-            where: riskAnswerIds.map((id) => ({ answerId: id })),
-          })
-        : [];
+    if (scopeStudentIds) {
+      riskQuery.andWhere('ta.studentId IN (:...scopeStudentIds)', {
+        scopeStudentIds,
+      });
+    }
+
+    const riskStudents = await riskQuery.getRawMany();
 
     const riskStudentMap = new Map<string, { color: string; level: string }>();
-    for (const r of riskResults) {
-      if (!colorSet.includes(r.color)) continue;
-      const answer = riskAnswers.find((a) => a.id === r.answerId);
-      if (!answer) continue;
-      const existing = riskStudentMap.get(answer.studentId);
-      if (!existing) {
-        riskStudentMap.set(answer.studentId, {
-          color: r.color,
-          level: r.level,
+    const colorPriority: Record<string, number> = { red: 2, yellow: 1 };
+    for (const row of riskStudents) {
+      const existing = riskStudentMap.get(row.studentId);
+      if (
+        !existing ||
+        (colorPriority[row.color] ?? 0) > (colorPriority[existing.color] ?? 0)
+      ) {
+        riskStudentMap.set(row.studentId, {
+          color: row.color,
+          level: row.level,
         });
       }
     }
 
-    const interviews = await this.interviewRepo.find();
+    const riskStudentIds = new Set(riskStudentMap.keys());
+
+    const interviewQuery = this.interviewRepo
+      .createQueryBuilder('iv')
+      .select('iv.studentId', 'studentId')
+      .addSelect('COUNT(*)', 'cnt')
+      .addSelect('MAX(iv.interviewDate)', 'lastDate');
+
+    if (scopeStudentIds) {
+      interviewQuery.where('iv.studentId IN (:...scopeStudentIds)', {
+        scopeStudentIds,
+      });
+    }
+
+    const interviewRows = await interviewQuery
+      .groupBy('iv.studentId')
+      .getRawMany();
+
     const interviewStudentMap = new Map<
       string,
       { count: number; lastDate: Date | null }
     >();
-    for (const iv of interviews) {
-      const existing = interviewStudentMap.get(iv.studentId);
-      if (existing) {
-        existing.count++;
-        if (
-          iv.interviewDate &&
-          (!existing.lastDate || iv.interviewDate > existing.lastDate)
-        ) {
-          existing.lastDate = iv.interviewDate;
-        }
-      } else {
-        interviewStudentMap.set(iv.studentId, {
-          count: 1,
-          lastDate: iv.interviewDate ?? null,
-        });
-      }
+    for (const row of interviewRows) {
+      interviewStudentMap.set(row.studentId, {
+        count: parseInt(row.cnt, 10),
+        lastDate: row.lastDate ? new Date(row.lastDate) : null,
+      });
     }
 
     const allStudentIds = new Set([
@@ -131,10 +144,18 @@ export class FollowupManageService {
     const start = (page - 1) * pageSize;
     const pageIds = filteredIds.slice(start, start + pageSize);
 
-    const piiMap = await this.encryptionService.batchDecrypt(pageIds);
-    const students = await this.studentRepo.find({
-      where: { id: In(pageIds) },
-    });
+    const userRows: { id: string; studentId: string }[] =
+      await this.dataSource.query(
+        'SELECT id, "studentId" FROM users WHERE id = ANY($1::uuid[])',
+        [pageIds],
+      );
+    const userToStudent = new Map(userRows.map((r) => [r.id, r.studentId]));
+    const studentIds = [...new Set(userToStudent.values())].filter(Boolean);
+    const piiMap = await this.encryptionService.batchDecrypt(studentIds);
+    const students =
+      studentIds.length > 0
+        ? await this.studentRepo.find({ where: { id: In(studentIds) } })
+        : [];
     const classIds = [...new Set(students.map((s) => s.classId))];
     const classes =
       classIds.length > 0
@@ -150,8 +171,9 @@ export class FollowupManageService {
     const studentClassMap = new Map(students.map((s) => [s.id, s.classId]));
 
     const data: FollowupStudent[] = pageIds.map((id) => {
-      const pii = piiMap.get(id);
-      const classId = studentClassMap.get(id);
+      const realStudentId = userToStudent.get(id) ?? id;
+      const pii = piiMap.get(realStudentId);
+      const classId = studentClassMap.get(realStudentId);
       const cls = classId ? classMap.get(classId) : undefined;
       const grade = cls ? gradeMap.get(cls.gradeId) : undefined;
       const risk = riskStudentMap.get(id);

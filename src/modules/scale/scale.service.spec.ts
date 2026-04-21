@@ -8,6 +8,7 @@ import { ScaleService } from './scale.service';
 import { Scale } from '../../entities/scale/scale.entity';
 import { ScoringRule } from '../../entities/scale/scoring-rule.entity';
 import { ScoreRange } from '../../entities/scale/score-range.entity';
+import { Task } from '../../entities/task/task.entity';
 import { CreateScaleDto } from './scale.dto';
 
 import { ScaleCacheService } from '../scoring/scale-cache.service';
@@ -16,6 +17,7 @@ describe('ScaleService', () => {
   let service: ScaleService;
   let dataSource: DataSource;
   let scaleRepo: any;
+  let testingModule: TestingModule;
 
   const mockEntityManager = {
     create: jest.fn().mockReturnValue({}),
@@ -57,13 +59,16 @@ describe('ScaleService', () => {
         },
         { provide: getRepositoryToken(ScoringRule), useValue: {} },
         { provide: getRepositoryToken(ScoreRange), useValue: {} },
+        { provide: getRepositoryToken(Task), useValue: { count: jest.fn().mockResolvedValue(0) } },
         { provide: ScaleCacheService, useValue: mockScaleCacheService },
       ],
     }).compile();
 
+    testingModule = module;
     service = module.get<ScaleService>(ScaleService);
     dataSource = module.get<DataSource>(DataSource);
     scaleRepo = module.get(getRepositoryToken(Scale));
+    scaleRepo.findOne.mockResolvedValue(null);
   });
 
   describe('create() transaction', () => {
@@ -181,11 +186,39 @@ describe('ScaleService', () => {
   });
 
   describe('remove()', () => {
-    it('calls delete + cache invalidate', async () => {
-      scaleRepo.delete.mockResolvedValueOnce(undefined);
+    it('calls delete + cache invalidate when scale has no tasks', async () => {
+      scaleRepo.findOne.mockResolvedValueOnce({
+        id: 's1',
+        isLibrary: false,
+      });
       await service.remove('s1');
       expect(scaleRepo.delete).toHaveBeenCalledWith('s1');
       expect(mockScaleCacheService.invalidate).toHaveBeenCalledWith('s1');
+    });
+
+    it('throws if scale is library scale', async () => {
+      scaleRepo.findOne.mockResolvedValueOnce({
+        id: 's1',
+        isLibrary: true,
+      });
+      await expect(service.remove('s1')).rejects.toThrow('不能删除内置量表');
+    });
+
+    it('throws if scale is referenced by tasks', async () => {
+      scaleRepo.findOne.mockResolvedValueOnce({
+        id: 's1',
+        isLibrary: false,
+      });
+      const taskRepo = testingModule.get(getRepositoryToken(Task));
+      taskRepo.count.mockResolvedValueOnce(3);
+      await expect(service.remove('s1')).rejects.toThrow(
+        '该量表已被 3 个任务引用',
+      );
+    });
+
+    it('throws if scale not found', async () => {
+      scaleRepo.findOne.mockResolvedValueOnce(null);
+      await expect(service.remove('s1')).rejects.toThrow(NotFoundException);
     });
   });
 

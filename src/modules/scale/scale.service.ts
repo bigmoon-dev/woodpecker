@@ -12,6 +12,7 @@ import { ScoringRule } from '../../entities/scale/scoring-rule.entity';
 import { ScoreRange } from '../../entities/scale/score-range.entity';
 import { CreateScaleDto } from './scale.dto';
 import { ScaleCacheService } from '../scoring/scale-cache.service';
+import { Task } from '../../entities/task/task.entity';
 
 @Injectable()
 export class ScaleService {
@@ -22,11 +23,20 @@ export class ScaleService {
     private scoringRuleRepo: Repository<ScoringRule>,
     @InjectRepository(ScoreRange)
     private scoreRangeRepo: Repository<ScoreRange>,
+    @InjectRepository(Task)
+    private taskRepo: Repository<Task>,
     private dataSource: DataSource,
     private scaleCacheService: ScaleCacheService,
   ) {}
 
   async create(dto: CreateScaleDto): Promise<Scale> {
+    const existing = await this.scaleRepo.findOne({
+      where: { name: dto.name },
+    });
+    if (existing) {
+      throw new BadRequestException(`量表名称"${dto.name}"已存在`);
+    }
+
     const normalizedDimensions = this.validateAndNormalizeDimensions(dto);
 
     return this.dataSource.transaction(async (manager) => {
@@ -199,6 +209,15 @@ export class ScaleService {
         );
       }
 
+      if (dto.name && dto.name !== scale.name) {
+        const nameConflict = await this.scaleRepo.findOne({
+          where: { name: dto.name },
+        });
+        if (nameConflict) {
+          throw new BadRequestException(`量表名称"${dto.name}"已存在`);
+        }
+      }
+
       scale.name = dto.name ?? scale.name;
       scale.version = dto.version ?? scale.version;
       scale.description = dto.description ?? scale.description;
@@ -273,6 +292,21 @@ export class ScaleService {
   }
 
   async remove(id: string): Promise<void> {
+    const scale = await this.scaleRepo.findOne({ where: { id } });
+    if (!scale) throw new NotFoundException(`Scale ${id} not found`);
+    if (scale.isLibrary) {
+      throw new BadRequestException('不能删除内置量表');
+    }
+
+    const taskCount = await this.taskRepo.count({
+      where: { scaleId: id },
+    });
+    if (taskCount > 0) {
+      throw new BadRequestException(
+        `该量表已被 ${taskCount} 个任务引用，无法删除`,
+      );
+    }
+
     await this.scaleRepo.delete(id);
     this.scaleCacheService.invalidate(id);
   }

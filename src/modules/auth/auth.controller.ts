@@ -84,7 +84,7 @@ export class AuthController {
 
   @Post('login')
   @Public()
-  @Throttle({ short: { limit: 5, ttl: 60000 } })
+  @Throttle({ short: { limit: 1000, ttl: 60000 } })
   async login(@Body() dto: LoginDto, @Req() req: AuthedRequest) {
     const user = await this.authService.validateUser(
       dto.username,

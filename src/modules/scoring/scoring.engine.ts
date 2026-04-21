@@ -70,12 +70,14 @@ export class ScoringEngine {
       | undefined;
 
     if (Object.keys(dimensionScores).length > 0) {
-      const dimensionMeanScores = this.computeDimensionMeans(
-        dimensionScores,
-        processedAnswers,
+      const useMeanScores = dimensionRanges.some(
+        (r) => r.maxScore <= 10,
       );
+      const scoresToMatch = useMeanScores
+        ? this.computeDimensionMeans(dimensionScores, processedAnswers)
+        : dimensionScores;
       dimensionLevels = ScoreRangeMatcher.matchDimension(
-        dimensionMeanScores,
+        scoresToMatch,
         dimensionRanges,
       );
 

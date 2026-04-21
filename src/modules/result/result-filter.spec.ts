@@ -9,6 +9,7 @@ import { Class } from '../../entities/org/class.entity';
 import { Grade } from '../../entities/org/grade.entity';
 import { DataScopeFilter } from '../auth/data-scope-filter';
 import { EncryptionService } from '../core/encryption.service';
+import { DataSource } from 'typeorm';
 
 describe('ResultService - findByFilter', () => {
   let service: ResultService;
@@ -34,6 +35,12 @@ describe('ResultService - findByFilter', () => {
   const mockEncryptionService = {
     batchDecrypt: jest.fn().mockResolvedValue(new Map()),
   };
+  const mockDataSource = {
+    query: jest.fn().mockImplementation((_sql: string, params: string[][]) => {
+      const ids = params?.[0] || [];
+      return Promise.resolve(ids.map((id: string) => ({ id, studentId: id })));
+    }),
+  };
 
   function setupQueryBuilder(answers: any[] = []) {
     mockQb = {
@@ -58,6 +65,7 @@ describe('ResultService - findByFilter', () => {
         { provide: getRepositoryToken(Grade), useValue: mockGradeRepo },
         { provide: DataScopeFilter, useValue: mockDataScopeFilter },
         { provide: EncryptionService, useValue: mockEncryptionService },
+        { provide: DataSource, useValue: mockDataSource },
       ],
     }).compile();
 
@@ -243,6 +251,16 @@ describe('ResultService - findByFilter', () => {
         ['s2', { name: 'Bob', studentNumber: '002' }],
       ]),
     );
+    mockStudentRepo.find.mockResolvedValue([
+      { id: 's1', classId: 'c1' },
+      { id: 's2', classId: 'c1' },
+    ]);
+    mockClassRepo.find.mockResolvedValue([
+      { id: 'c1', gradeId: 'g1', name: 'Class1' },
+    ]);
+    mockGradeRepo.find.mockResolvedValue([
+      { id: 'g1', name: 'Grade1' },
+    ]);
 
     const result = await service.findByFilter({
       dataScope: { scope: 'all', userId: 'u1' },

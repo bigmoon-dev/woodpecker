@@ -11,14 +11,18 @@ import { Class } from '../../entities/org/class.entity';
 import { Grade } from '../../entities/org/grade.entity';
 import { DataScopeFilter } from '../auth/data-scope-filter';
 import { EncryptionService } from '../core/encryption.service';
+import { DataSource } from 'typeorm';
 import { ConfigReloadService } from '../core/config-reload.service';
 
 describe('FollowupManageService', () => {
   let service: FollowupManageService;
 
-  const mockResultRepo = { find: jest.fn() };
-  const mockAnswerRepo = { find: jest.fn(), createQueryBuilder: jest.fn() };
-  const mockInterviewRepo = { find: jest.fn() };
+  const mockResultRepo = {
+    find: jest.fn(),
+    createQueryBuilder: jest.fn(),
+  };
+  const mockAnswerRepo = { find: jest.fn() };
+  const mockInterviewRepo = { find: jest.fn(), createQueryBuilder: jest.fn() };
   const mockStudentRepo = { find: jest.fn(), findOne: jest.fn() };
   const mockClassRepo = { find: jest.fn(), findOne: jest.fn() };
   const mockGradeRepo = { find: jest.fn(), findOne: jest.fn() };
@@ -47,17 +51,35 @@ describe('FollowupManageService', () => {
         { provide: DataScopeFilter, useValue: mockDataScopeFilter },
         { provide: EncryptionService, useValue: mockEncryptionService },
         { provide: ConfigReloadService, useValue: mockConfigService },
-      ],
+        { provide: DataSource, useValue: { query: jest.fn().mockImplementation((_sql: string, params: string[][]) => Promise.resolve((params?.[0] || []).map((id: string) => ({ id, studentId: id })))) } },
     }).compile();
 
     service = module.get<FollowupManageService>(FollowupManageService);
   });
 
   describe('getStudents', () => {
+    const makeRiskQb = (rows: any[]) => ({
+      innerJoin: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue(rows),
+    });
+
+    const makeInterviewQb = (rows: any[]) => ({
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue(rows),
+    });
+
     it('should return empty when no risk students and no interviews', async () => {
-      const qb = { getMany: jest.fn().mockResolvedValue([]) };
-      mockAnswerRepo.createQueryBuilder.mockReturnValue(qb);
-      mockInterviewRepo.find.mockResolvedValue([]);
+      mockResultRepo.createQueryBuilder.mockReturnValue(makeRiskQb([]));
+      mockInterviewRepo.createQueryBuilder.mockReturnValue(
+        makeInterviewQb([]),
+      );
 
       const result = await service.getStudents({ scope: 'all', userId: 'u1' });
 
@@ -65,20 +87,14 @@ describe('FollowupManageService', () => {
     });
 
     it('should aggregate risk students by yellow+red threshold', async () => {
-      const answers = [
-        { id: 'a1', studentId: 's1' },
-        { id: 'a2', studentId: 's2' },
-        { id: 'a3', studentId: 's3' },
+      const riskRows = [
+        { studentId: 's1', color: 'yellow', level: 'mild' },
+        { studentId: 's2', color: 'red', level: 'severe' },
       ];
-      const results = [
-        { id: 'r1', answerId: 'a1', color: 'yellow', level: 'mild' },
-        { id: 'r2', answerId: 'a2', color: 'red', level: 'severe' },
-        { id: 'r3', answerId: 'a3', color: 'green', level: 'normal' },
-      ];
-      const qb = { getMany: jest.fn().mockResolvedValue(answers) };
-      mockAnswerRepo.createQueryBuilder.mockReturnValue(qb);
-      mockResultRepo.find.mockResolvedValue(results);
-      mockInterviewRepo.find.mockResolvedValue([]);
+      mockResultRepo.createQueryBuilder.mockReturnValue(makeRiskQb(riskRows));
+      mockInterviewRepo.createQueryBuilder.mockReturnValue(
+        makeInterviewQb([]),
+      );
       mockEncryptionService.batchDecrypt.mockResolvedValue(
         new Map([
           ['s1', { name: 'A', studentNumber: '1' }],
@@ -103,13 +119,13 @@ describe('FollowupManageService', () => {
     });
 
     it('should aggregate interview students', async () => {
-      const qb = { getMany: jest.fn().mockResolvedValue([]) };
-      mockAnswerRepo.createQueryBuilder.mockReturnValue(qb);
-      mockResultRepo.find.mockResolvedValue([]);
-      mockInterviewRepo.find.mockResolvedValue([
-        { id: 'iv1', studentId: 's1', interviewDate: new Date('2024-01-01') },
-        { id: 'iv2', studentId: 's1', interviewDate: new Date('2024-02-01') },
-      ]);
+      mockResultRepo.createQueryBuilder.mockReturnValue(makeRiskQb([]));
+      const interviewRows = [
+        { studentId: 's1', cnt: '2', lastDate: '2024-02-01' },
+      ];
+      mockInterviewRepo.createQueryBuilder.mockReturnValue(
+        makeInterviewQb(interviewRows),
+      );
       mockEncryptionService.batchDecrypt.mockResolvedValue(
         new Map([['s1', { name: 'A', studentNumber: '1' }]]),
       );
@@ -126,14 +142,13 @@ describe('FollowupManageService', () => {
     });
 
     it('should apply dataScope filter', async () => {
-      const answers = [{ id: 'a1', studentId: 's1' }];
-      const results = [
-        { id: 'r1', answerId: 'a1', color: 'yellow', level: 'mild' },
+      const riskRows = [
+        { studentId: 's1', color: 'yellow', level: 'mild' },
       ];
-      const qb = { getMany: jest.fn().mockResolvedValue(answers) };
-      mockAnswerRepo.createQueryBuilder.mockReturnValue(qb);
-      mockResultRepo.find.mockResolvedValue(results);
-      mockInterviewRepo.find.mockResolvedValue([]);
+      mockResultRepo.createQueryBuilder.mockReturnValue(makeRiskQb(riskRows));
+      mockInterviewRepo.createQueryBuilder.mockReturnValue(
+        makeInterviewQb([]),
+      );
       mockDataScopeFilter.getStudentIds.mockResolvedValue(['s2']);
 
       const result = await service.getStudents({
@@ -146,20 +161,17 @@ describe('FollowupManageService', () => {
     });
 
     it('should paginate correctly', async () => {
-      const answers = Array.from({ length: 30 }, (_, i) => ({
-        id: `a${i}`,
+      const riskRows = Array.from({ length: 30 }, (_, i) => ({
         studentId: `s${i}`,
-      }));
-      const results = answers.map((a, i) => ({
-        id: `r${i}`,
-        answerId: a.id,
         color: 'yellow',
         level: 'mild',
       }));
-      const qb = { getMany: jest.fn().mockResolvedValue(answers) };
-      mockAnswerRepo.createQueryBuilder.mockReturnValue(qb);
-      mockResultRepo.find.mockResolvedValue(results);
-      mockInterviewRepo.find.mockResolvedValue([]);
+      mockResultRepo.createQueryBuilder.mockReturnValue(
+        makeRiskQb(riskRows),
+      );
+      mockInterviewRepo.createQueryBuilder.mockReturnValue(
+        makeInterviewQb([]),
+      );
       const piiMap = new Map(
         Array.from({ length: 30 }, (_, i) => [
           `s${i}`,
@@ -190,18 +202,13 @@ describe('FollowupManageService', () => {
 
     it('should use red-only threshold when config is red', async () => {
       mockConfigService.get.mockReturnValue('red');
-      const answers = [
-        { id: 'a1', studentId: 's1' },
-        { id: 'a2', studentId: 's2' },
+      const riskRows = [
+        { studentId: 's2', color: 'red', level: 'severe' },
       ];
-      const results = [
-        { id: 'r1', answerId: 'a1', color: 'yellow', level: 'mild' },
-        { id: 'r2', answerId: 'a2', color: 'red', level: 'severe' },
-      ];
-      const qb = { getMany: jest.fn().mockResolvedValue(answers) };
-      mockAnswerRepo.createQueryBuilder.mockReturnValue(qb);
-      mockResultRepo.find.mockResolvedValue(results);
-      mockInterviewRepo.find.mockResolvedValue([]);
+      mockResultRepo.createQueryBuilder.mockReturnValue(makeRiskQb(riskRows));
+      mockInterviewRepo.createQueryBuilder.mockReturnValue(
+        makeInterviewQb([]),
+      );
       mockEncryptionService.batchDecrypt.mockResolvedValue(
         new Map([['s2', { name: 'B', studentNumber: '2' }]]),
       );
