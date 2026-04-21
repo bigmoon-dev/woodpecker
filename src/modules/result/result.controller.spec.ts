@@ -80,7 +80,7 @@ describe('ResultController', () => {
       user: { id: 'u1', studentId: 's1', username: 'test', roles: [] },
     } as any;
     await controller.findMyResults(req);
-    expect(resultService.findByStudent).toHaveBeenCalledWith('s1');
+    expect(resultService.findByStudent).toHaveBeenCalledWith('u1', 's1');
   });
 
   it('findMyResults falls back to req.user.id', async () => {
@@ -89,7 +89,7 @@ describe('ResultController', () => {
       user: { id: 'u1', username: 'test', roles: [] },
     } as any;
     await controller.findMyResults(req);
-    expect(resultService.findByStudent).toHaveBeenCalledWith('u1');
+    expect(resultService.findByStudent).toHaveBeenCalledWith('u1', undefined);
   });
 
   it('findByClass passes pagination params', async () => {

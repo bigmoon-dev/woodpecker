@@ -52,7 +52,7 @@ export class ResultController {
 
   @Get('me')
   async findMyResults(@Req() req: AuthenticatedRequest) {
-    return this.resultService.findByStudent(req.user.studentId || req.user.id);
+    return this.resultService.findByStudent(req.user.id, req.user.studentId);
   }
 
   @Get('class/:classId')

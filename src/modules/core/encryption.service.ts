@@ -47,8 +47,8 @@ export class EncryptionService {
       student_number: string;
     }[] = await this.dataSource.query(
       `SELECT s.id,
-              pgp_sym_decrypt(s."encryptedName", $1) AS name,
-              pgp_sym_decrypt(s."encryptedStudentNumber", $1) AS student_number
+              CASE WHEN s."encryptedName" IS NOT NULL THEN pgp_sym_decrypt(s."encryptedName", $1) ELSE '' END AS name,
+              CASE WHEN s."encryptedStudentNumber" IS NOT NULL THEN pgp_sym_decrypt(s."encryptedStudentNumber", $1) ELSE '' END AS student_number
        FROM students s
        WHERE s.id = ANY($2::uuid[])`,
       [this.key, studentIds],

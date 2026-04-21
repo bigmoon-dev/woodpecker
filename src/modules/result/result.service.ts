@@ -145,9 +145,12 @@ export class ResultService {
     };
   }
 
-  async findByStudent(studentId: string): Promise<ResultWithContext[]> {
+  async findByStudent(
+    userId: string,
+    studentEntityId?: string,
+  ): Promise<ResultWithContext[]> {
     const answers = await this.answerRepo.find({
-      where: { studentId },
+      where: { studentId: userId },
       relations: ['task', 'task.scale'],
     });
     const answerIds = answers.map((a) => a.id);
@@ -158,11 +161,12 @@ export class ResultService {
       order: { createdAt: 'DESC' },
     });
 
-    const piiMap = await this.encryptionService.batchDecrypt([studentId]);
-    const pii = piiMap.get(studentId);
+    const realStudentId = studentEntityId || userId;
+    const piiMap = await this.encryptionService.batchDecrypt([realStudentId]);
+    const pii = piiMap.get(realStudentId);
 
     const student = await this.studentRepo.findOne({
-      where: { id: studentId },
+      where: { id: realStudentId },
     });
     const classEntity = student
       ? await this.classRepo.findOne({ where: { id: student.classId } })
@@ -177,7 +181,7 @@ export class ResultService {
       const answer = answerMap.get(r.answerId);
       return {
         result: r,
-        studentId,
+        studentId: realStudentId,
         studentName: pii?.name ?? '',
         studentNumber: pii?.studentNumber ?? '',
         className: classEntity?.name ?? '',
@@ -257,8 +261,16 @@ export class ResultService {
     const students = await this.studentRepo.find({
       where: { classId },
     });
+    const studentEntityIds = students.map((s) => s.id);
+    const userRows: { id: string; studentId: string }[] =
+      await this.dataSource.query(
+        'SELECT id, "studentId" FROM users WHERE "studentId" = ANY($1::uuid[])',
+        [studentEntityIds],
+      );
+    const userIds = userRows.map((u) => u.id);
     return this.buildResultsWithContext(
-      students.map((s) => s.id),
+      studentEntityIds,
+      userIds,
       classId,
       page,
       pageSize,
@@ -276,8 +288,16 @@ export class ResultService {
     const students = await this.studentRepo.find({
       where: { classId: In(classIds) },
     });
+    const studentEntityIds = students.map((s) => s.id);
+    const userRows: { id: string; studentId: string }[] =
+      await this.dataSource.query(
+        'SELECT id, "studentId" FROM users WHERE "studentId" = ANY($1::uuid[])',
+        [studentEntityIds],
+      );
+    const userIds = userRows.map((u) => u.id);
     return this.buildResultsWithContext(
-      students.map((s) => s.id),
+      studentEntityIds,
+      userIds,
       gradeId,
       page,
       pageSize,
@@ -398,15 +418,21 @@ export class ResultService {
   }
 
   private async buildResultsWithContext(
-    studentIds: string[],
+    studentEntityIds: string[],
+    userIds: string[],
     scopeId: string,
     page: number,
     pageSize: number,
   ): Promise<{ data: ResultWithContext[]; total: number }> {
-    if (studentIds.length === 0) return { data: [], total: 0 };
+    if (userIds.length === 0 && studentEntityIds.length === 0)
+      return { data: [], total: 0 };
 
+    const answerWhere =
+      userIds.length > 0
+        ? userIds.map((id) => ({ studentId: id }))
+        : studentEntityIds.map((id) => ({ studentId: id }));
     const answers = await this.answerRepo.find({
-      where: studentIds.map((id) => ({ studentId: id })),
+      where: answerWhere,
       relations: ['task', 'task.scale'],
     });
     const answerIds = answers.map((a) => a.id);
@@ -417,11 +443,22 @@ export class ResultService {
       order: { createdAt: 'DESC' },
     });
 
-    const piiMap = await this.encryptionService.batchDecrypt(studentIds);
+    const piiMap = await this.encryptionService.batchDecrypt(studentEntityIds);
     const answerMap = new Map(answers.map((a) => [a.id, a]));
 
+    const userRows2: { id: string; studentId: string }[] =
+      userIds.length > 0
+        ? await this.dataSource.query(
+            'SELECT id, "studentId" FROM users WHERE id = ANY($1::uuid[])',
+            [userIds],
+          )
+        : [];
+    const userToStudentEntity = new Map(
+      userRows2.map((r) => [r.id, r.studentId]),
+    );
+
     const studentRecords = await this.studentRepo.find({
-      where: { id: In(studentIds) },
+      where: { id: In(studentEntityIds) },
     });
     const classIds = [...new Set(studentRecords.map((s) => s.classId))];
     const classRecords =
@@ -441,10 +478,13 @@ export class ResultService {
 
     const all: ResultWithContext[] = results.map((r) => {
       const answer = answerMap.get(r.answerId);
-      const pii = answer ? piiMap.get(answer.studentId) : undefined;
+      const entityStudentId = answer
+        ? (userToStudentEntity.get(answer.studentId) ?? answer.studentId)
+        : '';
+      const pii = entityStudentId ? piiMap.get(entityStudentId) : undefined;
       const taskEntity = answer?.task;
-      const studentClassId = answer
-        ? studentClassMap.get(answer.studentId)
+      const studentClassId = entityStudentId
+        ? studentClassMap.get(entityStudentId)
         : undefined;
       const classEntity = studentClassId
         ? classMap.get(studentClassId)
@@ -454,7 +494,7 @@ export class ResultService {
         : undefined;
       return {
         result: r,
-        studentId: answer?.studentId ?? '',
+        studentId: entityStudentId,
         studentName: pii?.name ?? '',
         studentNumber: pii?.studentNumber ?? '',
         className: classEntity?.name ?? '',

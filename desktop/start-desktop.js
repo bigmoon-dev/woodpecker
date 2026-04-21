@@ -225,8 +225,10 @@ async function doSeed(attempt) {
     database: DB_NAME,
   });
 
-  try {
+   try {
     await client.connect();
+
+    await client.query(`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`);
 
     const check = await client.query(`SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users' LIMIT 1`);
     if (check.rows.length === 0) return true;
@@ -259,6 +261,7 @@ async function doSeed(attempt) {
       { code: 'scale:delete', name: '删除量表', category: 'scale' },
       { code: 'task:read', name: '查看任务', category: 'task' },
       { code: 'task:write', name: '管理任务', category: 'task' },
+      { code: 'task:submit', name: '提交任务', category: 'task' },
       { code: 'task:delete', name: '删除任务', category: 'task' },
       { code: 'result:read', name: '查看结果', category: 'result' },
       { code: 'result:write', name: '管理结果', category: 'result' },
@@ -307,6 +310,26 @@ async function doSeed(attempt) {
       await client.query(
         `INSERT INTO "role_permissions" ("roleId", "permissionId") VALUES ($1, $2) ON CONFLICT ("roleId", "permissionId") DO NOTHING`,
         [roleIds['psychologist'], permRow.id]
+      );
+    }
+
+    const studentPerms = await client.query(
+      `SELECT "id" FROM "permissions" WHERE "code" IN ('task:read', 'task:submit', 'result:read', 'consent:read', 'consent:write')`
+    );
+    for (const permRow of studentPerms.rows) {
+      await client.query(
+        `INSERT INTO "role_permissions" ("roleId", "permissionId") VALUES ($1, $2) ON CONFLICT ("roleId", "permissionId") DO NOTHING`,
+        [roleIds['student'], permRow.id]
+      );
+    }
+
+    const teacherPerms = await client.query(
+      `SELECT "id" FROM "permissions" WHERE "code" IN ('task:read', 'result:read', 'alert:read', 'consent:read', 'student:read', 'followup:read')`
+    );
+    for (const permRow of teacherPerms.rows) {
+      await client.query(
+        `INSERT INTO "role_permissions" ("roleId", "permissionId") VALUES ($1, $2) ON CONFLICT ("roleId", "permissionId") DO NOTHING`,
+        [roleIds['teacher'], permRow.id]
       );
     }
 
