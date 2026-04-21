@@ -51,7 +51,22 @@ describe('FollowupManageService', () => {
         { provide: DataScopeFilter, useValue: mockDataScopeFilter },
         { provide: EncryptionService, useValue: mockEncryptionService },
         { provide: ConfigReloadService, useValue: mockConfigService },
-        { provide: DataSource, useValue: { query: jest.fn().mockImplementation((_sql: string, params: string[][]) => Promise.resolve((params?.[0] || []).map((id: string) => ({ id, studentId: id })))) } },
+        {
+          provide: DataSource,
+          useValue: {
+            query: jest
+              .fn()
+              .mockImplementation((_sql: string, params: string[][]) =>
+                Promise.resolve(
+                  (params?.[0] || []).map((id: string) => ({
+                    id,
+                    studentId: id,
+                  })),
+                ),
+              ),
+          },
+        },
+      ],
     }).compile();
 
     service = module.get<FollowupManageService>(FollowupManageService);
@@ -77,9 +92,7 @@ describe('FollowupManageService', () => {
 
     it('should return empty when no risk students and no interviews', async () => {
       mockResultRepo.createQueryBuilder.mockReturnValue(makeRiskQb([]));
-      mockInterviewRepo.createQueryBuilder.mockReturnValue(
-        makeInterviewQb([]),
-      );
+      mockInterviewRepo.createQueryBuilder.mockReturnValue(makeInterviewQb([]));
 
       const result = await service.getStudents({ scope: 'all', userId: 'u1' });
 
@@ -92,9 +105,7 @@ describe('FollowupManageService', () => {
         { studentId: 's2', color: 'red', level: 'severe' },
       ];
       mockResultRepo.createQueryBuilder.mockReturnValue(makeRiskQb(riskRows));
-      mockInterviewRepo.createQueryBuilder.mockReturnValue(
-        makeInterviewQb([]),
-      );
+      mockInterviewRepo.createQueryBuilder.mockReturnValue(makeInterviewQb([]));
       mockEncryptionService.batchDecrypt.mockResolvedValue(
         new Map([
           ['s1', { name: 'A', studentNumber: '1' }],
@@ -142,13 +153,9 @@ describe('FollowupManageService', () => {
     });
 
     it('should apply dataScope filter', async () => {
-      const riskRows = [
-        { studentId: 's1', color: 'yellow', level: 'mild' },
-      ];
+      const riskRows = [{ studentId: 's1', color: 'yellow', level: 'mild' }];
       mockResultRepo.createQueryBuilder.mockReturnValue(makeRiskQb(riskRows));
-      mockInterviewRepo.createQueryBuilder.mockReturnValue(
-        makeInterviewQb([]),
-      );
+      mockInterviewRepo.createQueryBuilder.mockReturnValue(makeInterviewQb([]));
       mockDataScopeFilter.getStudentIds.mockResolvedValue(['s2']);
 
       const result = await service.getStudents({
@@ -166,12 +173,8 @@ describe('FollowupManageService', () => {
         color: 'yellow',
         level: 'mild',
       }));
-      mockResultRepo.createQueryBuilder.mockReturnValue(
-        makeRiskQb(riskRows),
-      );
-      mockInterviewRepo.createQueryBuilder.mockReturnValue(
-        makeInterviewQb([]),
-      );
+      mockResultRepo.createQueryBuilder.mockReturnValue(makeRiskQb(riskRows));
+      mockInterviewRepo.createQueryBuilder.mockReturnValue(makeInterviewQb([]));
       const piiMap = new Map(
         Array.from({ length: 30 }, (_, i) => [
           `s${i}`,
@@ -202,13 +205,9 @@ describe('FollowupManageService', () => {
 
     it('should use red-only threshold when config is red', async () => {
       mockConfigService.get.mockReturnValue('red');
-      const riskRows = [
-        { studentId: 's2', color: 'red', level: 'severe' },
-      ];
+      const riskRows = [{ studentId: 's2', color: 'red', level: 'severe' }];
       mockResultRepo.createQueryBuilder.mockReturnValue(makeRiskQb(riskRows));
-      mockInterviewRepo.createQueryBuilder.mockReturnValue(
-        makeInterviewQb([]),
-      );
+      mockInterviewRepo.createQueryBuilder.mockReturnValue(makeInterviewQb([]));
       mockEncryptionService.batchDecrypt.mockResolvedValue(
         new Map([['s2', { name: 'B', studentNumber: '2' }]]),
       );

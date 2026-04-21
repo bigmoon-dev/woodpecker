@@ -43,7 +43,21 @@ describe('ResultService.compareResults', () => {
         { provide: getRepositoryToken(Grade), useValue: mockGradeRepo },
         { provide: DataScopeFilter, useValue: mockDataScopeFilter },
         { provide: EncryptionService, useValue: mockEncryptionService },
-        { provide: DataSource, useValue: { query: jest.fn().mockImplementation((_sql: string, params: string[][]) => Promise.resolve((params?.[0] || []).map((id: string) => ({ id, studentId: id })))) } },
+        {
+          provide: DataSource,
+          useValue: {
+            query: jest
+              .fn()
+              .mockImplementation((_sql: string, params: string[][]) =>
+                Promise.resolve(
+                  (params?.[0] || []).map((id: string) => ({
+                    id,
+                    studentId: id,
+                  })),
+                ),
+              ),
+          },
+        },
       ],
     }).compile();
     service = module.get(ResultService);

@@ -45,7 +45,22 @@ describe('ResultService', () => {
         { provide: getRepositoryToken(Grade), useValue: mockGradeRepo },
         { provide: DataScopeFilter, useValue: mockDataScopeFilter },
         { provide: EncryptionService, useValue: mockEncryptionService },
-        { provide: DataSource, useValue: { query: jest.fn().mockImplementation((_sql: string, params: string[][]) => Promise.resolve((params?.[0] || []).map((id: string) => ({ id, studentId: id })))) } },
+        {
+          provide: DataSource,
+          useValue: {
+            query: jest
+              .fn()
+              .mockImplementation((_sql: string, params: string[][]) =>
+                Promise.resolve(
+                  (params?.[0] || []).map((id: string) => ({
+                    id,
+                    studentId: id,
+                  })),
+                ),
+              ),
+          },
+        },
+      ],
     }).compile();
 
     service = module.get<ResultService>(ResultService);
@@ -60,14 +75,24 @@ describe('ResultService', () => {
         { id: 'a1', task: { title: 'T1', scale: { name: 'S1' } } },
         { id: 'a2', task: { title: 'T2', scale: { name: 'S2' } } },
       ];
-      const results = [{ id: 'r1', answerId: 'a1' }, { id: 'r2', answerId: 'a2' }];
+      const results = [
+        { id: 'r1', answerId: 'a1' },
+        { id: 'r2', answerId: 'a2' },
+      ];
       mockAnswerRepo.find.mockResolvedValue(answers);
       mockResultRepo.find.mockResolvedValue(results);
       mockEncryptionService.batchDecrypt.mockResolvedValue(
         new Map([['student1', { name: 'Zhang', studentNumber: '001' }]]),
       );
-      mockStudentRepo.findOne.mockResolvedValue({ id: 'student1', classId: 'c1' });
-      mockClassRepo.findOne.mockResolvedValue({ id: 'c1', name: 'C1', gradeId: 'g1' });
+      mockStudentRepo.findOne.mockResolvedValue({
+        id: 'student1',
+        classId: 'c1',
+      });
+      mockClassRepo.findOne.mockResolvedValue({
+        id: 'c1',
+        name: 'C1',
+        gradeId: 'g1',
+      });
       mockGradeRepo.findOne.mockResolvedValue({ id: 'g1', name: 'G1' });
 
       const actual = await service.findByStudent('student1');

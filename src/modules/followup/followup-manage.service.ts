@@ -81,7 +81,8 @@ export class FollowupManageService {
       });
     }
 
-    const riskStudents = await riskQuery.getRawMany();
+    const riskStudents: { studentId: string; color: string; level: string }[] =
+      await riskQuery.getRawMany();
 
     const riskStudentMap = new Map<string, { color: string; level: string }>();
     const colorPriority: Record<string, number> = { red: 2, yellow: 1 };
@@ -98,8 +99,6 @@ export class FollowupManageService {
       }
     }
 
-    const riskStudentIds = new Set(riskStudentMap.keys());
-
     const interviewQuery = this.interviewRepo
       .createQueryBuilder('iv')
       .select('iv.studentId', 'studentId')
@@ -112,9 +111,11 @@ export class FollowupManageService {
       });
     }
 
-    const interviewRows = await interviewQuery
-      .groupBy('iv.studentId')
-      .getRawMany();
+    const interviewRows: {
+      studentId: string;
+      cnt: string;
+      lastDate: string;
+    }[] = await interviewQuery.groupBy('iv.studentId').getRawMany();
 
     const interviewStudentMap = new Map<
       string,

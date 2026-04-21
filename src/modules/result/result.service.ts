@@ -373,7 +373,7 @@ export class ResultService {
     return results.map((r) => {
       const answer = answerMap.get(r.answerId);
       const realId = answer
-        ? userToStudent.get(answer.studentId) ?? answer.studentId
+        ? (userToStudent.get(answer.studentId) ?? answer.studentId)
         : '';
       const pii = piiMap.get(realId);
       const taskEntity = answer?.task;

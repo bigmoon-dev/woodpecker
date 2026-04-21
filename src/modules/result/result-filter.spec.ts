@@ -258,9 +258,7 @@ describe('ResultService - findByFilter', () => {
     mockClassRepo.find.mockResolvedValue([
       { id: 'c1', gradeId: 'g1', name: 'Class1' },
     ]);
-    mockGradeRepo.find.mockResolvedValue([
-      { id: 'g1', name: 'Grade1' },
-    ]);
+    mockGradeRepo.find.mockResolvedValue([{ id: 'g1', name: 'Grade1' }]);
 
     const result = await service.findByFilter({
       dataScope: { scope: 'all', userId: 'u1' },

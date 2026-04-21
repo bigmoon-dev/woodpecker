@@ -1,7 +1,11 @@
 import 'reflect-metadata';
 import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
-import { CreateScoringRuleDto, CreateScoreRangeDto, CreateScaleDto } from './scale.dto';
+import {
+  CreateScoringRuleDto,
+  CreateScoreRangeDto,
+  CreateScaleDto,
+} from './scale.dto';
 
 describe('CreateScoringRuleDto', () => {
   it('should validate a valid scoring rule', async () => {

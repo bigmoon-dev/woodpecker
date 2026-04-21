@@ -59,7 +59,10 @@ describe('ScaleService', () => {
         },
         { provide: getRepositoryToken(ScoringRule), useValue: {} },
         { provide: getRepositoryToken(ScoreRange), useValue: {} },
-        { provide: getRepositoryToken(Task), useValue: { count: jest.fn().mockResolvedValue(0) } },
+        {
+          provide: getRepositoryToken(Task),
+          useValue: { count: jest.fn().mockResolvedValue(0) },
+        },
         { provide: ScaleCacheService, useValue: mockScaleCacheService },
       ],
     }).compile();
@@ -423,7 +426,12 @@ describe('ScaleService', () => {
       const dto: CreateScaleDto = {
         name: 'SCL-90',
         items: [
-          { itemText: 'Q1', sortOrder: 0, dimension: '躯体化', options: [{ optionText: 'A', scoreValue: 1, sortOrder: 0 }] },
+          {
+            itemText: 'Q1',
+            sortOrder: 0,
+            dimension: '躯体化',
+            options: [{ optionText: 'A', scoreValue: 1, sortOrder: 0 }],
+          },
         ],
         dimensions: ['躯体化', '强迫', '焦虑'],
       };
@@ -471,7 +479,12 @@ describe('ScaleService', () => {
       const dto: CreateScaleDto = {
         name: 'Test',
         items: [
-          { itemText: 'Q1', sortOrder: 0, dimension: 'X', options: [{ optionText: 'A', scoreValue: 0, sortOrder: 0 }] },
+          {
+            itemText: 'Q1',
+            sortOrder: 0,
+            dimension: 'X',
+            options: [{ optionText: 'A', scoreValue: 0, sortOrder: 0 }],
+          },
         ],
         dimensions: ['A', 'B'],
       };
@@ -483,7 +496,12 @@ describe('ScaleService', () => {
       const dto: CreateScaleDto = {
         name: 'Old Scale',
         items: [
-          { itemText: 'Q1', sortOrder: 0, dimension: 'anything', options: [{ optionText: 'A', scoreValue: 0, sortOrder: 0 }] },
+          {
+            itemText: 'Q1',
+            sortOrder: 0,
+            dimension: 'anything',
+            options: [{ optionText: 'A', scoreValue: 0, sortOrder: 0 }],
+          },
         ],
       };
 
@@ -499,7 +517,11 @@ describe('ScaleService', () => {
       const dto: CreateScaleDto = {
         name: 'Test',
         items: [
-          { itemText: 'Q1', sortOrder: 0, options: [{ optionText: 'A', scoreValue: 0, sortOrder: 0 }] },
+          {
+            itemText: 'Q1',
+            sortOrder: 0,
+            options: [{ optionText: 'A', scoreValue: 0, sortOrder: 0 }],
+          },
         ],
         dimensions: ['A', 'B'],
       };
@@ -514,11 +536,23 @@ describe('ScaleService', () => {
 
     it('should update dimensions', async () => {
       const existingScale = {
-        id: 'scale-1', name: 'Old', version: '1.0', description: '', source: '', validationInfo: null,
-        versionStatus: 'draft', isLibrary: false, items: [], scoringRules: [], scoreRanges: [],
+        id: 'scale-1',
+        name: 'Old',
+        version: '1.0',
+        description: '',
+        source: '',
+        validationInfo: null,
+        versionStatus: 'draft',
+        isLibrary: false,
+        items: [],
+        scoringRules: [],
+        scoreRanges: [],
       };
       mockEntityManager.findOne.mockResolvedValueOnce(existingScale);
-      mockEntityManager.save.mockResolvedValueOnce({ ...existingScale, dimensions: ['X'] });
+      mockEntityManager.save.mockResolvedValueOnce({
+        ...existingScale,
+        dimensions: ['X'],
+      });
 
       await service.update('scale-1', { dimensions: ['X'] });
 
@@ -530,11 +564,24 @@ describe('ScaleService', () => {
 
     it('should clear dimensions on update', async () => {
       const existingScale = {
-        id: 'scale-1', name: 'Old', version: '1.0', description: '', source: '', validationInfo: null,
-        versionStatus: 'draft', isLibrary: false, items: [], scoringRules: [], scoreRanges: [], dimensions: ['A'],
+        id: 'scale-1',
+        name: 'Old',
+        version: '1.0',
+        description: '',
+        source: '',
+        validationInfo: null,
+        versionStatus: 'draft',
+        isLibrary: false,
+        items: [],
+        scoringRules: [],
+        scoreRanges: [],
+        dimensions: ['A'],
       };
       mockEntityManager.findOne.mockResolvedValueOnce(existingScale);
-      mockEntityManager.save.mockResolvedValueOnce({ ...existingScale, dimensions: [] });
+      mockEntityManager.save.mockResolvedValueOnce({
+        ...existingScale,
+        dimensions: [],
+      });
 
       await service.update('scale-1', { dimensions: [] });
 
@@ -546,22 +593,44 @@ describe('ScaleService', () => {
 
     it('should reject update when item dimension not in list', async () => {
       const existingScale = {
-        id: 'scale-1', name: 'Old', version: '1.0', description: '', source: '', validationInfo: null,
-        versionStatus: 'draft', isLibrary: false, items: [], scoringRules: [], scoreRanges: [],
+        id: 'scale-1',
+        name: 'Old',
+        version: '1.0',
+        description: '',
+        source: '',
+        validationInfo: null,
+        versionStatus: 'draft',
+        isLibrary: false,
+        items: [],
+        scoringRules: [],
+        scoreRanges: [],
       };
       mockEntityManager.findOne.mockResolvedValueOnce(existingScale);
 
       await expect(
         service.update('scale-1', {
           dimensions: ['A'],
-          items: [{ itemText: 'Q1', sortOrder: 0, dimension: 'Z', options: [{ optionText: 'X', scoreValue: 0, sortOrder: 0 }] }],
+          items: [
+            {
+              itemText: 'Q1',
+              sortOrder: 0,
+              dimension: 'Z',
+              options: [{ optionText: 'X', scoreValue: 0, sortOrder: 0 }],
+            },
+          ],
         }),
       ).rejects.toThrow('不在预定义维度列表中');
     });
 
     it('should clone dimensions from library scale', async () => {
       const libraryScale = {
-        id: 'lib-1', name: 'PHQ-9', version: '1.0', description: '', items: [], scoringRules: [], scoreRanges: [],
+        id: 'lib-1',
+        name: 'PHQ-9',
+        version: '1.0',
+        description: '',
+        items: [],
+        scoringRules: [],
+        scoreRanges: [],
         dimensions: ['躯体化', '焦虑'],
       };
       scaleRepo.findOne.mockResolvedValueOnce(libraryScale);
@@ -577,7 +646,13 @@ describe('ScaleService', () => {
 
     it('should clone with empty dimensions (backward compat)', async () => {
       const libraryScale = {
-        id: 'lib-1', name: 'PHQ-9', version: '1.0', description: '', items: [], scoringRules: [], scoreRanges: [],
+        id: 'lib-1',
+        name: 'PHQ-9',
+        version: '1.0',
+        description: '',
+        items: [],
+        scoringRules: [],
+        scoreRanges: [],
       };
       scaleRepo.findOne.mockResolvedValueOnce(libraryScale);
       mockEntityManager.save.mockResolvedValueOnce({ id: 'clone-2' });
@@ -598,7 +673,9 @@ describe('ScaleService', () => {
         scoringRules: [{ dimension: 'Z', formulaType: 'sum', weight: 1 }],
       };
 
-      await expect(service.create(dto)).rejects.toThrow('评分规则的维度"Z"不在预定义维度列表中');
+      await expect(service.create(dto)).rejects.toThrow(
+        '评分规则的维度"Z"不在预定义维度列表中',
+      );
     });
 
     it('should reject scoreRange dimension not in list', async () => {
@@ -606,10 +683,21 @@ describe('ScaleService', () => {
         name: 'Test',
         items: [],
         dimensions: ['A'],
-        scoreRanges: [{ dimension: 'Z', minScore: 0, maxScore: 10, level: 'low', color: 'green', suggestion: 'OK' }],
+        scoreRanges: [
+          {
+            dimension: 'Z',
+            minScore: 0,
+            maxScore: 10,
+            level: 'low',
+            color: 'green',
+            suggestion: 'OK',
+          },
+        ],
       };
 
-      await expect(service.create(dto)).rejects.toThrow('分数范围的维度"Z"不在预定义维度列表中');
+      await expect(service.create(dto)).rejects.toThrow(
+        '分数范围的维度"Z"不在预定义维度列表中',
+      );
     });
   });
 });
