@@ -27,6 +27,7 @@ import TemplateManage from '../pages/interview/TemplateManage';
 import TimelineView from '../pages/interview/TimelineView';
 import FollowupManageNew from '../pages/followup/FollowupManage';
 import StudentProfile from '../pages/student/StudentProfile';
+import SettingsPage from '../pages/settings/SettingsPage';
 
 export const routeConfigs: RouteConfig[] = [
   { path: '/login', component: Login, public: true },
@@ -63,6 +64,7 @@ export const routeConfigs: RouteConfig[] = [
       { path: 'interviews/templates', component: TemplateManage },
       { path: 'interviews/followup-manage', component: FollowupManageNew },
       { path: 'interviews/timeline/:studentId', component: TimelineView },
+      { path: 'settings', component: SettingsPage },
     ],
   },
   {
@@ -92,6 +94,7 @@ export const routeConfigs: RouteConfig[] = [
       { path: 'grades', component: GradeManage },
       { path: 'classes', component: ClassManage },
       { path: 'students', component: StudentManage },
+      { path: 'settings', component: SettingsPage },
     ],
   },
 ];

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Card, Button, Input, Spin, Form, Space, Divider, Popconfirm, message, Select, Switch, InputNumber, Tag, Modal } from 'antd';
+import type { InputRef } from 'antd';
 import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import request from '../../utils/request';
@@ -41,7 +42,7 @@ export default function ScaleDetail() {
   const [description, setDescription] = useState('');
   const [items, setItems] = useState<ScaleItem[]>([]);
   const [dimensions, setDimensions] = useState<string[]>([]);
-  const dimInputRef = useRef<Input>(null);
+  const dimInputRef = useRef<InputRef>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -73,7 +74,7 @@ export default function ScaleDetail() {
               .map((item: any) => (item.dimension || '').trim())
               .filter(Boolean),
           )];
-          setDimensions(dims);
+          setDimensions(dims as string[]);
         }
       })
       .finally(() => setLoading(false));
@@ -237,7 +238,9 @@ export default function ScaleDetail() {
                 const val = (e.target as HTMLInputElement).value.trim();
                 if (val) {
                   addDimension(val);
-                  if (dimInputRef.current) dimInputRef.current.setValue('');
+                  if (dimInputRef.current?.input) {
+                    dimInputRef.current.input.value = '';
+                  }
                 }
               }}
             />
@@ -247,7 +250,9 @@ export default function ScaleDetail() {
                 const val = dimInputRef.current?.input?.value?.trim();
                 if (val) {
                   addDimension(val);
-                  if (dimInputRef.current) dimInputRef.current.setValue('');
+                  if (dimInputRef.current?.input) {
+                    dimInputRef.current.input.value = '';
+                  }
                 }
               }}
             >

@@ -6,7 +6,7 @@ import FollowUpManage from './FollowUpManage';
 let capturedForm: any;
 
 vi.mock('antd', async () => {
-  const actual = await vi.importActual('antd');
+  const actual = (await vi.importActual('antd')) as Record<string, any>;
   return {
     ...actual,
     message: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },

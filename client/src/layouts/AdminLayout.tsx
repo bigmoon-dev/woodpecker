@@ -29,6 +29,7 @@ const menuRoutes = [
   { path: '/admin/grades', name: '年级管理' },
   { path: '/admin/classes', name: '班级管理' },
   { path: '/admin/students', name: '学生管理' },
+  { path: '/admin/settings', name: '系统设置' },
 ];
 
 export default function AdminLayout() {

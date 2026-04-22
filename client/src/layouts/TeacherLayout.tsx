@@ -24,6 +24,7 @@ const menuRoutes = [
       { path: '/teacher/interviews/followup-manage', name: '随访管理' },
     ],
   },
+  { path: '/teacher/settings', name: '系统设置' },
 ];
 
 export default function TeacherLayout() {

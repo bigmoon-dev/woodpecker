@@ -168,8 +168,8 @@ export default function AlertList() {
                 )}
               </Descriptions.Item>
               <Descriptions.Item label="等级">
-                <Tag color={{ red: 'red', yellow: 'orange', green: 'green' }[detail.level] || 'default'}>
-                  {{ red: '红色预警', yellow: '黄色预警', green: '正常' }[detail.level] || detail.level}
+                <Tag color={({ red: 'red', yellow: 'orange', green: 'green' } as Record<string, string>)[detail.level] || 'default'}>
+                  {({ red: '红色预警', yellow: '黄色预警', green: '正常' } as Record<string, string>)[detail.level] || detail.level}
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="状态">

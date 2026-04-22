@@ -25,6 +25,7 @@ import { HealthModule } from './modules/health/health.module';
 import { InterviewModule } from './modules/interview/interview.module';
 import { StudentModule } from './modules/student/student.module';
 import { FollowupManageModule } from './modules/followup/followup-manage.module';
+import { BackupModule } from './modules/backup/backup.module';
 import {
   Scale,
   ScaleItem,
@@ -130,6 +131,7 @@ import {
     InterviewModule,
     StudentModule,
     FollowupManageModule,
+    BackupModule,
   ],
   controllers: [AppController],
   providers: [
