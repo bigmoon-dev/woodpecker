@@ -1,5 +1,48 @@
 # Changelog
 
+## [0.32.0] - 2026-04-22
+### Added
+- 数据库备份/恢复功能（BackupModule）：使用 pg 库替代 pg_dump，跨平台兼容
+- desktop/backup.js：OTA 更新前自动数据库备份
+- 系统设置页面 + 数据库备份管理 UI
+- 管理员/心理老师布局合并，共享系统设置菜单
+
+### Changed
+- OTA 发布 v0.32.0，500 个文件，137.4 MB
+
+## [0.31.0] - 2026-04-22
+### Fixed
+- AlertList、ScaleDetail 等前端 pre-existing TS 类型错误修复
+- 测试全部通过：823 jest + 48 vitest
+
+## [0.30.0] - 2026-04-22
+### Added
+- 量表库初始数据（SCL-90、SDS、SAS、MHT）写入 desktop seed
+- pgcrypto 扩展 + student/teacher 角色权限写入 seed
+- createStudent 端点增加姓名/学号加密
+
+### Fixed
+- 所有 raw SQL 列名改为 camelCase（适配 TypeORM synchronize 模式）
+- result.service 中 userId vs studentEntityId 映射修正
+- report-generator、intervention-analysis 的 SQL 列名修正
+
+## [0.29.0] - 2026-04-21
+### Fixed
+- encryption.service.ts：处理 NULL encryptedName/encryptedStudentNumber
+- result.service.ts：修复 userId 与 studentEntityId 不匹配问题（task_answers.studentId 存的是 userId）
+- result.controller.ts：同时传递 userId 和 studentEntityId
+- student-login.service.ts：兼容 'student' 和 '学生' 角色名
+- desktop seed：补充 task:submit 权限、student/teacher 角色权限、pgcrypto 扩展
+
+## [0.28.0] - 2026-04-21
+### Added
+- 学生创建时自动生成登录账号（StudentLoginService 监听 on:student.imported hook）
+- 自动创建 User（stu_<id8> / Test1234）并绑定学生角色
+
+### Fixed
+- Seed 验证数据完整性（roles>=4, users>=2, perms>=20），失败最多重试 3 次
+- Seed 错误日志写入 DATA_DIR/seed-error.log
+
 ## [0.27.0] - 2026-04-21
 ### Added
 - 自定义量表维度命名功能：支持用户自定义量表维度名称（上限100个）
