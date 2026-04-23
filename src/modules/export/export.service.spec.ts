@@ -9,6 +9,7 @@ import { TaskAnswer } from '../../entities/task/task-answer.entity';
 import { Student } from '../../entities/org/student.entity';
 import { Class } from '../../entities/org/class.entity';
 import { Grade } from '../../entities/org/grade.entity';
+import { User } from '../../entities/auth/user.entity';
 import { EncryptionService } from '../core/encryption.service';
 import { ResultWithContext } from '../result/result.service';
 
@@ -57,6 +58,7 @@ describe('ExportService', () => {
   const mockStudentRepo = { findOne: jest.fn() };
   const mockClassRepo = { find: jest.fn() };
   const mockGradeRepo = { find: jest.fn() };
+  const mockUserRepo = { findOne: jest.fn() };
   const mockEncryption = { batchDecrypt: jest.fn() };
 
   beforeEach(async () => {
@@ -70,6 +72,7 @@ describe('ExportService', () => {
         { provide: getRepositoryToken(Student), useValue: mockStudentRepo },
         { provide: getRepositoryToken(Class), useValue: mockClassRepo },
         { provide: getRepositoryToken(Grade), useValue: mockGradeRepo },
+        { provide: getRepositoryToken(User), useValue: mockUserRepo },
         { provide: EncryptionService, useValue: mockEncryption },
       ],
     }).compile();
@@ -154,12 +157,14 @@ describe('ExportService', () => {
         color: 'green',
         dimensionScores: { anxiety: 20 },
         suggestion: 'Monitor',
+        answerId: 'a1',
         createdAt: new Date('2026-01-01'),
       });
       mockAnswerRepo.findOne.mockResolvedValue({
-        studentId: 's1',
+        studentId: 'user1',
         task: { title: 'Task1', scale: { name: 'SCL-90' } },
       });
+      mockUserRepo.findOne.mockResolvedValue({ id: 'user1', studentId: 's1' });
       mockEncryption.batchDecrypt.mockResolvedValue(
         new Map([['s1', { name: 'Alice', studentNumber: '001' }]]),
       );
@@ -194,14 +199,14 @@ describe('ExportService', () => {
         level: 'mild',
         color: 'yellow',
         dimensionScores: { anxiety: 25, depression: 15 },
+        answerId: 'a1',
         createdAt: new Date('2026-01-01'),
       });
       mockAnswerRepo.findOne.mockResolvedValue({
-        studentId: 's1',
+        studentId: 'user1',
         task: { title: 'T', scale: { name: 'S' } },
       });
-      mockEncryption.batchDecrypt.mockResolvedValue(new Map());
-      mockStudentRepo.findOne.mockResolvedValue(null);
+      mockUserRepo.findOne.mockResolvedValue({ id: 'user1', studentId: null });
       const buf = await service.generatePdf('r1');
       expect(buf).toBeInstanceOf(Buffer);
     });
@@ -213,14 +218,14 @@ describe('ExportService', () => {
         level: 'severe',
         color: 'red',
         suggestion: 'Seek professional help immediately',
+        answerId: 'a1',
         createdAt: new Date('2026-01-01'),
       });
       mockAnswerRepo.findOne.mockResolvedValue({
-        studentId: 's1',
+        studentId: 'user1',
         task: { title: 'T', scale: { name: 'S' } },
       });
-      mockEncryption.batchDecrypt.mockResolvedValue(new Map());
-      mockStudentRepo.findOne.mockResolvedValue(null);
+      mockUserRepo.findOne.mockResolvedValue({ id: 'user1', studentId: null });
       const buf = await service.generatePdf('r1');
       expect(buf).toBeInstanceOf(Buffer);
     });

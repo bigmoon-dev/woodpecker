@@ -9,6 +9,7 @@ import { TaskAnswer } from '../../entities/task/task-answer.entity';
 import { Student } from '../../entities/org/student.entity';
 import { Class } from '../../entities/org/class.entity';
 import { Grade } from '../../entities/org/grade.entity';
+import { User } from '../../entities/auth/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EncryptionService } from '../core/encryption.service';
@@ -54,6 +55,8 @@ export class ExportService {
     private classRepo: Repository<Class>,
     @InjectRepository(Grade)
     private gradeRepo: Repository<Grade>,
+    @InjectRepository(User)
+    private userRepo: Repository<User>,
     private encryptionService: EncryptionService,
   ) {}
 
@@ -149,11 +152,7 @@ export class ExportService {
       relations: ['task', 'task.scale'],
     });
 
-    const studentId = answer?.studentId ?? '';
-    const pii = studentId
-      ? await this.encryptionService.batchDecrypt([studentId])
-      : new Map<string, { name: string; studentNumber: string }>();
-    const studentInfo = pii.get(studentId);
+    const userId = answer?.studentId ?? '';
     const taskEntity: {
       title?: string;
       scale?: { name?: string };
@@ -162,26 +161,39 @@ export class ExportService {
       scale?: { name?: string };
     };
 
+    let studentName = '';
+    let studentNumber = '';
+    let gradeName = '';
+    let className = '';
+
+    if (userId) {
+      const user = await this.userRepo.findOne({ where: { id: userId } });
+      if (user?.studentId) {
+        const pii = await this.encryptionService.batchDecrypt([user.studentId]);
+        const studentInfo = pii.get(user.studentId);
+        studentName = studentInfo?.name ?? '';
+        studentNumber = studentInfo?.studentNumber ?? '';
+
+        const student = await this.studentRepo.findOne({
+          where: { id: user.studentId },
+          relations: ['class', 'class.grade'],
+        });
+        if (student?.class) {
+          className = student.class.name;
+          gradeName = student.class.grade?.name ?? '';
+        }
+      }
+    }
+
     const data: PdfReportData = {
       result,
-      studentName: studentInfo?.name ?? '',
-      studentNumber: studentInfo?.studentNumber ?? '',
-      gradeName: '',
-      className: '',
+      studentName,
+      studentNumber,
+      gradeName,
+      className,
       scaleName: taskEntity?.scale?.name ?? '',
       taskTitle: taskEntity?.title ?? '',
     };
-
-    if (studentId) {
-      const student = await this.studentRepo.findOne({
-        where: { id: studentId },
-        relations: ['class', 'class.grade'],
-      });
-      if (student?.class) {
-        data.className = student.class.name;
-        data.gradeName = student.class.grade?.name ?? '';
-      }
-    }
 
     return new Promise<Buffer>((resolve, reject) => {
       const chunks: Buffer[] = [];

@@ -6,6 +6,8 @@ import ThemePicker from '../components/ThemePicker';
 import { useThemeTokens } from '../themes/ThemeProvider';
 
 const menuRoutes = [
+  { path: '/admin/dashboard', name: '数据看板' },
+  { path: '/admin/alerts', name: '预警管理' },
   {
     path: '/admin/scales',
     name: '量表管理',

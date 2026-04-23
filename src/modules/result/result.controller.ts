@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access */
 import {
   Controller,
   Get,
@@ -10,6 +10,7 @@ import {
   Body,
   Req,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { ResultService } from './result.service';
@@ -118,6 +119,9 @@ export class ResultController {
   @Post('report-templates')
   @SetMetadata(REQUIRE_PERMISSION, ['result:write'])
   async createReportTemplate(@Body() dto: any) {
+    if (!dto?.name || !dto?.schema) {
+      throw new BadRequestException('name and schema are required');
+    }
     return this.reportTemplateService.create(dto);
   }
 

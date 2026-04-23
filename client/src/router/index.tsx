@@ -26,6 +26,7 @@ import InterviewDetail from '../pages/interview/InterviewDetail';
 import TemplateManage from '../pages/interview/TemplateManage';
 import TimelineView from '../pages/interview/TimelineView';
 import FollowupManageNew from '../pages/followup/FollowupManage';
+import FollowupWorkbench from '../pages/followup/FollowupWorkbench';
 import StudentProfile from '../pages/student/StudentProfile';
 import SettingsPage from '../pages/settings/SettingsPage';
 
@@ -63,6 +64,7 @@ export const routeConfigs: RouteConfig[] = [
       { path: 'interviews/:id', component: InterviewDetail },
       { path: 'interviews/templates', component: TemplateManage },
       { path: 'interviews/followup-manage', component: FollowupManageNew },
+      { path: 'followup', component: FollowupWorkbench },
       { path: 'interviews/timeline/:studentId', component: TimelineView },
       { path: 'settings', component: SettingsPage },
     ],
@@ -87,6 +89,7 @@ export const routeConfigs: RouteConfig[] = [
       { path: 'interviews/:id', component: InterviewDetail },
       { path: 'interviews/templates', component: TemplateManage },
       { path: 'interviews/followup-manage', component: FollowupManageNew },
+      { path: 'followup', component: FollowupWorkbench },
       { path: 'interviews/timeline/:studentId', component: TimelineView },
       { path: 'roles', component: RoleManage },
       { path: 'users', component: UserManage },

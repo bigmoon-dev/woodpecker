@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ScaleValidation } from '../../entities/scale/scale-validation.entity';
@@ -51,7 +55,17 @@ export class ScaleValidationService {
     const scale = await this.scaleRepo.findOne({ where: { id: scaleId } });
     if (!scale) throw new NotFoundException(`Scale ${scaleId} not found`);
 
-    if (dto.reliabilityValue < 0 || dto.reliabilityValue > 1) {
+    if (!dto.reliabilityType || !dto.validityType || !dto.validatedAt) {
+      throw new BadRequestException(
+        'reliabilityType, validityType, and validatedAt are required',
+      );
+    }
+
+    if (
+      dto.reliabilityValue == null ||
+      dto.reliabilityValue < 0 ||
+      dto.reliabilityValue > 1
+    ) {
       throw new Error('reliabilityValue must be between 0 and 1');
     }
 

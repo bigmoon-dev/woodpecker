@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Plugin } from '../../entities/plugin/plugin.entity';
@@ -81,7 +81,8 @@ export class PluginManager implements OnModuleInit {
   async enable(name: string, config?: Record<string, any>): Promise<void> {
     const plugin = this.loadedPlugins.get(name);
     const entity = await this.pluginRepo.findOne({ where: { name } });
-    if (!plugin || !entity) throw new Error(`Plugin ${name} not found`);
+    if (!plugin || !entity)
+      throw new NotFoundException(`Plugin ${name} not found`);
 
     const ctx: PluginContext = {
       config: { ...entity.config, ...config },

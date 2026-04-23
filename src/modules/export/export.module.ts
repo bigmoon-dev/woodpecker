@@ -6,6 +6,7 @@ import { TaskAnswer } from '../../entities/task/task-answer.entity';
 import { Student } from '../../entities/org/student.entity';
 import { Class } from '../../entities/org/class.entity';
 import { Grade } from '../../entities/org/grade.entity';
+import { User } from '../../entities/auth/user.entity';
 import { ExportService } from './export.service';
 import { ExportController } from './export.controller';
 import { ResultModule } from '../result/result.module';
@@ -20,6 +21,7 @@ import { CoreModule } from '../core/core.module';
       Student,
       Class,
       Grade,
+      User,
     ]),
     forwardRef(() => ResultModule),
     CoreModule,
