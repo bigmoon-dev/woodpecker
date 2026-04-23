@@ -3,7 +3,7 @@
 A K-12 school-oriented psychological health scale assessment platform. Supports importing scales via Excel, online student testing, automatic scoring, and tiered alerting.
 
 [![CI](https://github.com/bigmoon-dev/woodpecker/actions/workflows/ci.yml/badge.svg)](https://github.com/bigmoon-dev/woodpecker/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-91.46%25-brightgreen)](./src/modules/scoring/)
+[![Coverage](https://img.shields.io/badge/coverage-91.45%25-brightgreen)](./src/modules/scoring/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
 > The woodpecker is the "forest doctor" — symbolizing early detection and early intervention to safeguard students' mental health.
