@@ -1811,10 +1811,6 @@
       "hash": "0f3cfbf3f4475cd556d3b0d99afe0001be0561faea1348e3f779f11848f430ed",
       "size": 341587
     },
-    "dist/version.json": {
-      "hash": "cde8a2a6cdb88c4105477cac86a1b180d3a41142fe30fa08befde57c488acb07",
-      "size": 21
-    },
     "public/assets/index-8pSy1EPa.js": {
       "hash": "33faf8939656520e887f2860e90f48629cfab9e73921ee412d8cf421975fbc23",
       "size": 3691799
@@ -2020,7 +2016,7 @@
       "size": 30949
     }
   },
-  "totalSize": 151591509,
-  "fileCount": 504,
-  "signature": "WHuXyB2cIkFJhxFRpXeGYiCB7WTT2BzQ7bdqiMuzr6TJg2EmOveCIlPcTqyKKsaidoyuH0UnsJIxueVOtd4CeewVgCe9TV1bFenudTo51XMP6zPczROgFR+KP6WocfE0UeoBJuRPODC40sACS77F4Wbu4FBHR5q1pbljlT5RhwxwYQjVLLouDJJySX4NAsDD8RuhxpwEGP9FNLOOXmunCGPRA1mi9ycrjx+qMQplIXGWVffSh55GdSTEXXvg8t1Tstm9iP4gQ9jfGZsFgSCX6fC4Lpn/ITSx+upqKRysB3snB6m7JxNvz981eL6zFea2q6qf46fX0NZdk4wrbvnx9A=="
+  "totalSize": 151591488,
+  "fileCount": 503,
+  "signature": "HzC0MEd4aUOAuJejY22/rxZaGrkaDPnmfVm6IohTSQ6gLkluVDwF0e0iN1o4eByEMFqn0zgCh51ffJIw3V9pAvTBXTYla++eJSyZN4tB+3S9LN4o0/B4QZrgb27Ii3B9Lz43ZyFsWQBhT1MgF5EBg6ZjWdAPFOr/aVtT9GCiAN/63eBN8O6VoML3g9aPhr7J1FlG4QOfLkEL4wyO0+xamAwGAYFbkj1BnRYIdUL17R60KIwBR1Qge3uvWK0T423PnWECcgIK/SDJbYwRSXJocF4lNWwkw/+I8dBE7x5xqPU7oa9NLT0QRYJB76vjWeP9Fl8tts+ZniFTPZxExaDtEQ=="
 }
