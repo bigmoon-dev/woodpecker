@@ -112,13 +112,19 @@ export class ExportController {
     @Param('resultId') resultId: string,
     @Res() res: express.Response,
   ) {
-    const buffer = await this.exportService.generatePdf(resultId);
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename=report-${resultId}.pdf`,
-    );
-    res.setHeader('Cache-Control', 'no-store');
-    res.send(buffer);
+    try {
+      const buffer = await this.exportService.generatePdf(resultId);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename=report-${resultId}.pdf`,
+      );
+      res.setHeader('Cache-Control', 'no-store');
+      res.send(buffer);
+    } catch (e: unknown) {
+      console.error('[exportPdf ERROR]', e);
+      const msg = e instanceof Error ? e.message : String(e);
+      res.status(500).json({ code: 500, message: msg, detail: null });
+    }
   }
 }

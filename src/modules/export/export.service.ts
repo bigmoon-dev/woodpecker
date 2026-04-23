@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
-import * as PDFDocument from 'pdfkit';
+import PDFDocument from 'pdfkit';
 import * as path from 'path';
 import { ResultWithContext } from '../result/result.service';
 import { AlertRecord } from '../../entities/audit/alert-record.entity';
@@ -144,138 +144,145 @@ export class ExportService {
   }
 
   async generatePdf(resultId: string): Promise<Buffer> {
-    const result = await this.resultRepo.findOne({ where: { id: resultId } });
-    if (!result) throw new NotFoundException(`Result ${resultId} not found`);
+    try {
+      const result = await this.resultRepo.findOne({ where: { id: resultId } });
+      if (!result) throw new NotFoundException(`Result ${resultId} not found`);
 
-    const answer = await this.answerRepo.findOne({
-      where: { id: result.answerId },
-      relations: ['task', 'task.scale'],
-    });
+      const answer = await this.answerRepo.findOne({
+        where: { id: result.answerId },
+        relations: ['task', 'task.scale'],
+      });
 
-    const userId = answer?.studentId ?? '';
-    const taskEntity: {
-      title?: string;
-      scale?: { name?: string };
-    } = (answer?.task ?? {}) as {
-      title?: string;
-      scale?: { name?: string };
-    };
+      const userId = answer?.studentId ?? '';
+      const taskEntity: {
+        title?: string;
+        scale?: { name?: string };
+      } = (answer?.task ?? {}) as {
+        title?: string;
+        scale?: { name?: string };
+      };
 
-    let studentName = '';
-    let studentNumber = '';
-    let gradeName = '';
-    let className = '';
+      let studentName = '';
+      let studentNumber = '';
+      let gradeName = '';
+      let className = '';
 
-    if (userId) {
-      const user = await this.userRepo.findOne({ where: { id: userId } });
-      if (user?.studentId) {
-        const pii = await this.encryptionService.batchDecrypt([user.studentId]);
-        const studentInfo = pii.get(user.studentId);
-        studentName = studentInfo?.name ?? '';
-        studentNumber = studentInfo?.studentNumber ?? '';
+      if (userId) {
+        const user = await this.userRepo.findOne({ where: { id: userId } });
+        if (user?.studentId) {
+          const pii = await this.encryptionService.batchDecrypt([
+            user.studentId,
+          ]);
+          const studentInfo = pii.get(user.studentId);
+          studentName = studentInfo?.name ?? '';
+          studentNumber = studentInfo?.studentNumber ?? '';
 
-        const student = await this.studentRepo.findOne({
-          where: { id: user.studentId },
-          relations: ['class', 'class.grade'],
-        });
-        if (student?.class) {
-          className = student.class.name;
-          gradeName = student.class.grade?.name ?? '';
+          const student = await this.studentRepo.findOne({
+            where: { id: user.studentId },
+            relations: ['class', 'class.grade'],
+          });
+          if (student?.class) {
+            className = student.class.name;
+            gradeName = student.class.grade?.name ?? '';
+          }
         }
       }
+
+      const data: PdfReportData = {
+        result,
+        studentName,
+        studentNumber,
+        gradeName,
+        className,
+        scaleName: taskEntity?.scale?.name ?? '',
+        taskTitle: taskEntity?.title ?? '',
+      };
+
+      return new Promise<Buffer>((resolve, reject) => {
+        const chunks: Buffer[] = [];
+        const PDFDocumentCtor = PDFDocument as unknown as new (
+          opts: Record<string, unknown>,
+        ) => PDFDoc;
+        const doc = new PDFDocumentCtor({
+          size: 'A4',
+          margin: 50,
+        }) as unknown as PDFDoc;
+
+        doc.registerFont('NotoSansSC', FONT_PATH);
+        doc.font('NotoSansSC');
+
+        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+
+        doc.fontSize(20).text('心理测评报告', { align: 'center' });
+        doc.moveDown(0.5);
+        doc
+          .fontSize(10)
+          .fillColor('#999')
+          .text('Psychological Assessment Report', { align: 'center' });
+        doc.fillColor('#000');
+        doc.moveDown(1.5);
+
+        doc.fontSize(12).text(`量表名称：${data.scaleName}`);
+        doc.text(`任务名称：${data.taskTitle}`);
+        doc.text(`学生姓名：${data.studentName}`);
+        doc.text(`学号：${data.studentNumber}`);
+        if (data.gradeName) doc.text(`年级：${data.gradeName}`);
+        if (data.className) doc.text(`班级：${data.className}`);
+        doc.text(
+          `测评时间：${data.result.createdAt?.toISOString().slice(0, 19).replace('T', ' ') ?? ''}`,
+        );
+        doc.moveDown(1);
+
+        doc.fontSize(14).text('测评结果', { underline: true });
+        doc.moveDown(0.5);
+        doc.fontSize(12);
+
+        const colorLabel =
+          data.result.color === 'red'
+            ? '红色（需重点关注）'
+            : data.result.color === 'yellow'
+              ? '黄色（需关注）'
+              : '绿色（正常）';
+        doc.text(`总分：${data.result.totalScore}`);
+        doc.text(`等级：${data.result.level}`);
+        doc.text(`预警等级：${colorLabel}`);
+        doc.moveDown(0.5);
+
+        if (data.result.dimensionScores) {
+          doc.fontSize(14).text('维度得分', { underline: true });
+          doc.moveDown(0.5);
+          doc.fontSize(11);
+
+          const dimensions = Object.entries(data.result.dimensionScores);
+          for (const [dim, score] of dimensions) {
+            doc.text(`${dim}：${score}`);
+          }
+          doc.moveDown(0.5);
+        }
+
+        if (data.result.suggestion) {
+          doc.fontSize(14).text('评估建议', { underline: true });
+          doc.moveDown(0.5);
+          doc.fontSize(11).text(data.result.suggestion, { width: 450 });
+          doc.moveDown(0.5);
+        }
+
+        doc.moveDown(2);
+        doc
+          .fontSize(8)
+          .fillColor('#999')
+          .text(
+            `报告生成时间：${new Date().toISOString().slice(0, 19).replace('T', ' ')}`,
+          )
+          .text('本报告仅供参考，不作为临床诊断依据。', { align: 'center' });
+
+        doc.end();
+      });
+    } catch (e) {
+      console.error('[generatePdf ERROR]', e);
+      throw e;
     }
-
-    const data: PdfReportData = {
-      result,
-      studentName,
-      studentNumber,
-      gradeName,
-      className,
-      scaleName: taskEntity?.scale?.name ?? '',
-      taskTitle: taskEntity?.title ?? '',
-    };
-
-    return new Promise<Buffer>((resolve, reject) => {
-      const chunks: Buffer[] = [];
-      const PDFDocumentCtor = PDFDocument as unknown as new (
-        opts: Record<string, unknown>,
-      ) => PDFDoc;
-      const doc = new PDFDocumentCtor({
-        size: 'A4',
-        margin: 50,
-      }) as unknown as PDFDoc;
-
-      doc.registerFont('NotoSansSC', FONT_PATH);
-      doc.font('NotoSansSC');
-
-      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
-      doc.on('end', () => resolve(Buffer.concat(chunks)));
-      doc.on('error', reject);
-
-      doc.fontSize(20).text('心理测评报告', { align: 'center' });
-      doc.moveDown(0.5);
-      doc
-        .fontSize(10)
-        .fillColor('#999')
-        .text('Psychological Assessment Report', { align: 'center' });
-      doc.fillColor('#000');
-      doc.moveDown(1.5);
-
-      doc.fontSize(12).text(`量表名称：${data.scaleName}`);
-      doc.text(`任务名称：${data.taskTitle}`);
-      doc.text(`学生姓名：${data.studentName}`);
-      doc.text(`学号：${data.studentNumber}`);
-      if (data.gradeName) doc.text(`年级：${data.gradeName}`);
-      if (data.className) doc.text(`班级：${data.className}`);
-      doc.text(
-        `测评时间：${data.result.createdAt?.toISOString().slice(0, 19).replace('T', ' ') ?? ''}`,
-      );
-      doc.moveDown(1);
-
-      doc.fontSize(14).text('测评结果', { underline: true });
-      doc.moveDown(0.5);
-      doc.fontSize(12);
-
-      const colorLabel =
-        data.result.color === 'red'
-          ? '红色（需重点关注）'
-          : data.result.color === 'yellow'
-            ? '黄色（需关注）'
-            : '绿色（正常）';
-      doc.text(`总分：${data.result.totalScore}`);
-      doc.text(`等级：${data.result.level}`);
-      doc.text(`预警等级：${colorLabel}`);
-      doc.moveDown(0.5);
-
-      if (data.result.dimensionScores) {
-        doc.fontSize(14).text('维度得分', { underline: true });
-        doc.moveDown(0.5);
-        doc.fontSize(11);
-
-        const dimensions = Object.entries(data.result.dimensionScores);
-        for (const [dim, score] of dimensions) {
-          doc.text(`${dim}：${score}`);
-        }
-        doc.moveDown(0.5);
-      }
-
-      if (data.result.suggestion) {
-        doc.fontSize(14).text('评估建议', { underline: true });
-        doc.moveDown(0.5);
-        doc.fontSize(11).text(data.result.suggestion, { width: 450 });
-        doc.moveDown(0.5);
-      }
-
-      doc.moveDown(2);
-      doc
-        .fontSize(8)
-        .fillColor('#999')
-        .text(
-          `报告生成时间：${new Date().toISOString().slice(0, 19).replace('T', ' ')}`,
-        )
-        .text('本报告仅供参考，不作为临床诊断依据。', { align: 'center' });
-
-      doc.end();
-    });
   }
 }

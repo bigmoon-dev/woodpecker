@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.34.1] - 2026-04-23
+### Fixed
+- PDF 报告导出 500 错误：`import * as PDFDocument` 编译后 `__importStar` 包装为非构造函数对象，改为默认导入
+- export.controller.ts PDF 导出添加 try/catch 错误日志输出
+
 ## [0.34.0] - 2026-04-23
 ### Fixed
 - audit_logs.action 列长度从 varchar(50) 扩展到 varchar(255)，修复含 UUID 的 URL 写入失败
