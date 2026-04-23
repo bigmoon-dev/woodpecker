@@ -13,7 +13,7 @@ export class AuditLog {
   @Column({ type: 'uuid', nullable: true })
   userId: string | null;
 
-  @Column({ length: 50 })
+  @Column({ length: 255 })
   action: string;
 
   @Column({ length: 50 })

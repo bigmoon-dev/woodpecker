@@ -148,6 +148,9 @@ export class ResultController {
     @Query('templateId') templateId: string,
     @Query('taskId') taskId: string,
   ) {
+    if (!templateId || !taskId) {
+      throw new BadRequestException('templateId and taskId are required');
+    }
     return this.reportGeneratorService.generateGroupReport(templateId, taskId);
   }
 

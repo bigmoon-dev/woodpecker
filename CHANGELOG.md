@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.34.0] - 2026-04-23
+### Fixed
+- audit_logs.action 列长度从 varchar(50) 扩展到 varchar(255)，修复含 UUID 的 URL 写入失败
+- PUT /scales/:id 更新 scoringRules/scoreRanges 时先删除旧记录再创建新记录，修复 scaleId null 约束违反
+- 139 端点黑盒测试全部通过（含答题提交流程）
+
 ## [0.33.0] - 2026-04-23
 ### Fixed
 - PDF 导出：通过 User.studentId 解析学生信息，替代直接使用 TaskAnswer.studentId

@@ -260,6 +260,9 @@ export class ScaleService {
       }
 
       if (dto.scoringRules) {
+        if (scale.scoringRules?.length) {
+          await manager.remove(ScoringRule, scale.scoringRules);
+        }
         scale.scoringRules = dto.scoringRules.map((r) => {
           const rule = new ScoringRule();
           rule.scaleId = scale.id;
@@ -272,6 +275,9 @@ export class ScaleService {
       }
 
       if (dto.scoreRanges) {
+        if (scale.scoreRanges?.length) {
+          await manager.remove(ScoreRange, scale.scoreRanges);
+        }
         scale.scoreRanges = dto.scoreRanges.map((r) => {
           const range = new ScoreRange();
           range.scaleId = scale.id;
