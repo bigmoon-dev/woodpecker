@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.34.2] - 2026-04-23
+### Fixed
+- 文件上传后异步 OCR 回调添加 .catch() 保护，防止文件被删除后 NotFoundException 导致进程崩溃
+
 ## [0.34.1] - 2026-04-23
 ### Fixed
 - PDF 报告导出 500 错误：`import * as PDFDocument` 编译后 `__importStar` 包装为非构造函数对象，改为默认导入

@@ -145,20 +145,16 @@ export class InterviewController {
     this.ocrService
       .recognize(file.path)
       .then(async (result) => {
-        await this.interviewService.updateFileOcr(
-          interviewFile.id,
-          result,
-          'done',
-        );
-        await this.interviewService.aggregateOcrText(id);
+        await this.interviewService
+          .updateFileOcr(interviewFile.id, result, 'done')
+          .catch(() => {});
+        await this.interviewService.aggregateOcrText(id).catch(() => {});
         await this.summaryExtractionService.extract(id).catch(() => {});
       })
       .catch(async () => {
-        await this.interviewService.updateFileOcr(
-          interviewFile.id,
-          null,
-          'failed',
-        );
+        await this.interviewService
+          .updateFileOcr(interviewFile.id, null, 'failed')
+          .catch(() => {});
       });
 
     return interviewFile;
