@@ -32,6 +32,9 @@ function escapeSql(val: unknown): string {
   if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';
   if (typeof val === 'number') return String(val);
   if (val instanceof Date) return `'${val.toISOString()}'`;
+  if (Buffer.isBuffer(val)) {
+    return `E'\\\\x${val.toString('hex')}'`;
+  }
   if (typeof val === 'object') {
     return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
   }

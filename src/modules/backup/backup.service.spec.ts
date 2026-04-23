@@ -123,6 +123,25 @@ describe('BackupService', () => {
       expect(fs.writeFileSync).toHaveBeenCalled();
     });
 
+    it('handles Buffer (bytea) columns correctly with hex escape', async () => {
+      mockPool.query.mockResolvedValueOnce({
+        rows: [{ tablename: 'students' }],
+      });
+      mockPool.query.mockResolvedValueOnce({
+        rows: [{ column_name: 'id' }, { column_name: 'encryptedName' }],
+      });
+      mockPool.query.mockResolvedValueOnce({
+        rows: [{ id: 'abc', encryptedName: Buffer.from('hello') }],
+      });
+      mockPool.query.mockResolvedValueOnce({ rows: [] });
+
+      await service.createBackup('bytea_test');
+      const writeCall = (fs.writeFileSync as jest.Mock).mock.calls[0];
+      const content: string = writeCall[1];
+      expect(content).toContain("E'\\\\x68656c6c6f'");
+      expect(content).not.toContain('{"type":"Buffer"');
+    });
+
     it('creates backup with custom name', async () => {
       mockPool.query.mockResolvedValueOnce({ rows: [] });
 
