@@ -142,8 +142,7 @@ export class InterviewController {
       fileType,
     );
 
-    this.ocrService
-      .recognize(file.path)
+    Promise.resolve(this.ocrService.recognize(file.path))
       .then(async (result) => {
         await this.interviewService
           .updateFileOcr(interviewFile.id, result, 'done')

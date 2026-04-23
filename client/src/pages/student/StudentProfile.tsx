@@ -126,9 +126,9 @@ export default function StudentProfile() {
         <Empty description="未找到学生档案" />
         <Button
           style={{ marginTop: 16 }}
-          onClick={() => navigate(`${basePath}/followup`)}
+          onClick={() => navigate(`${basePath}/interviews/followup-manage`)}
         >
-          返回随访工作台
+          返回随访管理
         </Button>
       </div>
     );

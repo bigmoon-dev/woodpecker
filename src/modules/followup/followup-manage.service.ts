@@ -180,7 +180,7 @@ export class FollowupManageService {
       const risk = riskStudentMap.get(id);
       const interview = interviewStudentMap.get(id);
       return {
-        studentId: id,
+        studentId: realStudentId,
         studentName: pii?.name ?? '',
         studentNumber: pii?.studentNumber ?? '',
         className: cls?.name ?? '',

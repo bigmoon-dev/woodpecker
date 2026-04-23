@@ -9,7 +9,6 @@ import { clearToken } from '../utils/auth';
 
 const menuRoutes = [
   { path: '/teacher/dashboard', name: '数据看板' },
-  { path: '/teacher/alerts', name: '预警管理' },
   { path: '/teacher/scales', name: '量表管理',
     routes: [
       { path: '/teacher/scales', name: '自定义量表' },

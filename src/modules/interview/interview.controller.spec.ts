@@ -31,7 +31,7 @@ describe('InterviewController', () => {
     update: jest.fn(),
     delete: jest.fn(),
     getFiles: jest.fn(),
-    updateFileOcr: jest.fn(),
+    updateFileOcr: jest.fn().mockResolvedValue({}),
     addFile: jest.fn(),
     deleteFile: jest.fn(),
     updateStatus: jest.fn(),

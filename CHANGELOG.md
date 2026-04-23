@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.35.0] - 2026-04-23
+### Changed
+- 删除「预警管理」一级菜单（Admin/Teacher Layout），按设计要求整合到访谈管理子菜单
+- 删除独立「随访工作台」路由和菜单，功能由「访谈管理 > 随访管理」替代
+- StudentProfile 未找到档案时返回按钮改为「返回随访管理」
+- AlertList 删除「随访工作台」工具栏按钮
+
+### Fixed
+- FollowupManageService.getStudents 返回 studentId 改为 realStudentId（student entity ID），修复查看详情 404
+- InterviewService.findAll 添加 user→student 映射后再 batchDecrypt，修复访谈列表学生姓名为空
+- OCR 异步回调 Promise.resolve() 包装，防止 mock 环境下 undefined.catch 崩溃
+
 ## [0.34.2] - 2026-04-23
 ### Fixed
 - 文件上传后异步 OCR 回调添加 .catch() 保护，防止文件被删除后 NotFoundException 导致进程崩溃

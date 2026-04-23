@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { ProTable, type ActionType, type ProColumns } from '@ant-design/pro-components';
-import { Button, Modal, Form, Input, message, Tag, Descriptions, Timeline, Spin, Tooltip } from 'antd';
-import { SafetyCertificateOutlined } from '@ant-design/icons';
+import { Button, Modal, Form, Input, message, Tag, Descriptions, Timeline, Spin } from 'antd';
+
 import { useNavigate, useLocation } from 'react-router-dom';
 import request from '../../utils/request';
 
@@ -118,16 +118,6 @@ export default function AlertList() {
           return { data: res.data || res, total: res.total, success: true };
         }}
         search={false}
-        toolBarRender={() => [
-          <Tooltip title="统一管理待随访学生" key="followup">
-            <Button
-              icon={<SafetyCertificateOutlined />}
-              onClick={() => navigate(`${basePath}/followup`)}
-            >
-              随访工作台
-            </Button>
-          </Tooltip>,
-        ]}
       />
       <Modal title="处理预警" open={handleOpen} onCancel={() => setHandleOpen(false)} onOk={() => doAction('handle')}>
         <Form form={form} layout="vertical">

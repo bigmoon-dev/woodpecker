@@ -113,15 +113,32 @@ export class InterviewService {
     });
 
     const dbStudentIds = [...new Set(records.map((r) => r.studentId))];
-    const piiMap =
+
+    const userRows =
       dbStudentIds.length > 0
-        ? await this.encryptionService.batchDecrypt(dbStudentIds)
+        ? await this.userRepo.find({
+            where: { id: In(dbStudentIds) },
+            select: ['id', 'studentId'],
+          })
+        : [];
+    const userToStudent = new Map(
+      userRows.filter((r) => r.studentId).map((r) => [r.id, r.studentId]),
+    );
+
+    const realStudentIds = [
+      ...new Set(dbStudentIds.map((id) => userToStudent.get(id) ?? id)),
+    ];
+    const piiMap =
+      realStudentIds.length > 0
+        ? await this.encryptionService.batchDecrypt(realStudentIds)
         : new Map<string, { name: string; studentNumber: string }>();
 
     const data = records.map((r) => {
-      const pii = piiMap.get(r.studentId);
+      const realId = userToStudent.get(r.studentId) ?? r.studentId;
+      const pii = piiMap.get(realId);
       return {
         ...r,
+        studentId: realId,
         studentName: pii?.name ?? '',
       };
     });

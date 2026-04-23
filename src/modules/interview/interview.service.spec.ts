@@ -40,7 +40,7 @@ describe('InterviewService', () => {
     createQueryBuilder: jest.fn(),
   };
   const mockStudentRepo = { findOne: jest.fn() };
-  const mockUserRepo = { findOne: jest.fn() };
+  const mockUserRepo = { findOne: jest.fn(), find: jest.fn() };
   const mockRoleRepo = { findOne: jest.fn() };
   const mockEncryptionService = {
     encrypt: jest.fn().mockResolvedValue(Buffer.from('encrypted')),
@@ -165,6 +165,7 @@ describe('InterviewService', () => {
     it('should find all interviews with scope=all', async () => {
       const interviews = [{ id: 'iv1', studentId: 's1' }];
       mockInterviewRepo.findAndCount.mockResolvedValue([interviews, 1]);
+      mockUserRepo.find.mockResolvedValue([]);
 
       const result = await service.findAll(
         { scope: 'all', userId: 'u1' },
@@ -238,6 +239,7 @@ describe('InterviewService', () => {
         [{ id: 'iv1', studentId: 's1' }],
         1,
       ]);
+      mockUserRepo.find.mockResolvedValue([]);
       mockEncryptionService.batchDecrypt.mockResolvedValue(piiMap);
 
       const result = await service.findAll({ scope: 'all', userId: 'u1' });
