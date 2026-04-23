@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.33.0] - 2026-04-23
+### Fixed
+- PDF 导出：通过 User.studentId 解析学生信息，替代直接使用 TaskAnswer.studentId
+- 前端 AdminLayout/TeacherLayout：添加数据看板和预警管理菜单入口
+- 前端 SettingsPage：使用 hasRole('admin') 过滤管理员工具标签页
+- 前端 MyResults：添加班级/年级 Select 下拉筛选入口
+- 前端路由：注册 followup 工作台路由到 teacher+admin
+- POST /scales/:id/validations：添加必填字段验证，500→400
+- POST /results/report-templates：添加 name/schema 必填校验，500→400
+- POST /admin/plugins/:name/enable：使用 NotFoundException 替代 Error，500→404
+
 ## [0.32.0] - 2026-04-22
 ### Added
 - 数据库备份/恢复功能（BackupModule）：使用 pg 库替代 pg_dump，跨平台兼容
