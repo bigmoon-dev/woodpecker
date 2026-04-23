@@ -6,6 +6,7 @@ const http = require('http');
 const readline = require('readline');
 const crypto = require('crypto');
 const ota = require('./ota-client');
+const backup = require('./backup');
 
 const APP_DIR = path.resolve(__dirname, '..');
 
@@ -137,6 +138,13 @@ async function checkAndApplyOta() {
     console.log('  💾 正在备份当前版本...');
     ota.backupCurrent(diff);
     console.log('  ✅ 备份完成');
+
+    try {
+      await backup.createBackup(currentVersion);
+      backup.cleanupOldBackups();
+    } catch (e) {
+      console.log(`  ⚠️  OTA前数据库备份失败: ${e.message}`);
+    }
 
     console.log(`  ⬇️  正在下载更新...`);
     let lastFile = '';
