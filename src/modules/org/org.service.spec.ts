@@ -60,6 +60,7 @@ describe('OrgService', () => {
           provide: EncryptionService,
           useValue: {
             encrypt: jest.fn().mockResolvedValue(Buffer.from('enc')),
+            batchDecrypt: jest.fn().mockResolvedValue(new Map()),
           },
         },
       ],

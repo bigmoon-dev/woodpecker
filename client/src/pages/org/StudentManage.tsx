@@ -106,7 +106,11 @@ export default function StudentManage() {
   const columns = [
     { title: '姓名', dataIndex: 'name', key: 'name' },
     { title: '学号', dataIndex: 'studentNo', key: 'studentNo' },
-    { title: '班级ID', dataIndex: 'classId', key: 'classId', ellipsis: true },
+    {
+      title: '班级',
+      dataIndex: 'className',
+      key: 'className',
+    },
     {
       title: '操作',
       key: 'action',

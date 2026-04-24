@@ -61,7 +61,10 @@ describe('StudentProfileController', () => {
           provide: getRepositoryToken(FollowUpReminder),
           useValue: mockFollowupRepo,
         },
-        { provide: getRepositoryToken(User), useValue: { find: jest.fn().mockResolvedValue([]) } },
+        {
+          provide: getRepositoryToken(User),
+          useValue: { find: jest.fn().mockResolvedValue([]) },
+        },
         { provide: EncryptionService, useValue: mockEncryptionService },
       ],
     })

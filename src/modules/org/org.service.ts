@@ -193,7 +193,7 @@ export class OrgService {
     classId?: string,
     page = 1,
     pageSize = 20,
-  ): Promise<{ data: Student[]; total: number }> {
+  ): Promise<{ data: any[]; total: number }> {
     const where: Record<string, any> = classId ? { classId } : {};
 
     if (dataScope.scope !== 'all') {
@@ -203,11 +203,32 @@ export class OrgService {
       where.id = In(studentIds);
     }
 
-    const [data, total] = await this.studentRepo.findAndCount({
+    const [students, total] = await this.studentRepo.findAndCount({
       where,
       skip: (page - 1) * pageSize,
       take: pageSize,
+      relations: ['class'],
     });
+
+    if (students.length === 0) return { data: [], total };
+
+    const piiMap = await this.encryptionService.batchDecrypt(
+      students.map((s) => s.id),
+    );
+
+    const data = students.map((s) => {
+      const pii = piiMap.get(s.id);
+      return {
+        id: s.id,
+        classId: s.classId,
+        className: s.class?.name ?? '',
+        name: pii?.name ?? '',
+        studentNo: pii?.studentNumber ?? '',
+        gender: s.gender,
+        createdAt: s.createdAt,
+      };
+    });
+
     return { data, total };
   }
 
