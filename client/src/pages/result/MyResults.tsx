@@ -37,7 +37,7 @@ export default function MyResults() {
   const columns: ProColumns[] = [
     ...(!isStudent
       ? [
-          { title: '学生姓名', dataIndex: 'studentName', key: 'studentName' },
+          { title: '学生姓名', dataIndex: 'studentName', key: 'studentName', render: (t: string) => t || '-' },
           { title: '班级', dataIndex: 'className', key: 'className' },
           { title: '量表', dataIndex: 'scaleName', key: 'scaleName' },
         ]

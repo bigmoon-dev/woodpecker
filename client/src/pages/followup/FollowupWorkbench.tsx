@@ -42,6 +42,7 @@ export default function FollowupWorkbench() {
       title: '学生姓名',
       dataIndex: 'studentName',
       width: 120,
+      render: (t: string) => t || '-',
     },
     {
       title: '班级',

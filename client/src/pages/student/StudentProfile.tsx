@@ -179,7 +179,7 @@ export default function StudentProfile() {
           >
             <Descriptions column={4}>
               <Descriptions.Item label="姓名">
-                {profile.student.name}
+                {profile.student.name || '-'}
               </Descriptions.Item>
               <Descriptions.Item label="年级">
                 {profile.student.gradeName}

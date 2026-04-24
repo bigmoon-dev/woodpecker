@@ -501,11 +501,11 @@ describe('AlertService', () => {
       mockUserRepo.find.mockResolvedValue([
         {
           id: 'u1',
-          roles: [{ name: '心理老师' }],
+          roles: [{ name: 'psychologist' }],
         },
         {
           id: 'u2',
-          roles: [{ name: '班主任' }],
+          roles: [{ name: 'teacher' }],
         },
       ]);
 
@@ -528,11 +528,11 @@ describe('AlertService', () => {
       mockUserRepo.find.mockResolvedValue([
         {
           id: 'u1',
-          roles: [{ name: '心理老师' }],
+          roles: [{ name: 'psychologist' }],
         },
         {
           id: 'u2',
-          roles: [{ name: '班主任' }],
+          roles: [{ name: 'teacher' }],
         },
       ]);
 
@@ -541,7 +541,7 @@ describe('AlertService', () => {
       expect(notificationRepo.save).toHaveBeenCalled();
       const saved = notificationRepo.save.mock.calls[0][0];
       expect(saved).toHaveLength(1);
-      expect(saved[0].targetRole).toBe('心理老师');
+      expect(saved[0].targetRole).toBe('psychologist');
     });
 
     it('should not throw when notifyRelevantUsers fails', async () => {

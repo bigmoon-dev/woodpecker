@@ -8,7 +8,7 @@ export default function UserManage() {
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [currentId, setCurrentId] = useState('');
-  const [roles, setRoles] = useState<{ id: string; name: string }[]>([]);
+  const [roles, setRoles] = useState<{ id: string; name: string; displayName?: string }[]>([]);
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
 
@@ -61,7 +61,7 @@ export default function UserManage() {
       key: 'roles',
       render: (_: any, record: any) =>
         (record.roles || []).map((r: any) => (
-          <Tag key={r.id} color="blue">{r.name}</Tag>
+          <Tag key={r.id} color="blue">{r.displayName || r.name}</Tag>
         )),
     },
     {
@@ -114,7 +114,7 @@ export default function UserManage() {
           <Form.Item name="roleIds" label="角色" rules={[{ required: true, message: '请选择角色' }]}>
             <Select mode="multiple" placeholder="选择角色">
               {roles.map((r) => (
-                <Select.Option key={r.id} value={r.id}>{r.name}</Select.Option>
+                <Select.Option key={r.id} value={r.id}>{r.displayName ? `${r.displayName} (${r.name})` : r.name}</Select.Option>
               ))}
             </Select>
           </Form.Item>
@@ -128,7 +128,7 @@ export default function UserManage() {
           <Form.Item name="roleIds" label="角色">
             <Select mode="multiple" placeholder="选择角色">
               {roles.map((r) => (
-                <Select.Option key={r.id} value={r.id}>{r.name}</Select.Option>
+                <Select.Option key={r.id} value={r.id}>{r.displayName ? `${r.displayName} (${r.name})` : r.name}</Select.Option>
               ))}
             </Select>
           </Form.Item>

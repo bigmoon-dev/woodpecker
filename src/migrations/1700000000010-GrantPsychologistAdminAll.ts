@@ -8,7 +8,7 @@ export class GrantPsychologistAdminAll1700000000010 implements MigrationInterfac
       INSERT INTO "role_permissions" ("roleId", "permissionId")
       SELECT r."id", p."id"
       FROM "roles" r, "permissions" p
-      WHERE r."name" = 'psychologist' AND p."code" = 'admin:all'
+      WHERE r."name" IN ('psychologist', '心理老师') AND p."code" = 'admin:all'
       ON CONFLICT ("roleId", "permissionId") DO NOTHING
     `);
 
@@ -16,7 +16,7 @@ export class GrantPsychologistAdminAll1700000000010 implements MigrationInterfac
       INSERT INTO "role_permissions" ("roleId", "permissionId")
       SELECT r."id", p."id"
       FROM "roles" r, "permissions" p
-      WHERE r."name" = 'psychologist' AND p."code" IN (
+      WHERE r."name" IN ('psychologist', '心理老师') AND p."code" IN (
         'role:write', 'plugin:write', 'config:write',
         'user:read', 'user:write', 'role:read',
         'student:read', 'student:write',
@@ -52,7 +52,7 @@ export class GrantPsychologistAdminAll1700000000010 implements MigrationInterfac
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       DELETE FROM "role_permissions"
-      WHERE "roleId" = (SELECT "id" FROM "roles" WHERE "name" = 'psychologist')
+      WHERE "roleId" = (SELECT "id" FROM "roles" WHERE "name" IN ('psychologist', '心理老师'))
       AND "permissionId" = (SELECT "id" FROM "permissions" WHERE "code" = 'admin:all')
     `);
   }

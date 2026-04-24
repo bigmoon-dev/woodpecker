@@ -22,6 +22,9 @@ export class Role {
   @Column({ type: 'boolean', default: false })
   isSystem: boolean;
 
+  @Column({ length: 100, nullable: true })
+  displayName: string;
+
   @ManyToMany(() => User, (user) => user.roles)
   users: User[];
 

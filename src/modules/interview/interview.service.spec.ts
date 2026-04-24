@@ -297,7 +297,7 @@ describe('InterviewService', () => {
       });
       mockUserRepo.findOne.mockResolvedValue({
         id: 'u1',
-        roles: [{ name: '班主任' }],
+        roles: [{ name: 'teacher' }],
       });
 
       const result = await service.findOne('iv1', 'u1');
@@ -313,7 +313,7 @@ describe('InterviewService', () => {
       });
       mockUserRepo.findOne.mockResolvedValue({
         id: 'u1',
-        roles: [{ name: '心理老师' }],
+        roles: [{ name: 'psychologist' }],
       });
 
       const result = await service.findOne('iv1', 'u1');

@@ -56,7 +56,7 @@ export class StudentLoginService implements OnModuleInit {
 
     const studentRole = await this.roleRepo
       .createQueryBuilder('role')
-      .where('role.name IN (:...names)', { names: ['student', '学生'] })
+      .where('role.name IN (:...names)', { names: ['student'] })
       .getOne();
 
     const hash = await this.authService.hashPassword(DEFAULT_STUDENT_PASSWORD);

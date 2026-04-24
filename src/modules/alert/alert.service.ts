@@ -243,7 +243,7 @@ export class AlertService {
       if (!student) return;
 
       const targetRoleNames =
-        level === 'red' ? ['心理老师', '班主任'] : ['心理老师'];
+        level === 'red' ? ['psychologist', 'teacher'] : ['psychologist'];
       const users = await this.userRepo.find({ relations: ['roles'] });
       const targetUsers = users.filter((u) =>
         u.roles?.some((r) => targetRoleNames.includes(r.name)),

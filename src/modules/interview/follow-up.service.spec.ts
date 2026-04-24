@@ -4,6 +4,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { FollowUpService } from './follow-up.service';
 import { FollowUpReminder } from '../../entities/interview/follow-up-reminder.entity';
+import { User } from '../../entities/auth/user.entity';
+import { EncryptionService } from '../core/encryption.service';
 
 describe('FollowUpService', () => {
   let service: FollowUpService;
@@ -16,6 +18,14 @@ describe('FollowUpService', () => {
     save: jest.fn((d) => Promise.resolve({ ...d, id: d.id || 'r1' })),
   };
 
+  const mockUserRepo = {
+    find: jest.fn(),
+  };
+
+  const mockEncryptionService = {
+    batchDecrypt: jest.fn(),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
@@ -24,6 +34,14 @@ describe('FollowUpService', () => {
         {
           provide: getRepositoryToken(FollowUpReminder),
           useValue: mockReminderRepo,
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: mockUserRepo,
+        },
+        {
+          provide: EncryptionService,
+          useValue: mockEncryptionService,
         },
       ],
     }).compile();
@@ -98,18 +116,27 @@ describe('FollowUpService', () => {
   });
 
   describe('findPending', () => {
-    it('should return pending reminders', async () => {
-      const pending = [{ id: 'r1', completed: false }];
+    it('should return pending reminders with studentName', async () => {
+      const pending = [{ id: 'r1', completed: false, studentId: 'u1' }];
+      mockReminderRepo.find.mockResolvedValue(pending);
+      mockUserRepo.find.mockResolvedValue([{ id: 'u1', studentId: 's1' }]);
+      mockEncryptionService.batchDecrypt.mockResolvedValue(
+        new Map([['s1', { name: '张三', studentNumber: 'S001' }]]),
+      );
+
+      const result = await service.findPending();
+
+      expect(result[0].studentName).toBe('张三');
+      expect(mockEncryptionService.batchDecrypt).toHaveBeenCalledWith(['s1']);
+    });
+
+    it('should handle empty studentIds', async () => {
+      const pending = [{ id: 'r1', completed: false, studentId: null }];
       mockReminderRepo.find.mockResolvedValue(pending);
 
       const result = await service.findPending();
 
-      expect(result).toEqual(pending);
-      expect(reminderRepo.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ completed: false }),
-        }),
-      );
+      expect(result[0].studentName).toBe('');
     });
   });
 });

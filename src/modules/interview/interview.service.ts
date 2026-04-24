@@ -166,10 +166,24 @@ export class InterviewService {
         where: { id: userId },
         relations: ['roles'],
       });
-      const isClassTeacher = user?.roles?.some((r) => r.name === '班主任');
+      const isClassTeacher = user?.roles?.some((r) => r.name === 'teacher');
       if (isClassTeacher) {
         delete (interview as any).encryptedContent;
         delete (interview as any).content;
+      }
+    }
+
+    if (interview.studentId) {
+      const userRecord = await this.userRepo.findOne({
+        where: { id: interview.studentId },
+        select: ['id', 'studentId'],
+      });
+      if (userRecord?.studentId) {
+        const pii = await this.encryptionService.batchDecrypt([
+          userRecord.studentId,
+        ]);
+        (interview as any).studentName =
+          pii.get(userRecord.studentId)?.name ?? '';
       }
     }
 

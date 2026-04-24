@@ -67,6 +67,7 @@ export class EncryptionService {
           validIds.push(id);
         }
       } catch {
+        console.warn(`[batchDecrypt] Failed to decrypt studentId=${id}`);
         map.set(id, { name: '', studentNumber: '' });
       }
     }

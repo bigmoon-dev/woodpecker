@@ -26,26 +26,26 @@ export class SeedRolesPermissions1700000000001 implements MigrationInterface {
     `);
 
     await queryRunner.query(`
-      INSERT INTO "roles" ("id", "name", "description", "isSystem")
+      INSERT INTO "roles" ("id", "name", "displayName", "description", "isSystem")
       VALUES
-        (gen_random_uuid(), '系统管理员', '系统管理员，拥有全部权限', true),
-        (gen_random_uuid(), '心理老师', '心理老师，负责量表管理和测评任务', true),
-        (gen_random_uuid(), '班主任', '班主任，查看班级相关数据', true),
-        (gen_random_uuid(), '学生', '学生，参与测评任务', true)
+        (gen_random_uuid(), 'admin', '系统管理员', '系统管理员，拥有全部权限', true),
+        (gen_random_uuid(), 'psychologist', '心理老师', '心理老师，负责量表管理和测评任务', true),
+        (gen_random_uuid(), 'teacher', '班主任', '班主任，查看班级相关数据', true),
+        (gen_random_uuid(), 'student', '学生', '学生，参与测评任务', true)
       ON CONFLICT ("name") DO NOTHING
     `);
 
     await queryRunner.query(`
       INSERT INTO "role_permissions" ("roleId", "permissionId")
       SELECT r."id", p."id" FROM "roles" r, "permissions" p
-      WHERE r."name" = '系统管理员'
+      WHERE r."name" = 'admin'
       ON CONFLICT ("roleId", "permissionId") DO NOTHING
     `);
 
     await queryRunner.query(`
       INSERT INTO "role_permissions" ("roleId", "permissionId")
       SELECT r."id", p."id" FROM "roles" r, "permissions" p
-      WHERE r."name" = '心理老师' AND p."code" IN (
+      WHERE r."name" = 'psychologist' AND p."code" IN (
         'scale:read', 'scale:write',
         'task:read', 'task:write', 'task:submit',
         'result:read',
@@ -59,7 +59,7 @@ export class SeedRolesPermissions1700000000001 implements MigrationInterface {
     await queryRunner.query(`
       INSERT INTO "role_permissions" ("roleId", "permissionId")
       SELECT r."id", p."id" FROM "roles" r, "permissions" p
-      WHERE r."name" = '班主任' AND p."code" IN (
+      WHERE r."name" = 'teacher' AND p."code" IN (
         'task:read', 'result:read', 'alert:read', 'consent:read'
       )
       ON CONFLICT ("roleId", "permissionId") DO NOTHING
@@ -68,7 +68,7 @@ export class SeedRolesPermissions1700000000001 implements MigrationInterface {
     await queryRunner.query(`
       INSERT INTO "role_permissions" ("roleId", "permissionId")
       SELECT r."id", p."id" FROM "roles" r, "permissions" p
-      WHERE r."name" = '学生' AND p."code" IN (
+      WHERE r."name" = 'student' AND p."code" IN (
         'task:submit', 'result:read', 'consent:read'
       )
       ON CONFLICT ("roleId", "permissionId") DO NOTHING
@@ -89,7 +89,7 @@ export class SeedRolesPermissions1700000000001 implements MigrationInterface {
     await queryRunner.query(`
       INSERT INTO "user_roles" ("userId", "roleId")
       SELECT u."id", r."id" FROM "users" u, "roles" r
-      WHERE u."username" = 'admin' AND r."name" = '系统管理员'
+      WHERE u."username" = 'admin' AND r."name" = 'admin'
       ON CONFLICT ("userId", "roleId") DO NOTHING
     `);
   }
