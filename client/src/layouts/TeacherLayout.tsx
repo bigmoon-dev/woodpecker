@@ -24,6 +24,11 @@ const menuRoutes = [
       { path: '/teacher/interviews/followup-manage', name: '随访管理' },
     ],
   },
+  { path: '/admin/grades', name: '年级管理' },
+  { path: '/admin/classes', name: '班级管理' },
+  { path: '/admin/students', name: '学生管理' },
+  { path: '/admin/roles', name: '角色管理' },
+  { path: '/admin/users', name: '用户管理' },
   { path: '/teacher/settings', name: '系统设置' },
 ];
 

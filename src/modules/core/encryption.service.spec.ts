@@ -52,11 +52,9 @@ describe('EncryptionService', () => {
   });
 
   it('should batch decrypt multiple student IDs', async () => {
-    const rows = [
-      { id: 's1', name: 'Alice', student_number: '001' },
-      { id: 's2', name: 'Bob', student_number: '002' },
-    ];
-    dataSource.query.mockResolvedValue(rows);
+    dataSource.query
+      .mockResolvedValueOnce([{ id: 's1', name: 'Alice', student_number: '001' }])
+      .mockResolvedValueOnce([{ id: 's2', name: 'Bob', student_number: '002' }]);
     const result = await service.batchDecrypt(['s1', 's2']);
     expect(result).toBeInstanceOf(Map);
     expect(result.get('s1')).toEqual({ name: 'Alice', studentNumber: '001' });
@@ -71,12 +69,23 @@ describe('EncryptionService', () => {
   });
 
   it('should return partial map when some IDs not in DB', async () => {
-    const rows = [{ id: 's1', name: 'Alice', student_number: '001' }];
-    dataSource.query.mockResolvedValue(rows);
+    dataSource.query
+      .mockResolvedValueOnce([{ id: 's1', name: 'Alice', student_number: '001' }])
+      .mockResolvedValueOnce([]);
     const result = await service.batchDecrypt(['s1', 's2']);
     expect(result.size).toBe(1);
     expect(result.get('s1')).toEqual({ name: 'Alice', studentNumber: '001' });
     expect(result.has('s2')).toBe(false);
+  });
+
+  it('should handle corrupted data gracefully', async () => {
+    dataSource.query
+      .mockRejectedValueOnce(new Error('pgp_sym_decrypt failed'))
+      .mockResolvedValueOnce([{ id: 's2', name: 'Bob', student_number: '002' }]);
+    const result = await service.batchDecrypt(['s1-corrupt', 's2']);
+    expect(result.size).toBe(2);
+    expect(result.get('s1-corrupt')).toEqual({ name: '', studentNumber: '' });
+    expect(result.get('s2')).toEqual({ name: 'Bob', studentNumber: '002' });
   });
 
   it('should propagate database errors', async () => {

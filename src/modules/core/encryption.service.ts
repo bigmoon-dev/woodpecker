@@ -41,22 +41,36 @@ export class EncryptionService {
     studentIds: string[],
   ): Promise<Map<string, { name: string; studentNumber: string }>> {
     if (studentIds.length === 0) return new Map();
-    const rows: {
-      id: string;
-      name: string;
-      student_number: string;
-    }[] = await this.dataSource.query(
-      `SELECT s.id,
-              CASE WHEN s."encryptedName" IS NOT NULL THEN pgp_sym_decrypt(s."encryptedName", $1) ELSE '' END AS name,
-              CASE WHEN s."encryptedStudentNumber" IS NOT NULL THEN pgp_sym_decrypt(s."encryptedStudentNumber", $1) ELSE '' END AS student_number
-       FROM students s
-       WHERE s.id = ANY($2::uuid[])`,
-      [this.key, studentIds],
-    );
+
+    const validIds: string[] = [];
     const map = new Map<string, { name: string; studentNumber: string }>();
-    for (const row of rows) {
-      map.set(row.id, { name: row.name, studentNumber: row.student_number });
+
+    for (const id of studentIds) {
+      try {
+        const rows: {
+          id: string;
+          name: string;
+          student_number: string;
+        }[] = await this.dataSource.query(
+          `SELECT s.id,
+                  CASE WHEN s."encryptedName" IS NOT NULL THEN pgp_sym_decrypt(s."encryptedName", $1) ELSE '' END AS name,
+                  CASE WHEN s."encryptedStudentNumber" IS NOT NULL THEN pgp_sym_decrypt(s."encryptedStudentNumber", $1) ELSE '' END AS student_number
+           FROM students s
+           WHERE s.id = $2`,
+          [this.key, id],
+        );
+        if (rows.length > 0) {
+          map.set(rows[0].id, {
+            name: rows[0].name || '',
+            studentNumber: rows[0].student_number || '',
+          });
+          validIds.push(id);
+        }
+      } catch {
+        map.set(id, { name: '', studentNumber: '' });
+      }
     }
+
     return map;
   }
 }

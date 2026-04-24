@@ -68,7 +68,7 @@ export const routeConfigs: RouteConfig[] = [
   {
     path: '/admin',
     layout: AdminLayout,
-    roles: ['admin'],
+    roles: ['admin', 'psychologist'],
     children: [
       { path: 'dashboard', component: Dashboard },
       { path: 'scales', component: ScaleList },
