@@ -38,7 +38,7 @@ export default function FollowupManage() {
   };
 
   const columns = [
-    { title: '学生姓名', dataIndex: 'studentName', key: 'studentName', render: (t: string) => t || '-' },
+    { title: '学生姓名', dataIndex: 'studentName', key: 'studentName', render: (_: any, record: any) => record.studentName || '-' },
     { title: '班级', dataIndex: 'className', key: 'className' },
     {
       title: '风险等级',

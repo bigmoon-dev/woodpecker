@@ -10,7 +10,7 @@ export default function GradeResults() {
   const actionRef = useRef<ActionType>();
 
   const columns = [
-    { title: '学生', dataIndex: 'studentName', key: 'studentName', render: (t: string) => t || '-' },
+    { title: '学生', dataIndex: 'studentName', key: 'studentName', render: (_: any, record: any) => record.studentName || '-' },
     { title: '学号', dataIndex: 'studentNumber', key: 'studentNumber' },
     { title: '量表', dataIndex: 'scaleName', key: 'scaleName', ellipsis: true },
     { title: '总分', dataIndex: 'totalScore', key: 'totalScore' },

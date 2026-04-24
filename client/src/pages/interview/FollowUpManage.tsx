@@ -48,7 +48,7 @@ export default function FollowUpManage() {
     completed ? <Tag color="green">已完成</Tag> : <Tag color="orange">待处理</Tag>;
 
   const columns = [
-    { title: '学生', dataIndex: 'studentName', key: 'studentName', render: (t: string) => t || '-' },
+    { title: '学生', dataIndex: 'studentName', key: 'studentName', render: (_: any, record: any) => record.studentName || '-' },
     {
       title: '提醒日期',
       dataIndex: 'reminderDate',
