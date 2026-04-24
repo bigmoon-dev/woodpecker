@@ -12,6 +12,7 @@ import { TaskResult } from '../../entities/task/task-result.entity';
 import { TaskAnswer } from '../../entities/task/task-answer.entity';
 import { Interview } from '../../entities/interview/interview.entity';
 import { FollowUpReminder } from '../../entities/interview/follow-up-reminder.entity';
+import { User } from '../../entities/auth/user.entity';
 import { EncryptionService } from '../core/encryption.service';
 
 describe('StudentProfileService', () => {
@@ -26,6 +27,7 @@ describe('StudentProfileService', () => {
   const mockAnswerRepo = { find: jest.fn() };
   const mockInterviewRepo = { find: jest.fn() };
   const mockFollowupRepo = { find: jest.fn() };
+  const mockUserRepo = { find: jest.fn() };
   const mockEncryptionService = {
     batchDecrypt: jest.fn().mockResolvedValue(new Map()),
   };
@@ -53,6 +55,7 @@ describe('StudentProfileService', () => {
           provide: getRepositoryToken(FollowUpReminder),
           useValue: mockFollowupRepo,
         },
+        { provide: getRepositoryToken(User), useValue: mockUserRepo },
         { provide: EncryptionService, useValue: mockEncryptionService },
       ],
     }).compile();
@@ -372,6 +375,7 @@ describe('StudentProfileService', () => {
           createdAt: new Date(),
         },
       ]);
+      mockUserRepo.find.mockResolvedValue([]);
       mockEncryptionService.batchDecrypt.mockResolvedValue(
         new Map([
           [
@@ -414,6 +418,7 @@ describe('StudentProfileService', () => {
           createdAt: new Date(),
         },
       ]);
+      mockUserRepo.find.mockResolvedValue([]);
       mockEncryptionService.batchDecrypt.mockResolvedValue(new Map());
       mockStudentRepo.find.mockResolvedValue([
         { id: '00000000-0000-0000-0000-000000000001', class: null },
@@ -442,6 +447,7 @@ describe('StudentProfileService', () => {
           createdAt: new Date(),
         },
       ]);
+      mockUserRepo.find.mockResolvedValue([]);
       mockEncryptionService.batchDecrypt.mockResolvedValue(new Map());
       mockStudentRepo.find.mockResolvedValue([
         { id: '00000000-0000-0000-0000-000000000001', class: null },
@@ -481,6 +487,7 @@ describe('StudentProfileService', () => {
           createdAt: new Date(),
         },
       ]);
+      mockUserRepo.find.mockResolvedValue([]);
       mockEncryptionService.batchDecrypt.mockResolvedValue(new Map());
       mockStudentRepo.find.mockResolvedValue([]);
       mockAlertRepo.find.mockResolvedValue([]);

@@ -9,6 +9,7 @@ import { TaskResult } from '../../entities/task/task-result.entity';
 import { TaskAnswer } from '../../entities/task/task-answer.entity';
 import { Interview } from '../../entities/interview/interview.entity';
 import { FollowUpReminder } from '../../entities/interview/follow-up-reminder.entity';
+import { User } from '../../entities/auth/user.entity';
 import { StudentProfileService } from './student-profile.service';
 import {
   StudentProfileController,
@@ -28,6 +29,7 @@ import { CoreModule } from '../core/core.module';
       TaskAnswer,
       Interview,
       FollowUpReminder,
+      User,
     ]),
     CoreModule,
   ],

@@ -244,20 +244,23 @@ async function doSeed(attempt) {
     if (attempt === 1) console.log('  检查初始数据...');
 
     const roles = [
-      { name: 'admin', desc: '系统管理员' },
-      { name: 'psychologist', desc: '心理老师' },
-      { name: 'teacher', desc: '班主任' },
-      { name: 'student', desc: '学生' },
+      { name: 'admin', desc: '系统管理员', displayName: '系统管理员' },
+      { name: 'psychologist', desc: '心理老师', displayName: '心理老师' },
+      { name: 'teacher', desc: '班主任', displayName: '班主任' },
+      { name: 'student', desc: '学生', displayName: '学生' },
     ];
     const roleIds = {};
     for (const role of roles) {
-      let res = await client.query(`SELECT "id" FROM "roles" WHERE "name" = $1`, [role.name]);
+      let res = await client.query(`SELECT "id", "displayName" FROM "roles" WHERE "name" = $1`, [role.name]);
       if (res.rows.length > 0) {
         roleIds[role.name] = res.rows[0].id;
+        if (!res.rows[0].displayName) {
+          await client.query(`UPDATE "roles" SET "displayName" = $1 WHERE "name" = $2`, [role.displayName, role.name]);
+        }
       } else {
         res = await client.query(
-          `INSERT INTO "roles" ("id", "name", "description", "isSystem") VALUES (gen_random_uuid(), $1, $2, true) RETURNING "id"`,
-          [role.name, role.desc]
+          `INSERT INTO "roles" ("id", "name", "description", "isSystem", "displayName") VALUES (gen_random_uuid(), $1, $2, true, $3) RETURNING "id"`,
+          [role.name, role.desc, role.displayName]
         );
         roleIds[role.name] = res.rows[0].id;
       }

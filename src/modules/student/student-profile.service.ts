@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Student } from '../../entities/org/student.entity';
 import { Class } from '../../entities/org/class.entity';
 import { Grade } from '../../entities/org/grade.entity';
@@ -10,6 +10,7 @@ import { TaskResult } from '../../entities/task/task-result.entity';
 import { TaskAnswer } from '../../entities/task/task-answer.entity';
 import { Interview } from '../../entities/interview/interview.entity';
 import { FollowUpReminder } from '../../entities/interview/follow-up-reminder.entity';
+import { User } from '../../entities/auth/user.entity';
 import { EncryptionService } from '../core/encryption.service';
 
 export interface StudentProfile {
@@ -54,6 +55,8 @@ export class StudentProfileService {
     private interviewRepo: Repository<Interview>,
     @InjectRepository(FollowUpReminder)
     private followupRepo: Repository<FollowUpReminder>,
+    @InjectRepository(User)
+    private userRepo: Repository<User>,
     private encryptionService: EncryptionService,
   ) {}
 
@@ -172,7 +175,20 @@ export class StudentProfileService {
 
     if (followups.length === 0) return [];
 
-    const studentIds = [...new Set(followups.map((f) => f.studentId))];
+    const followupStudentIds = [...new Set(followups.map((f) => f.studentId))];
+
+    const users = await this.userRepo.find({
+      where: { id: In(followupStudentIds) },
+      select: ['id', 'studentId'],
+    });
+    const userToStudent = new Map<string, string>();
+    for (const u of users) {
+      if (u.studentId) userToStudent.set(u.id, u.studentId);
+    }
+
+    const studentIds = [
+      ...new Set(followupStudentIds.map((id) => userToStudent.get(id) ?? id)),
+    ];
     const piiMap = await this.encryptionService.batchDecrypt(studentIds);
 
     const students = await this.studentRepo.find({
@@ -193,9 +209,10 @@ export class StudentProfileService {
     }
 
     return followups.map((f) => {
-      const student = studentMap.get(f.studentId);
-      const pii = piiMap.get(f.studentId);
-      const alert = latestAlertMap.get(f.studentId);
+      const realStudentId = userToStudent.get(f.studentId) ?? f.studentId;
+      const student = studentMap.get(realStudentId);
+      const pii = piiMap.get(realStudentId);
+      const alert = latestAlertMap.get(realStudentId);
 
       let status = 'pending';
       if (f.interviewId) status = 'interviewed';

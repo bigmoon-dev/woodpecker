@@ -15,6 +15,7 @@ import { TaskResult } from '../../entities/task/task-result.entity';
 import { TaskAnswer } from '../../entities/task/task-answer.entity';
 import { Interview } from '../../entities/interview/interview.entity';
 import { FollowUpReminder } from '../../entities/interview/follow-up-reminder.entity';
+import { User } from '../../entities/auth/user.entity';
 import { EncryptionService } from '../core/encryption.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RbacGuard } from '../auth/rbac.guard';
@@ -60,6 +61,7 @@ describe('StudentProfileController', () => {
           provide: getRepositoryToken(FollowUpReminder),
           useValue: mockFollowupRepo,
         },
+        { provide: getRepositoryToken(User), useValue: { find: jest.fn().mockResolvedValue([]) } },
         { provide: EncryptionService, useValue: mockEncryptionService },
       ],
     })
@@ -121,6 +123,7 @@ describe('FollowupController', () => {
     answer: { find: jest.fn() },
     interview: { find: jest.fn() },
     followup: { find: jest.fn() },
+    user: { find: jest.fn().mockResolvedValue([]) },
   };
 
   beforeEach(async () => {
@@ -156,6 +159,7 @@ describe('FollowupController', () => {
           provide: getRepositoryToken(FollowUpReminder),
           useValue: mockRepos.followup,
         },
+        { provide: getRepositoryToken(User), useValue: mockRepos.user },
         {
           provide: EncryptionService,
           useValue: { batchDecrypt: jest.fn().mockResolvedValue(new Map()) },
