@@ -165,7 +165,7 @@ export default function StudentManage() {
           <Form.Item name="name" label="姓名" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="studentNo" label="学号" rules={[{ required: true }]}>
+          <Form.Item name="studentNumber" label="学号" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
           <Form.Item

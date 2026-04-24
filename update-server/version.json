@@ -1,11 +1,11 @@
 {
-  "version": "0.36.0",
-  "releaseDate": "2026-04-23",
+  "version": "0.38.3",
+  "releaseDate": "2026-04-24",
   "minVersion": "0.22.0",
   "channel": "stable",
-  "manifestUrl": "https://bigmoon.top/woodpecker/updates/0.36.0/manifest.json",
+  "manifestUrl": "https://bigmoon.top/woodpecker/updates/0.38.3/manifest.json",
   "notes": "",
   "size": {
-    "common": 151591488
+    "common": 166613690
   }
 }
