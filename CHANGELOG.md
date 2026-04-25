@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.41.2] - 2026-04-25
+### Fixed
+- 模板管理页面"上传文件"按钮不可见：将 Ant Design `<Upload>` 组件替换为隐藏 `<input type="file">` + 可见按钮
+- 模板文件上传验证失败：MIME type 验证改为文件扩展名验证，修复 .docx 文件被误拒
+- 模板文件上传验证失败时磁盘残留文件：验证不通过时立即删除已写入的文件
+
+### Changed
+- E2E 黑盒测试新增模板 CRUD + 文件上传全流程覆盖（10 个用例）
+- E2E setup 添加 interview:read/write 权限 seed
+- app.module.ts DB_SYNC=true 时跳过 migrations 加载，修复 E2E 环境启动失败
+
 ## [0.41.0] - 2026-04-25
 ### Added
 - 访谈模板文件上传功能：支持上传 .doc/.docx/.xls/.xlsx/.pdf 文件作为访谈模板
