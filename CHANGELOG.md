@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.41.0] - 2026-04-25
+### Added
+- 访谈模板文件上传功能：支持上传 .doc/.docx/.xls/.xlsx/.pdf 文件作为访谈模板
+- 模板列表新增"模板文件"列，显示文件名和下载链接，支持替换文件
+- 使用帮助页面表格和排版样式（remark-gfm + CSS）
+
+### Fixed
+- OTA 更新后自动重启服务进程（修复 needsRestart 未生效的问题）
+- 使用帮助页面 GFM 表格渲染（安装 remark-gfm 插件）
+- 说明书版本号更新为 v0.40.0，移除学生适用对象
+- NestJS 静态文件服务（main.ts 添加 useStaticAssets）
+
 ## [0.39.0] - 2026-04-25
 ### Fixed — 前后端字段名系统性对齐（whitelist 静默丢数据修复）
 - Interview: CreateInterviewDto 和 UpdateInterviewDto 添加 `riskLevel` 字段（@IsIn(['normal','low','medium','high'])），修复创建/编辑面谈时风险等级被 whitelist 静默剥掉的问题

@@ -33,6 +33,8 @@ import { PaginationQueryDto } from '../../common/pagination.dto';
 import { Request } from 'express';
 import { SetMetadata } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import * as path from 'path';
 
 interface AuthenticatedRequest extends Request {
   user: { id: string };
@@ -113,6 +115,47 @@ export class InterviewController {
   @SetMetadata(REQUIRE_PERMISSION, ['interview:write'])
   async createTemplate(@Body() dto: CreateTemplateDto) {
     return this.templateService.create(dto);
+  }
+
+  @Post('templates/:id/file')
+  @SetMetadata(REQUIRE_PERMISSION, ['interview:write'])
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './public/uploads/templates',
+        filename: (_req, file, cb) => {
+          const ext = path.extname(file.originalname);
+          const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+          cb(null, `${unique}${ext}`);
+        },
+      }),
+      limits: { fileSize: 20 * 1024 * 1024 },
+    }),
+  )
+  async uploadTemplateFile(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File | undefined,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+    const allowed = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ];
+    if (!allowed.includes(file.mimetype)) {
+      throw new BadRequestException(
+        'Unsupported file type. Allowed: .doc .docx .xls .xlsx .pdf',
+      );
+    }
+    return this.templateService.updateFilePath(
+      id,
+      file.path,
+      file.originalname,
+    );
   }
 
   @Post(':id/follow-up')

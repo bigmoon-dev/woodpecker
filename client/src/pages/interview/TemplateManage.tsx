@@ -1,7 +1,21 @@
 import { useRef, useState } from 'react';
 import { ProTable, type ActionType } from '@ant-design/pro-components';
-import { Button, Modal, Form, Input, message, Popconfirm } from 'antd';
+import { Button, Modal, Form, Input, message, Popconfirm, Upload, Space } from 'antd';
+import { UploadOutlined, PaperClipOutlined } from '@ant-design/icons';
 import request from '../../utils/request';
+
+const ALLOWED_EXT = ['.doc', '.docx', '.xls', '.xlsx', '.pdf'];
+
+function getFileName(filePath: string | null | undefined): string {
+  if (!filePath) return '';
+  const parts = filePath.replace(/\\/g, '/').split('/');
+  return parts[parts.length - 1] || '';
+}
+
+function getFileExt(name: string): string {
+  const idx = name.lastIndexOf('.');
+  return idx >= 0 ? name.slice(idx).toLowerCase() : '';
+}
 
 export default function TemplateManage() {
   const actionRef = useRef<ActionType>();
@@ -10,6 +24,25 @@ export default function TemplateManage() {
   const [currentId, setCurrentId] = useState('');
   const [createForm] = Form.useForm();
   const [editForm] = Form.useForm();
+
+  const handleUpload = async (templateId: string, file: File) => {
+    const ext = getFileExt(file.name);
+    if (!ALLOWED_EXT.includes(ext)) {
+      message.error('不支持的文件格式，仅支持 .doc .docx .xls .xlsx .pdf');
+      return;
+    }
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      await request.post(`/interviews/templates/${templateId}/file`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      message.success('文件上传成功');
+      actionRef.current?.reload();
+    } catch {
+      message.error('文件上传失败');
+    }
+  };
 
   const handleCreate = async (values: any) => {
     try {
@@ -54,23 +87,52 @@ export default function TemplateManage() {
   };
 
   const columns = [
-    { title: '模板名称', dataIndex: 'name', key: 'name' },
+    { title: '模板名称', dataIndex: 'name', key: 'name', width: 180 },
     { title: '描述', dataIndex: 'description', key: 'description', ellipsis: true },
+    {
+      title: '模板文件',
+      dataIndex: 'filePath',
+      key: 'filePath',
+      width: 180,
+      render: (filePath: string | null, record: any) => {
+        if (!filePath) {
+          return (
+            <Upload
+              showUploadList={false}
+              beforeUpload={(file) => { handleUpload(record.id, file); return false; }}
+              accept=".doc,.docx,.xls,.xlsx,.pdf"
+            >
+              <Button type="link" icon={<UploadOutlined />} size="small">上传文件</Button>
+            </Upload>
+          );
+        }
+        const name = getFileName(filePath);
+        return (
+          <Space>
+            <a href={`/${filePath}`} target="_blank" rel="noreferrer">
+              <PaperClipOutlined /> {name}
+            </a>
+          </Space>
+        );
+      },
+    },
     {
       title: '创建时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
+      width: 160,
       render: (_: any, record: any) =>
         record.createdAt ? new Date(record.createdAt).toLocaleString() : '-',
     },
     {
       title: '操作',
       key: 'action',
-      width: 180,
+      width: 220,
       render: (_: any, record: any) => (
-        <>
+        <Space>
           <Button
             type="link"
+            size="small"
             onClick={() => {
               setCurrentId(record.id);
               editForm.setFieldsValue({
@@ -83,15 +145,24 @@ export default function TemplateManage() {
           >
             编辑
           </Button>
+          {record.filePath && (
+            <Upload
+              showUploadList={false}
+              beforeUpload={(file) => { handleUpload(record.id, file); return false; }}
+              accept=".doc,.docx,.xls,.xlsx,.pdf"
+            >
+              <Button type="link" size="small">替换文件</Button>
+            </Upload>
+          )}
           <Popconfirm
             title="确定删除此模板？"
             onConfirm={() => handleDelete(record.id)}
             okText="删除"
             cancelText="取消"
           >
-            <Button type="link" danger>删除</Button>
+            <Button type="link" danger size="small">删除</Button>
           </Popconfirm>
-        </>
+        </Space>
       ),
     },
   ];
@@ -134,7 +205,7 @@ export default function TemplateManage() {
             label="字段定义(JSON)"
             rules={[
               {
-                validator: (_, value) => {
+                validator: (_: any, value: string) => {
                   if (!value) return Promise.resolve();
                   try {
                     JSON.parse(value);
@@ -169,7 +240,7 @@ export default function TemplateManage() {
             label="字段定义(JSON)"
             rules={[
               {
-                validator: (_, value) => {
+                validator: (_: any, value: string) => {
                   if (!value) return Promise.resolve();
                   try {
                     JSON.parse(value);

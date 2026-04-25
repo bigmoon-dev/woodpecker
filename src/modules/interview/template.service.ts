@@ -3,6 +3,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { InterviewTemplate } from '../../entities/interview/interview-template.entity';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class TemplateService {
@@ -40,6 +42,40 @@ export class TemplateService {
   async delete(id: string): Promise<void> {
     const template = await this.templateRepo.findOne({ where: { id } });
     if (!template) throw new NotFoundException(`Template ${id} not found`);
+    if (template.filePath) {
+      const abs = path.join(process.cwd(), 'public', template.filePath);
+      try {
+        if (fs.existsSync(abs)) fs.unlinkSync(abs);
+      } catch {
+        // ignore cleanup errors
+      }
+    }
     await this.templateRepo.remove(template);
+  }
+
+  async updateFilePath(
+    id: string,
+    filePath: string,
+    originalName: string,
+  ): Promise<InterviewTemplate> {
+    const template = await this.templateRepo.findOne({ where: { id } });
+    if (!template) throw new NotFoundException(`Template ${id} not found`);
+
+    if (template.filePath) {
+      const abs = path.join(process.cwd(), 'public', template.filePath);
+      try {
+        if (fs.existsSync(abs)) fs.unlinkSync(abs);
+      } catch {
+        // ignore cleanup errors
+      }
+    }
+
+    template.filePath = filePath
+      .replace(/^public[\\/]/, '')
+      .replace(/\\/g, '/');
+    template.description = template.description || originalName;
+    return this.templateRepo.save(
+      template,
+    ) as unknown as Promise<InterviewTemplate>;
   }
 }
