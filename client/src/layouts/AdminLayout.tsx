@@ -32,6 +32,7 @@ const menuRoutes = [
     ],
   },
   { path: '/admin/settings', name: '系统设置' },
+  { path: '/admin/help', name: '使用帮助' },
 ];
 
 export default function AdminLayout() {

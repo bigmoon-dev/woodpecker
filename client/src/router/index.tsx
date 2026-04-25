@@ -27,6 +27,7 @@ import TimelineView from '../pages/interview/TimelineView';
 import FollowupManageNew from '../pages/followup/FollowupManage';
 import StudentProfile from '../pages/student/StudentProfile';
 import SettingsPage from '../pages/settings/SettingsPage';
+import HelpPage from '../pages/help/HelpPage';
 
 export const routeConfigs: RouteConfig[] = [
   { path: '/login', component: Login, public: true },
@@ -63,6 +64,7 @@ export const routeConfigs: RouteConfig[] = [
       { path: 'interviews/followup-manage', component: FollowupManageNew },
       { path: 'interviews/timeline/:studentId', component: TimelineView },
       { path: 'settings', component: SettingsPage },
+      { path: 'help', component: HelpPage },
     ],
   },
   {
@@ -92,6 +94,7 @@ export const routeConfigs: RouteConfig[] = [
       { path: 'classes', component: ClassManage },
       { path: 'students', component: StudentManage },
       { path: 'settings', component: SettingsPage },
+      { path: 'help', component: HelpPage },
     ],
   },
 ];

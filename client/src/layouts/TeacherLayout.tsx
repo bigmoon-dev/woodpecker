@@ -32,6 +32,7 @@ const menuRoutes = [
     ],
   },
   { path: '/teacher/settings', name: '系统设置' },
+  { path: '/teacher/help', name: '使用帮助' },
 ];
 
 export default function TeacherLayout() {

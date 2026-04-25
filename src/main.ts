@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/http-exception.filter';
+import * as path from 'path';
 import * as crypto from 'crypto';
 
 const DEFAULT_SECRETS = [
@@ -22,6 +23,7 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.useGlobalFilters(new AllExceptionsFilter());
+  app.useStaticAssets(path.join(__dirname, '..', 'public'));
   await app.listen(process.env.PORT ?? 3000);
 }
 void bootstrap();
