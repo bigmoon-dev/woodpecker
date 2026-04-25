@@ -640,19 +640,6 @@ async function main() {
   const nodePath = getNodePath();
   const mainJs = path.join(APP_DIR, 'dist', 'main.js');
 
-  const controllerJs = path.join(APP_DIR, 'dist', 'modules', 'org', 'org.controller.js');
-  if (fs.existsSync(controllerJs)) {
-    let ctrlSrc = fs.readFileSync(controllerJs, 'utf8');
-    if (ctrlSrc.includes('studentNo') && !ctrlSrc.includes('__patched_studentNo')) {
-      ctrlSrc = ctrlSrc.replace(
-        /async createStudent\(([^)]*)\) \{/,
-        'async createStudent($1) { const __origDto = arguments[0]; if (__origDto && !__origDto.studentNumber && __origDto.studentNo) { __origDto.studentNumber = __origDto.studentNo; } /* __patched_studentNo */'
-      );
-      fs.writeFileSync(controllerJs, ctrlSrc);
-      console.log('  ✅ 已注入 studentNo 兼容补丁');
-    }
-  }
-
   if (!fs.existsSync(mainJs)) {
     console.error('  ❌ 未找到应用文件: dist/main.js');
     console.error('  请确认已完成构建（npm run build）');

@@ -31,6 +31,14 @@ export class OrgService {
   ) {}
 
   async createGrade(data: Partial<Grade>): Promise<Grade> {
+    if (data.sortOrder === undefined || data.sortOrder === null) {
+      const maxResult: { maxSort: number | null } | undefined =
+        await this.gradeRepo
+          .createQueryBuilder('grade')
+          .select('MAX(grade.sortOrder)', 'maxSort')
+          .getRawOne();
+      data.sortOrder = (maxResult?.maxSort ?? -1) + 1;
+    }
     const grade = this.gradeRepo.create(data);
     return this.gradeRepo.save(grade);
   }
@@ -100,6 +108,14 @@ export class OrgService {
   }
 
   async createClass(data: Partial<Class>): Promise<Class> {
+    if (data.sortOrder === undefined || data.sortOrder === null) {
+      const maxResult: { maxSort: number | null } | undefined =
+        await this.classRepo
+          .createQueryBuilder('cls')
+          .select('MAX(cls.sortOrder)', 'maxSort')
+          .getRawOne();
+      data.sortOrder = (maxResult?.maxSort ?? -1) + 1;
+    }
     const cls = this.classRepo.create(data);
     return this.classRepo.save(cls);
   }

@@ -117,7 +117,11 @@ export class InterviewController {
 
   @Post(':id/follow-up')
   @SetMetadata(REQUIRE_PERMISSION, ['interview:write'])
-  async createFollowUp(@Body() dto: CreateFollowUpDto) {
+  async createFollowUp(
+    @Param('id') id: string,
+    @Body() dto: CreateFollowUpDto,
+  ) {
+    dto.interviewId = id;
     return this.followUpService.create(dto);
   }
 

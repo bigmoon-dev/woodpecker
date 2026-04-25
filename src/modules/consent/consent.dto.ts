@@ -19,9 +19,13 @@ export class CreateConsentDto {
   @IsNotEmpty()
   consentType: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  contentHash: string;
+  contentHash?: string;
+
+  @IsOptional()
+  @IsString()
+  content?: string;
 
   @IsDate()
   @Type(() => Date)

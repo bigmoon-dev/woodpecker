@@ -23,11 +23,11 @@ export default function MyResults() {
 
   useEffect(() => {
     if (!isStudent) {
-      request.get('/classes').then((res: any) => {
+      request.get('/admin/classes').then((res: any) => {
         const data = Array.isArray(res) ? res : res.data || [];
         setClasses(data);
       }).catch(() => {});
-      request.get('/grades').then((res: any) => {
+      request.get('/admin/grades').then((res: any) => {
         const data = Array.isArray(res) ? res : res.data || [];
         setGrades(data);
       }).catch(() => {});

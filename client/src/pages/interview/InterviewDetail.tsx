@@ -77,7 +77,7 @@ export default function InterviewDetail() {
 
   const handleStatusTransition = async (status: string) => {
     try {
-      await request.put(`/interviews/${id}`, { status });
+      await request.put(`/interviews/${id}/status`, { status });
       message.success('状态更新成功');
       loadData();
     } catch {

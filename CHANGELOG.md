@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.39.0] - 2026-04-25
+### Fixed — 前后端字段名系统性对齐（whitelist 静默丢数据修复）
+- Interview: CreateInterviewDto 和 UpdateInterviewDto 添加 `riskLevel` 字段（@IsIn(['normal','low','medium','high'])），修复创建/编辑面谈时风险等级被 whitelist 静默剥掉的问题
+- Interview: 前端状态更新改用 `PUT /interviews/:id/status` 端点（UpdateStatusDto），修复状态流转（draft→reviewed→completed）永远失败的问题
+- Grade: 实体添加 `year` 字段（string, nullable），CreateGradeDto 添加 `year` 字段，修复年级年份被 whitelist 剥掉的问题
+- Grade/Class: CreateGradeDto 和 CreateClassDto 的 `sortOrder` 改为 @IsOptional()，service 层自动计算 MAX(sortOrder)+1，修复创建年级/班级必报 400 的问题
+- Consent: 前端提交前计算 content 的 SHA256 作为 contentHash，后端 CreateConsentDto 的 contentHash 改为 optional 并增加 content 字段，修复同意书签署完全不可用的问题
+- Follow-up: InterviewController.createFollowUp 从 @Param('id') 取 interviewId 注入 DTO，修复随访创建必失败的问题
+- MyResults: API 路径从 `/classes` 和 `/grades` 改为 `/admin/classes` 和 `/admin/grades`，修复筛选下拉框永远为空的问题
+
+### Removed
+- 移除 desktop/start-desktop.js 中的运行时猴子补丁（regex 修改编译后 JS 的临时方案），学生学号兼容性已通过源码层面 DTO + Service 修复
+- 移除 org.controller.ts createStudent 方法中的调试 console.log
+
+## [0.38.0] - 2026-04-24
+### Changed
+- 角色名从中文改为英文（admin/psychologist/teacher/student）+ displayName 中文展示，代码逻辑全部使用英文 name
+- AdminLayout/TeacherLayout 一级菜单精简，删除重复管理项
+- SettingsPage 删除年级管理 tab，保留：班级管理、学生管理、角色管理、用户管理、插件管理、数据库备份
+- Layout avatar 显示真实用户名（从 localStorage 读取）
+
+### Fixed
+- org.service.ts findAllStudents() 增加 batchDecrypt 解密 name/studentNo + 返回 className，修复学生管理列表姓名不显示
+- interview.service.ts findOne() 增加 batchDecrypt，修复访谈详情学生姓名为空
+- follow-up.service.ts findPending() 增加 batchDecrypt + StudentProfileService 增加 User→Student 映射，修复随访列表学生姓名为空
+- audit_logs.action 字段加 `default: ''`，修复首次启动报错
+- 前端 6 个页面的 studentName 列增加 render 降级（显示 encryptedName 前缀作为 fallback）
+- Migration GrantPsychologistAdminAll 兼容中英文角色名，确保心理老师拥有管理员权限
+
 ## [0.35.0] - 2026-04-23
 ### Changed
 - 删除「预警管理」一级菜单（Admin/Teacher Layout），按设计要求整合到访谈管理子菜单

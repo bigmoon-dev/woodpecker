@@ -13,10 +13,17 @@ export default function ConsentPage() {
     try {
       const token = localStorage.getItem('token') || '';
       const payload = parseJwtPayload(token);
+      const contentText = values.content || '';
+      const encoder = new TextEncoder();
+      const data = encoder.encode(contentText);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const contentHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       await request.post('/consent', {
         userId: payload.sub,
         consentType: 'assessment',
-        content: values.content || '',
+        content: contentText,
+        contentHash,
         signedAt: new Date().toISOString(),
       });
       message.success('签署成功');

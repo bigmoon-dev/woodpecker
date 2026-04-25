@@ -12,9 +12,14 @@ export class CreateGradeDto {
   @IsNotEmpty()
   name: string;
 
+  @IsOptional()
   @IsInt()
   @Min(0)
-  sortOrder: number;
+  sortOrder?: number;
+
+  @IsOptional()
+  @IsString()
+  year?: string;
 }
 
 export class CreateClassDto {
@@ -25,9 +30,10 @@ export class CreateClassDto {
   @IsNotEmpty()
   name: string;
 
+  @IsOptional()
   @IsInt()
   @Min(0)
-  sortOrder: number;
+  sortOrder?: number;
 }
 
 export class CreateStudentDto {

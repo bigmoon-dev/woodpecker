@@ -19,6 +19,9 @@ export class Grade {
   @Column({ type: 'int' })
   sortOrder: number;
 
+  @Column({ length: 10, nullable: true })
+  year?: string;
+
   @OneToMany(() => Class, (cls) => cls.grade)
   classes: Class[];
 }

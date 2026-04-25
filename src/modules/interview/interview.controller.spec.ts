@@ -186,13 +186,19 @@ describe('InterviewController', () => {
 
   it('POST /:id/follow-up delegates to createFollowUp', async () => {
     const dto = {
-      interviewId: 'iv1',
       studentId: 's1',
       reminderDate: '2024-02-01',
     };
-    followUpService.create.mockResolvedValueOnce({ id: 'r1', ...dto });
-    await controller.createFollowUp(dto as any);
-    expect(followUpService.create).toHaveBeenCalledWith(dto);
+    followUpService.create.mockResolvedValueOnce({
+      id: 'r1',
+      interviewId: 'iv1',
+      ...dto,
+    });
+    await controller.createFollowUp('iv1', dto as any);
+    expect(followUpService.create).toHaveBeenCalledWith({
+      interviewId: 'iv1',
+      ...dto,
+    });
   });
 
   it('GET /follow-ups/pending delegates to findPending', async () => {

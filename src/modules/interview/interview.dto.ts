@@ -34,6 +34,11 @@ export class CreateInterviewDto {
   @IsOptional()
   @IsUUID()
   alertId?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['normal', 'low', 'medium', 'high'])
+  riskLevel?: string;
 }
 
 export class UpdateInterviewDto {
@@ -66,6 +71,11 @@ export class UpdateInterviewDto {
   ocrText?: string;
 
   @IsOptional()
+  @IsString()
+  @IsIn(['normal', 'low', 'medium', 'high'])
+  riskLevel?: string;
+
+  @IsOptional()
   structuredSummary?: Record<string, unknown>;
 }
 
@@ -83,8 +93,9 @@ export class CreateTemplateDto {
 }
 
 export class CreateFollowUpDto {
+  @IsOptional()
   @IsUUID()
-  interviewId: string;
+  interviewId?: string;
 
   @IsUUID()
   studentId: string;
