@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, Spin } from 'antd';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const MANUAL_URL = '/docs/用户使用说明书.md';
 
@@ -30,7 +31,7 @@ export default function HelpPage() {
       styles={{ body: { padding: '24px 32px' } }}
     >
       <div style={{ lineHeight: 1.8, fontSize: 14, color: 'rgba(0,0,0,0.85)', maxWidth: 860 }}>
-        <ReactMarkdown>{content}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
       </div>
     </Card>
   );

@@ -620,6 +620,21 @@ async function main() {
   }
   const needsRestart = await checkAndApplyOta();
 
+  if (needsRestart) {
+    console.log('  🔄 更新已应用，正在重启...');
+    try { await pg.stop(); } catch {}
+    const nodeExe = getNodePath();
+    const script = __filename;
+    const child = spawn(nodeExe, [script], {
+      cwd: APP_DIR,
+      env: { ...process.env },
+      stdio: 'inherit',
+      detached: true,
+    });
+    child.unref();
+    process.exit(0);
+  }
+
   console.log('[4/5] 启动应用服务...');
   const env = {
     ...process.env,
