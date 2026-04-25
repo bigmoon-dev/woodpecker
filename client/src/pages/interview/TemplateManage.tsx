@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { ProTable, type ActionType } from '@ant-design/pro-components';
-import { Button, Modal, Form, Input, message, Popconfirm, Upload, Space } from 'antd';
+import { Button, Modal, Form, Input, message, Popconfirm, Space } from 'antd';
 import { UploadOutlined, PaperClipOutlined } from '@ant-design/icons';
 import request from '../../utils/request';
 
 const ALLOWED_EXT = ['.doc', '.docx', '.xls', '.xlsx', '.pdf'];
+const ACCEPT_STR = '.doc,.docx,.xls,.xlsx,.pdf';
 
 function getFileName(filePath: string | null | undefined): string {
   if (!filePath) return '';
@@ -19,6 +20,8 @@ function getFileExt(name: string): string {
 
 export default function TemplateManage() {
   const actionRef = useRef<ActionType>();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadTargetId = useRef<string>('');
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [currentId, setCurrentId] = useState('');
@@ -43,6 +46,21 @@ export default function TemplateManage() {
       message.error('文件上传失败');
     }
   };
+
+  const triggerFileUpload = useCallback((templateId: string) => {
+    uploadTargetId.current = templateId;
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  }, []);
+
+  const onFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && uploadTargetId.current) {
+      handleUpload(uploadTargetId.current, file);
+    }
+  }, []);
 
   const handleCreate = async (values: any) => {
     try {
@@ -94,22 +112,23 @@ export default function TemplateManage() {
       dataIndex: 'filePath',
       key: 'filePath',
       width: 180,
-      render: (filePath: string | null, record: any) => {
-        if (!filePath) {
+      render: (_: any, record: any) => {
+        if (!record.filePath) {
           return (
-            <Upload
-              showUploadList={false}
-              beforeUpload={(file) => { handleUpload(record.id, file); return false; }}
-              accept=".doc,.docx,.xls,.xlsx,.pdf"
+            <Button
+              type="link"
+              icon={<UploadOutlined />}
+              size="small"
+              onClick={() => triggerFileUpload(record.id)}
             >
-              <Button type="link" icon={<UploadOutlined />} size="small">上传文件</Button>
-            </Upload>
+              上传文件
+            </Button>
           );
         }
-        const name = getFileName(filePath);
+        const name = getFileName(record.filePath);
         return (
           <Space>
-            <a href={`/${filePath}`} target="_blank" rel="noreferrer">
+            <a href={`/${record.filePath}`} target="_blank" rel="noreferrer">
               <PaperClipOutlined /> {name}
             </a>
           </Space>
@@ -146,13 +165,13 @@ export default function TemplateManage() {
             编辑
           </Button>
           {record.filePath && (
-            <Upload
-              showUploadList={false}
-              beforeUpload={(file) => { handleUpload(record.id, file); return false; }}
-              accept=".doc,.docx,.xls,.xlsx,.pdf"
+            <Button
+              type="link"
+              size="small"
+              onClick={() => triggerFileUpload(record.id)}
             >
-              <Button type="link" size="small">替换文件</Button>
-            </Upload>
+              替换文件
+            </Button>
           )}
           <Popconfirm
             title="确定删除此模板？"
@@ -169,6 +188,13 @@ export default function TemplateManage() {
 
   return (
     <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={ACCEPT_STR}
+        style={{ display: 'none' }}
+        onChange={onFileInputChange}
+      />
       <ProTable
         rowKey="id"
         actionRef={actionRef}
