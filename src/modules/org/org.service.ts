@@ -158,17 +158,24 @@ export class OrgService {
   }
 
   async createStudent(
-    data: Partial<Student> & { name?: string; studentNumber?: string },
+    data: Partial<Student> & {
+      name?: string;
+      studentNumber?: string;
+      studentNo?: string;
+    },
   ): Promise<Student> {
     const input = data as unknown as CreateStudentInput;
+    const studentNumberRaw: string | undefined =
+      input.studentNumber ||
+      ((data as Record<string, unknown>).studentNo as string | undefined);
     const encryptedName = input.name
       ? await this.encryptionService.encrypt(input.name)
       : null;
-    const encryptedStudentNumber = input.studentNumber
-      ? await this.encryptionService.encrypt(input.studentNumber)
+    const encryptedStudentNumber = studentNumberRaw
+      ? await this.encryptionService.encrypt(studentNumberRaw)
       : null;
-    const studentNumberHash = input.studentNumber
-      ? crypto.createHash('sha256').update(input.studentNumber).digest('hex')
+    const studentNumberHash = studentNumberRaw
+      ? crypto.createHash('sha256').update(studentNumberRaw).digest('hex')
       : null;
 
     const student = this.studentRepo.create({
