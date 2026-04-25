@@ -108,8 +108,12 @@ import {
         ],
         synchronize: config.get('DB_SYNC', 'false') === 'true',
         logging: config.get('DB_LOGGING', 'false') === 'true',
-        migrations: [__dirname + '/migrations/*{.ts,.js}'],
-        migrationsRun: config.get('DB_SYNC', 'false') !== 'true',
+        ...(config.get('DB_SYNC', 'false') === 'true'
+          ? {}
+          : {
+              migrations: [__dirname + '/migrations/*{.ts,.js}'],
+              migrationsRun: true,
+            }),
       }),
       inject: [ConfigService],
     }),

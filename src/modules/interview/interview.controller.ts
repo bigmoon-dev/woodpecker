@@ -35,6 +35,7 @@ import { SetMetadata } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as path from 'path';
+import * as fs from 'fs';
 
 interface AuthenticatedRequest extends Request {
   user: { id: string };
@@ -139,16 +140,17 @@ export class InterviewController {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
-    const allowed = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    ];
-    if (!allowed.includes(file.mimetype)) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const allowedExt = ['.doc', '.docx', '.xls', '.xlsx', '.pdf'];
+    if (!allowedExt.includes(ext)) {
+      const abs = path.resolve(file.path);
+      try {
+        fs.unlinkSync(abs);
+      } catch {
+        /* ignore */
+      }
       throw new BadRequestException(
-        'Unsupported file type. Allowed: .doc .docx .xls .xlsx .pdf',
+        '不支持的文件格式，仅支持 .doc .docx .xls .xlsx .pdf',
       );
     }
     return this.templateService.updateFilePath(

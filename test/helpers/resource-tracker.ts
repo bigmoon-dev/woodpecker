@@ -1,6 +1,7 @@
 export class ResourceTracker {
   private scaleIds: string[] = [];
   private versionIds: string[] = [];
+  private templateIds: string[] = [];
 
   addScale(id: string) {
     this.scaleIds.push(id);
@@ -8,6 +9,10 @@ export class ResourceTracker {
 
   addVersion(id: string) {
     this.versionIds.push(id);
+  }
+
+  addTemplate(id: string) {
+    this.templateIds.push(id);
   }
 
   getScaleIds(): string[] {
@@ -18,6 +23,10 @@ export class ResourceTracker {
     return [...this.versionIds];
   }
 
+  getTemplateIds(): string[] {
+    return [...this.templateIds];
+  }
+
   allResourceIds(): string[] {
     return [...this.versionIds, ...this.scaleIds];
   }
@@ -25,5 +34,6 @@ export class ResourceTracker {
   clear() {
     this.scaleIds = [];
     this.versionIds = [];
+    this.templateIds = [];
   }
 }

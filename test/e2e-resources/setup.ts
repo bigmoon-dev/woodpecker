@@ -69,7 +69,9 @@ export default async function () {
       (gen_random_uuid(), 'consent:read', '查看知情同意', 'consent', '查看知情同意'),
       (gen_random_uuid(), 'consent:write', '签署知情同意', 'consent', '签署知情同意'),
       (gen_random_uuid(), 'plugin:read', '查看插件', 'plugin', '查看插件信息'),
-      (gen_random_uuid(), 'plugin:write', '管理插件', 'plugin', '管理插件配置')
+      (gen_random_uuid(), 'plugin:write', '管理插件', 'plugin', '管理插件配置'),
+      (gen_random_uuid(), 'interview:read', '查看访谈', 'interview', '查看访谈记录'),
+      (gen_random_uuid(), 'interview:write', '管理访谈', 'interview', '创建编辑删除访谈')
     ON CONFLICT ("code") DO NOTHING
   `);
 
