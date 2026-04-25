@@ -130,6 +130,9 @@ export class OrgController {
   @Post('students')
   @SetMetadata(REQUIRE_PERMISSION, ['org:write'])
   async createStudent(@Body() dto: CreateStudentDto): Promise<Student> {
+    console.log('[createStudent] DTO keys:', Object.keys(dto));
+    console.log('[createStudent] studentNumber:', (dto as any).studentNumber);
+    console.log('[createStudent] studentNo:', (dto as any).studentNo);
     return this.orgService.createStudent(dto);
   }
 
