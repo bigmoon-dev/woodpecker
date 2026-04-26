@@ -3,7 +3,7 @@ import {
   Get,
   Post,
   Put,
-  Delete,
+  Patch,
   Param,
   Body,
   Query,
@@ -23,13 +23,12 @@ import { Class } from '../../entities/org/class.entity';
 import { Student } from '../../entities/org/student.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RbacGuard, REQUIRE_PERMISSION } from '../auth/rbac.guard';
-import { RequireReauth } from '../auth/reauth.decorator';
 import { CreateGradeDto, CreateClassDto, CreateStudentDto } from './org.dto';
 import { PaginationQueryDto } from '../../common/pagination.dto';
 import { SetMetadata } from '@nestjs/common';
 
 interface AuthenticatedRequest extends express.Request {
-  user: { id: string };
+  user: { id: string; displayName?: string };
   dataScope: {
     scope: 'own' | 'class' | 'grade' | 'all';
     userId: string;
@@ -79,11 +78,17 @@ export class OrgController {
     return this.orgService.updateGrade(id, dto);
   }
 
-  @Delete('grades/:id')
+  @Patch('grades/:id/status')
   @SetMetadata(REQUIRE_PERMISSION, ['org:write'])
-  @RequireReauth()
-  async removeGrade(@Param('id') id: string): Promise<void> {
-    return this.orgService.removeGrade(id);
+  async updateGradeStatus(
+    @Param('id') id: string,
+    @Body('status') status: 'active' | 'archived',
+    @Req() req: AuthenticatedRequest,
+  ): Promise<Grade> {
+    return this.orgService.updateGradeStatus(id, status, {
+      id: req.user.id,
+      name: req.user.displayName ?? 'unknown',
+    });
   }
 
   @Post('classes')
@@ -120,11 +125,17 @@ export class OrgController {
     return this.orgService.updateClass(id, dto);
   }
 
-  @Delete('classes/:id')
+  @Patch('classes/:id/status')
   @SetMetadata(REQUIRE_PERMISSION, ['org:write'])
-  @RequireReauth()
-  async removeClass(@Param('id') id: string): Promise<void> {
-    return this.orgService.removeClass(id);
+  async updateClassStatus(
+    @Param('id') id: string,
+    @Body('status') status: 'active' | 'archived',
+    @Req() req: AuthenticatedRequest,
+  ): Promise<Class> {
+    return this.orgService.updateClassStatus(id, status, {
+      id: req.user.id,
+      name: req.user.displayName ?? 'unknown',
+    });
   }
 
   @Post('students')
@@ -157,15 +168,26 @@ export class OrgController {
   async updateStudent(
     @Param('id') id: string,
     @Body() dto: CreateStudentDto,
+    @Req() req: AuthenticatedRequest,
   ): Promise<Student> {
-    return this.orgService.updateStudent(id, dto);
+    return this.orgService.updateStudent(id, dto, {
+      id: req.user.id,
+      name: req.user.displayName ?? 'unknown',
+    });
   }
 
-  @Delete('students/:id')
+  @Patch('students/:id/status')
   @SetMetadata(REQUIRE_PERMISSION, ['org:write'])
-  @RequireReauth()
-  async removeStudent(@Param('id') id: string): Promise<void> {
-    return this.orgService.removeStudent(id);
+  async updateStudentStatus(
+    @Param('id') id: string,
+    @Body('status')
+    status: 'active' | 'suspended' | 'graduated' | 'transferred',
+    @Req() req: AuthenticatedRequest,
+  ): Promise<Student> {
+    return this.orgService.updateStudentStatus(id, status, {
+      id: req.user.id,
+      name: req.user.displayName ?? 'unknown',
+    });
   }
 
   @Post('students/import')

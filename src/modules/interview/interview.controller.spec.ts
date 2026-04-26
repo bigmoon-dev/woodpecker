@@ -123,26 +123,26 @@ describe('InterviewController', () => {
       psychologistId: 'p1',
       interviewDate: '2024-01-01',
     };
+    const req = { user: { id: 'u1' } } as any;
     interviewService.create.mockResolvedValueOnce({ id: 'iv1', ...dto });
-    await controller.create(dto as any);
-    expect(interviewService.create).toHaveBeenCalledWith(dto);
+    await controller.create(dto as any, req);
+    expect(interviewService.create).toHaveBeenCalledWith(dto, 'u1');
   });
 
   it('PUT /:id delegates to update', async () => {
+    const req = { user: { id: 'u1' } } as any;
     interviewService.update.mockResolvedValueOnce({
       id: 'iv1',
       status: 'reviewed',
     });
-    await controller.update('iv1', { status: 'reviewed' } as any);
-    expect(interviewService.update).toHaveBeenCalledWith('iv1', {
-      status: 'reviewed',
-    });
-  });
-
-  it('DELETE /:id delegates to delete', async () => {
-    interviewService.delete.mockResolvedValueOnce(undefined);
-    await controller.delete('iv1');
-    expect(interviewService.delete).toHaveBeenCalledWith('iv1');
+    await controller.update('iv1', { status: 'reviewed' } as any, req);
+    expect(interviewService.update).toHaveBeenCalledWith(
+      'iv1',
+      {
+        status: 'reviewed',
+      },
+      'u1',
+    );
   });
 
   it('GET /templates/all delegates to findAllTemplates', async () => {

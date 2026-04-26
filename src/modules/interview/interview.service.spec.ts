@@ -12,6 +12,7 @@ import { User } from '../../entities/auth/user.entity';
 import { Role } from '../../entities/auth/role.entity';
 import { EncryptionService } from '../core/encryption.service';
 import { DataScopeFilter } from '../auth/data-scope-filter';
+import { AuditLogService } from '../audit/audit-log.service';
 
 describe('InterviewService', () => {
   let service: InterviewService;
@@ -71,6 +72,10 @@ describe('InterviewService', () => {
         { provide: getRepositoryToken(Role), useValue: mockRoleRepo },
         { provide: EncryptionService, useValue: mockEncryptionService },
         { provide: DataScopeFilter, useValue: mockDataScopeFilter },
+        {
+          provide: AuditLogService,
+          useValue: { log: jest.fn().mockResolvedValue({}) },
+        },
       ],
     }).compile();
 
@@ -357,24 +362,6 @@ describe('InterviewService', () => {
       await service.update('iv1', { content: 'new secret' });
 
       expect(encryptionService.encrypt).toHaveBeenCalledWith('new secret');
-    });
-  });
-
-  describe('delete', () => {
-    it('should delete an interview', async () => {
-      mockInterviewRepo.findOne.mockResolvedValue({ id: 'iv1' });
-
-      await service.delete('iv1');
-
-      expect(interviewRepo.remove).toHaveBeenCalledWith({ id: 'iv1' });
-    });
-
-    it('should throw NotFoundException when deleting non-existent', async () => {
-      mockInterviewRepo.findOne.mockResolvedValue(null);
-
-      await expect(service.delete('missing')).rejects.toThrow(
-        NotFoundException,
-      );
     });
   });
 

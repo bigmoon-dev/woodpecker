@@ -87,20 +87,37 @@ export class StudentProfileService {
 
     const className = student.class?.name ?? '';
 
+    const user = await this.userRepo.findOne({
+      where: { studentId },
+      select: ['id'],
+    });
+    const userId = user?.id;
+
     const [alerts, interviews, followups, answers] = await Promise.all([
-      this.alertRepo.find({
-        where: { studentId },
-        order: { createdAt: 'DESC' },
-      }),
-      this.interviewRepo.find({
-        where: { studentId },
-        order: { createdAt: 'DESC' },
-      }),
-      this.followupRepo.find({
-        where: { studentId, completed: false },
-        order: { reminderDate: 'ASC' },
-      }),
-      this.answerRepo.find({ where: { studentId } }),
+      this.alertRepo.find(
+        userId
+          ? { where: { studentId: userId }, order: { createdAt: 'DESC' } }
+          : { where: { studentId }, order: { createdAt: 'DESC' } },
+      ),
+      this.interviewRepo.find(
+        userId
+          ? { where: { studentId: userId }, order: { createdAt: 'DESC' } }
+          : { where: { studentId }, order: { createdAt: 'DESC' } },
+      ),
+      this.followupRepo.find(
+        userId
+          ? {
+              where: { studentId: userId, completed: false },
+              order: { reminderDate: 'ASC' },
+            }
+          : {
+              where: { studentId, completed: false },
+              order: { reminderDate: 'ASC' },
+            },
+      ),
+      this.answerRepo.find(
+        userId ? { where: { studentId: userId } } : { where: { studentId } },
+      ),
     ]);
 
     const answerIds = answers.map((a) => a.id);

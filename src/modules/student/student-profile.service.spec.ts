@@ -27,13 +27,14 @@ describe('StudentProfileService', () => {
   const mockAnswerRepo = { find: jest.fn() };
   const mockInterviewRepo = { find: jest.fn() };
   const mockFollowupRepo = { find: jest.fn() };
-  const mockUserRepo = { find: jest.fn() };
+  const mockUserRepo = { find: jest.fn(), findOne: jest.fn() };
   const mockEncryptionService = {
     batchDecrypt: jest.fn().mockResolvedValue(new Map()),
   };
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    mockUserRepo.findOne.mockResolvedValue(null);
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StudentProfileService,

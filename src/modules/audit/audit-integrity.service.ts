@@ -6,10 +6,10 @@ import { AuditLog } from '../../entities/audit/audit-log.entity';
 export class AuditIntegrityService {
   computeHash(log: Partial<AuditLog>, secret: string): string {
     const payload = [
-      log.userId ?? '',
+      log.operatorId ?? '',
       log.action ?? '',
-      log.resourceType ?? '',
-      log.resourceId ?? '',
+      log.entityType ?? '',
+      log.entityId ?? '',
       log.ip ?? '',
       log.userAgent ?? '',
       log.createdAt ? new Date(log.createdAt).toISOString() : '',

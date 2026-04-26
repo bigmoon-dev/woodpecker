@@ -52,7 +52,7 @@ describe('Audit Security', () => {
 
   it('does not log password in audit entry', (done) => {
     const req = {
-      user: { id: 'u1' },
+      user: { id: 'u1', displayName: 'Admin' },
       method: 'POST',
       url: '/api/auth/login',
       ip: '127.0.0.1',
@@ -72,7 +72,7 @@ describe('Audit Security', () => {
   it('records action with URL path and extracts resource info', (done) => {
     const uuid = '550e8400-e29b-41d4-a716-446655440000';
     const req = {
-      user: { id: 'u1' },
+      user: { id: 'u1', displayName: 'Admin' },
       method: 'GET',
       url: `/api/scales/${uuid}`,
       ip: '127.0.0.1',
@@ -82,8 +82,8 @@ describe('Audit Security', () => {
       complete: () => {
         const logged = auditRepo.create.mock.calls[0][0];
         expect(logged.action).toBe(`GET /api/scales/${uuid}`);
-        expect(logged.resourceType).toBe('scales');
-        expect(logged.resourceId).toBe(uuid);
+        expect(logged.entityType).toBe('scales');
+        expect(logged.entityId).toBe(uuid);
         done();
       },
     });
@@ -92,7 +92,7 @@ describe('Audit Security', () => {
   it('safely handles path traversal and injection payloads in URL', (done) => {
     const maliciousUrl = '/api/scales/../../../etc/passwd';
     const req = {
-      user: { id: 'u1' },
+      user: { id: 'u1', displayName: 'Admin' },
       method: 'GET',
       url: maliciousUrl,
       ip: '127.0.0.1',
@@ -102,7 +102,7 @@ describe('Audit Security', () => {
       complete: () => {
         const logged = auditRepo.create.mock.calls[0][0];
         expect(logged.action).toBe(`GET ${maliciousUrl}`);
-        expect(logged.resourceId).toBeNull();
+        expect(logged.entityId).toBeNull();
         expect(auditRepo.save).toHaveBeenCalledTimes(1);
         done();
       },
@@ -112,7 +112,7 @@ describe('Audit Security', () => {
   it('does not throw when save fails (audit does not block request)', (done) => {
     auditRepo.save.mockRejectedValue(new Error('DB down'));
     const req = {
-      user: { id: 'u1' },
+      user: { id: 'u1', displayName: 'Admin' },
       method: 'GET',
       url: '/api/scales',
       ip: '127.0.0.1',
@@ -126,7 +126,7 @@ describe('Audit Security', () => {
 
   it('does not write audit log for failed requests', (done) => {
     const req = {
-      user: { id: 'u1' },
+      user: { id: 'u1', displayName: 'Admin' },
       method: 'POST',
       url: '/api/scales',
       ip: '127.0.0.1',
@@ -142,7 +142,7 @@ describe('Audit Security', () => {
       });
   });
 
-  it('logs userId as null for unauthenticated requests', (done) => {
+  it('logs operatorId as null for unauthenticated requests', (done) => {
     const req = {
       method: 'POST',
       url: '/api/auth/login',
@@ -152,7 +152,8 @@ describe('Audit Security', () => {
     interceptor.intercept(ctx(req), handler(of('ok'))).subscribe({
       complete: () => {
         const logged = auditRepo.create.mock.calls[0][0];
-        expect(logged.userId).toBeNull();
+        expect(logged.operatorId).toBeNull();
+        expect(logged.operatorName).toBe('anonymous');
         done();
       },
     });
@@ -160,7 +161,7 @@ describe('Audit Security', () => {
 
   it('handles concurrent audit writes without data loss', (done) => {
     const req = {
-      user: { id: 'u1' },
+      user: { id: 'u1', displayName: 'Admin' },
       method: 'GET',
       url: '/api/scales',
       ip: '127.0.0.1',
@@ -183,7 +184,7 @@ describe('Audit Security', () => {
 
   it('attaches integrityHash to each audit log entry', (done) => {
     const req = {
-      user: { id: 'u1' },
+      user: { id: 'u1', displayName: 'Admin' },
       method: 'POST',
       url: '/api/scales',
       ip: '127.0.0.1',
@@ -193,7 +194,7 @@ describe('Audit Security', () => {
       complete: () => {
         const logged = auditRepo.create.mock.calls[0][0];
         expect(integrityService.computeHash).toHaveBeenCalledWith(
-          expect.objectContaining({ userId: 'u1' }),
+          expect.objectContaining({ operatorId: 'u1' }),
           'test-hmac-secret',
         );
         expect(logged.integrityHash).toBe('fake-hash');
@@ -204,10 +205,10 @@ describe('Audit Security', () => {
 
   it('detects tampered audit log via verify', () => {
     const tamperedLog = {
-      userId: 'u1',
+      operatorId: 'u1',
       action: 'POST /api/scales',
-      resourceType: 'scales',
-      resourceId: null,
+      entityType: 'scales',
+      entityId: null,
       ip: '127.0.0.1',
       userAgent: 'Jest',
       createdAt: new Date(),

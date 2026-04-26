@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import * as crypto from 'crypto';
@@ -8,12 +12,18 @@ import { Student } from '../../entities/org/student.entity';
 import { HookBus } from '../plugin/hook-bus';
 import { DataScopeFilter, DataScope } from '../auth/data-scope-filter';
 import { EncryptionService } from '../core/encryption.service';
+import { AuditLogService } from '../audit/audit-log.service';
 
 interface CreateStudentInput {
   classId: string;
   name?: string;
   studentNumber?: string;
   gender?: string;
+}
+
+interface Operator {
+  id: string;
+  name: string;
 }
 
 @Injectable()
@@ -28,6 +38,7 @@ export class OrgService {
     private hookBus: HookBus,
     private dataScopeFilter: DataScopeFilter,
     private encryptionService: EncryptionService,
+    private auditLogService: AuditLogService,
   ) {}
 
   async createGrade(data: Partial<Grade>): Promise<Grade> {
@@ -96,15 +107,36 @@ export class OrgService {
     return grade;
   }
 
-  async removeGrade(id: string): Promise<void> {
-    await this.gradeRepo.delete(id);
-  }
-
   async updateGrade(id: string, data: Partial<Grade>): Promise<Grade> {
     const grade = await this.gradeRepo.findOne({ where: { id } });
     if (!grade) throw new NotFoundException(`Grade ${id} not found`);
     Object.assign(grade, data);
     return this.gradeRepo.save(grade);
+  }
+
+  async updateGradeStatus(
+    id: string,
+    status: 'active' | 'archived',
+    operator?: Operator,
+  ): Promise<Grade> {
+    const grade = await this.gradeRepo.findOne({ where: { id } });
+    if (!grade) throw new NotFoundException(`Grade ${id} not found`);
+    const oldStatus = grade.status;
+    grade.status = status;
+    const saved = await this.gradeRepo.save(grade);
+    if (operator) {
+      await this.auditLogService
+        .log({
+          operatorId: operator.id,
+          operatorName: operator.name,
+          action: 'grade.update_status',
+          entityType: 'grade',
+          entityId: id,
+          changes: { status: { before: oldStatus, after: status } },
+        })
+        .catch(() => {});
+    }
+    return saved;
   }
 
   async createClass(data: Partial<Class>): Promise<Class> {
@@ -162,15 +194,36 @@ export class OrgService {
     return cls;
   }
 
-  async removeClass(id: string): Promise<void> {
-    await this.classRepo.delete(id);
-  }
-
   async updateClass(id: string, data: Partial<Class>): Promise<Class> {
     const cls = await this.classRepo.findOne({ where: { id } });
     if (!cls) throw new NotFoundException(`Class ${id} not found`);
     Object.assign(cls, data);
     return this.classRepo.save(cls);
+  }
+
+  async updateClassStatus(
+    id: string,
+    status: 'active' | 'archived',
+    operator?: Operator,
+  ): Promise<Class> {
+    const cls = await this.classRepo.findOne({ where: { id } });
+    if (!cls) throw new NotFoundException(`Class ${id} not found`);
+    const oldStatus = cls.status;
+    cls.status = status;
+    const saved = await this.classRepo.save(cls);
+    if (operator) {
+      await this.auditLogService
+        .log({
+          operatorId: operator.id,
+          operatorName: operator.name,
+          action: 'class.update_status',
+          entityType: 'class',
+          entityId: id,
+          changes: { status: { before: oldStatus, after: status } },
+        })
+        .catch(() => {});
+    }
+    return saved;
   }
 
   async createStudent(
@@ -248,6 +301,7 @@ export class OrgService {
         name: pii?.name ?? '',
         studentNo: pii?.studentNumber ?? '',
         gender: s.gender,
+        status: s.status || 'active',
         createdAt: s.createdAt,
       };
     });
@@ -261,14 +315,91 @@ export class OrgService {
     return student;
   }
 
-  async removeStudent(id: string): Promise<void> {
-    await this.studentRepo.delete(id);
+  private static readonly ARCHIVED_STATUSES = new Set([
+    'suspended',
+    'graduated',
+    'transferred',
+  ]);
+
+  private assertNotArchied(student: Student): void {
+    if (OrgService.ARCHIVED_STATUSES.has(student.status)) {
+      throw new BadRequestException(
+        `学生已归档（状态: ${student.status}），无法修改`,
+      );
+    }
   }
 
-  async updateStudent(id: string, data: Partial<Student>): Promise<Student> {
+  async updateStudent(
+    id: string,
+    data: Partial<Student> & { name?: string; studentNumber?: string },
+    operator?: Operator,
+  ): Promise<Student> {
     const student = await this.studentRepo.findOne({ where: { id } });
     if (!student) throw new NotFoundException(`Student ${id} not found`);
-    Object.assign(student, data);
-    return this.studentRepo.save(student);
+    this.assertNotArchied(student);
+    const changes: Record<string, { before: unknown; after: unknown }> = {};
+    if (data.name) {
+      student.encryptedName = await this.encryptionService.encrypt(data.name);
+      changes.name = { before: '[encrypted]', after: '[encrypted]' };
+    }
+    if (data.studentNumber) {
+      student.encryptedStudentNumber = await this.encryptionService.encrypt(
+        data.studentNumber,
+      );
+      student.studentNumberHash = crypto
+        .createHash('sha256')
+        .update(data.studentNumber)
+        .digest('hex');
+      changes.studentNumber = { before: '[encrypted]', after: '[encrypted]' };
+    }
+    if (data.classId) {
+      changes.classId = { before: student.classId, after: data.classId };
+      student.classId = data.classId;
+    }
+    if (data.gender !== undefined) {
+      changes.gender = { before: student.gender, after: data.gender };
+      student.gender = data.gender;
+    }
+    const saved = await this.studentRepo.save(student);
+    if (operator && Object.keys(changes).length > 0) {
+      await this.auditLogService
+        .log({
+          operatorId: operator.id,
+          operatorName: operator.name,
+          action: 'student.update',
+          entityType: 'student',
+          entityId: id,
+          changes,
+        })
+        .catch(() => {});
+    }
+    return saved;
+  }
+
+  async updateStudentStatus(
+    id: string,
+    status: 'active' | 'suspended' | 'graduated' | 'transferred',
+    operator?: Operator,
+  ): Promise<Student> {
+    const student = await this.studentRepo.findOne({ where: { id } });
+    if (!student) throw new NotFoundException(`Student ${id} not found`);
+    this.assertNotArchied(student);
+    const oldStatus = student.status;
+    student.status = status;
+    student.statusChangedAt = new Date();
+    const saved = await this.studentRepo.save(student);
+    if (operator) {
+      await this.auditLogService
+        .log({
+          operatorId: operator.id,
+          operatorName: operator.name,
+          action: 'student.update_status',
+          entityType: 'student',
+          entityId: id,
+          changes: { status: { before: oldStatus, after: status } },
+        })
+        .catch(() => {});
+    }
+    return saved;
   }
 }

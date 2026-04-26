@@ -22,6 +22,16 @@ export class Grade {
   @Column({ length: 10, nullable: true })
   year?: string;
 
+  @Column({ length: 20, nullable: true })
+  cohort?: string;
+
+  @Column({
+    type: 'enum',
+    enum: ['active', 'archived'],
+    default: 'active',
+  })
+  status: 'active' | 'archived';
+
   @OneToMany(() => Class, (cls) => cls.grade)
   classes: Class[];
 }

@@ -13,10 +13,10 @@ describe('AuditIntegrityService', () => {
   describe('computeHash', () => {
     it('produces consistent HMAC-SHA256 for a complete log entry', () => {
       const log = {
-        userId: 'u1',
+        operatorId: 'u1',
         action: 'POST /api/scales',
-        resourceType: 'scales',
-        resourceId: 'r1',
+        entityType: 'scales',
+        entityId: 'r1',
         ip: '127.0.0.1',
         userAgent: 'Jest',
         createdAt: new Date('2025-01-15T10:00:00Z'),
@@ -30,10 +30,10 @@ describe('AuditIntegrityService', () => {
 
     it('handles all null/undefined fields by defaulting to empty strings', () => {
       const log = {
-        userId: undefined,
+        operatorId: undefined,
         action: undefined,
-        resourceType: undefined,
-        resourceId: undefined,
+        entityType: undefined,
+        entityId: undefined,
         ip: undefined,
         userAgent: undefined,
         createdAt: undefined,
@@ -51,10 +51,10 @@ describe('AuditIntegrityService', () => {
 
     it('handles null createdAt by using empty string in payload', () => {
       const log = {
-        userId: 'u1',
+        operatorId: 'u1',
         action: 'GET /api/test',
-        resourceType: 'test',
-        resourceId: null,
+        entityType: 'test',
+        entityId: null,
         ip: '10.0.0.1',
         userAgent: 'Test',
         createdAt: null as unknown as undefined,
@@ -66,10 +66,10 @@ describe('AuditIntegrityService', () => {
     it('converts valid createdAt to ISO string', () => {
       const date = new Date('2025-06-01T12:00:00Z');
       const log = {
-        userId: 'u1',
+        operatorId: 'u1',
         action: 'POST /api/test',
-        resourceType: 'test',
-        resourceId: null,
+        entityType: 'test',
+        entityId: null,
         ip: '10.0.0.1',
         userAgent: 'Test',
         createdAt: date,
@@ -97,10 +97,10 @@ describe('AuditIntegrityService', () => {
     it('returns false when integrityHash is null', () => {
       const log = {
         integrityHash: null,
-        userId: 'u1',
+        operatorId: 'u1',
         action: 'POST',
-        resourceType: 'test',
-        resourceId: null,
+        entityType: 'test',
+        entityId: null,
         ip: '127.0.0.1',
         userAgent: 'Jest',
         createdAt: new Date(),
@@ -110,10 +110,10 @@ describe('AuditIntegrityService', () => {
 
     it('returns false when hash length differs (tampered)', () => {
       const log = {
-        userId: 'u1',
+        operatorId: 'u1',
         action: 'POST',
-        resourceType: 'test',
-        resourceId: null,
+        entityType: 'test',
+        entityId: null,
         ip: '127.0.0.1',
         userAgent: 'Jest',
         createdAt: new Date(),
@@ -128,10 +128,10 @@ describe('AuditIntegrityService', () => {
 
     it('returns true for a valid matching hash', () => {
       const log = {
-        userId: 'u1',
+        operatorId: 'u1',
         action: 'POST /api/scales',
-        resourceType: 'scales',
-        resourceId: 'r1',
+        entityType: 'scales',
+        entityId: 'r1',
         ip: '127.0.0.1',
         userAgent: 'Jest',
         createdAt: new Date('2025-01-15T10:00:00Z'),
@@ -143,10 +143,10 @@ describe('AuditIntegrityService', () => {
 
     it('returns false for a wrong secret', () => {
       const log = {
-        userId: 'u1',
+        operatorId: 'u1',
         action: 'POST',
-        resourceType: 'test',
-        resourceId: null,
+        entityType: 'test',
+        entityId: null,
         ip: '127.0.0.1',
         userAgent: 'Jest',
         createdAt: new Date(),
@@ -165,10 +165,10 @@ describe('AuditIntegrityService', () => {
     it('returns valid:true when all logs are untampered', () => {
       const logs = [1, 2, 3].map((i) => {
         const base = {
-          userId: `u${i}`,
+          operatorId: `u${i}`,
           action: `POST /api/${i}`,
-          resourceType: 'test',
-          resourceId: null,
+          entityType: 'test',
+          entityId: null,
           ip: '127.0.0.1',
           userAgent: 'Jest',
           createdAt: new Date(2025, 0, i),
@@ -182,16 +182,16 @@ describe('AuditIntegrityService', () => {
 
     it('detects tampered entry at specific index after sorting', () => {
       const entries = [
-        { date: new Date(2025, 0, 1), userId: 'u1' },
-        { date: new Date(2025, 0, 2), userId: 'u2' },
-        { date: new Date(2025, 0, 3), userId: 'u3' },
+        { date: new Date(2025, 0, 1), operatorId: 'u1' },
+        { date: new Date(2025, 0, 2), operatorId: 'u2' },
+        { date: new Date(2025, 0, 3), operatorId: 'u3' },
       ];
       const logs = entries.map((e) => {
         const base = {
-          userId: e.userId,
-          action: `POST /api/${e.userId}`,
-          resourceType: 'test',
-          resourceId: null,
+          operatorId: e.operatorId,
+          action: `POST /api/${e.operatorId}`,
+          entityType: 'test',
+          entityId: null,
           ip: '127.0.0.1',
           userAgent: 'Jest',
           createdAt: e.date,
@@ -212,10 +212,10 @@ describe('AuditIntegrityService', () => {
       ];
       const logs = dates.map((d, i) => {
         const base = {
-          userId: `u${i}`,
+          operatorId: `u${i}`,
           action: `POST /api/${i}`,
-          resourceType: 'test',
-          resourceId: null,
+          entityType: 'test',
+          entityId: null,
           ip: '127.0.0.1',
           userAgent: 'Jest',
           createdAt: d,

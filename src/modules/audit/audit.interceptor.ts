@@ -13,7 +13,7 @@ import { Observable, tap } from 'rxjs';
 import { Request } from 'express';
 
 interface AuthenticatedRequest extends Request {
-  user?: { id: string };
+  user?: { id: string; displayName?: string };
 }
 
 @Injectable()
@@ -44,13 +44,13 @@ export class AuditInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap(() => {
         const log = this.auditRepo.create({
-          userId: user?.id || null,
+          operatorId: user?.id || null,
+          operatorName: user?.displayName || 'anonymous',
           action: `${method} ${url}`,
-          resourceType: this.extractResource(url),
-          resourceId: this.extractId(url),
+          entityType: this.extractResource(url),
+          entityId: this.extractId(url),
           ip: request.ip,
           userAgent: request.headers['user-agent'],
-          createdAt: new Date(),
         });
         log.integrityHash = this.integrityService.computeHash(
           log,

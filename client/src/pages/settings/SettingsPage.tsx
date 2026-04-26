@@ -3,13 +3,10 @@ import { Tabs } from 'antd';
 import RoleManage from '../admin/RoleManage';
 import UserManage from '../admin/UserManage';
 import PluginManage from '../admin/PluginManage';
-import ClassManage from '../org/ClassManage';
 import StudentManage from '../org/StudentManage';
 import DatabaseBackup from './DatabaseBackup';
 
 const allTabItems = [
-  { key: 'classes', label: '班级管理', children: <ClassManage /> },
-  { key: 'students', label: '学生管理', children: <StudentManage /> },
   { key: 'roles', label: '角色管理', children: <RoleManage /> },
   { key: 'users', label: '用户管理', children: <UserManage /> },
   { key: 'plugins', label: '插件管理', children: <PluginManage /> },

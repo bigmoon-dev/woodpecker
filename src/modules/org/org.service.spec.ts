@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unused-vars */
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { OrgService } from './org.service';
 import { Grade } from '../../entities/org/grade.entity';
 import { Class } from '../../entities/org/class.entity';
@@ -9,6 +9,7 @@ import { Student } from '../../entities/org/student.entity';
 import { HookBus } from '../plugin/hook-bus';
 import { DataScopeFilter } from '../auth/data-scope-filter';
 import { EncryptionService } from '../core/encryption.service';
+import { AuditLogService } from '../audit/audit-log.service';
 
 describe('OrgService', () => {
   let service: OrgService;
@@ -56,6 +57,10 @@ describe('OrgService', () => {
         { provide: getRepositoryToken(Student), useValue: mockStudentRepo },
         { provide: HookBus, useValue: mockHookBus },
         { provide: DataScopeFilter, useValue: mockDataScopeFilter },
+        {
+          provide: AuditLogService,
+          useValue: { log: jest.fn().mockResolvedValue({}) },
+        },
         {
           provide: EncryptionService,
           useValue: {
@@ -170,10 +175,19 @@ describe('OrgService', () => {
     });
   });
 
-  describe('removeGrade', () => {
-    it('should call delete', async () => {
-      await service.removeGrade('g1');
-      expect(gradeRepo.delete).toHaveBeenCalledWith('g1');
+  describe('updateGradeStatus', () => {
+    it('should update grade status', async () => {
+      mockGradeRepo.findOne.mockResolvedValue({ id: 'g1', status: 'active' });
+      mockGradeRepo.save.mockResolvedValue({ id: 'g1', status: 'archived' });
+      const result = await service.updateGradeStatus('g1', 'archived');
+      expect(result.status).toBe('archived');
+    });
+
+    it('should throw NotFoundException when not found', async () => {
+      mockGradeRepo.findOne.mockResolvedValue(null);
+      await expect(service.updateGradeStatus('x', 'archived')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -258,6 +272,62 @@ describe('OrgService', () => {
       await expect(service.updateStudent('x', {})).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('should throw BadRequestException when student is archived (suspended)', async () => {
+      mockStudentRepo.findOne.mockResolvedValue({
+        id: 's1',
+        status: 'suspended',
+      });
+      await expect(
+        service.updateStudent('s1', { gender: 'M' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when student is archived (graduated)', async () => {
+      mockStudentRepo.findOne.mockResolvedValue({
+        id: 's1',
+        status: 'graduated',
+      });
+      await expect(
+        service.updateStudent('s1', { gender: 'M' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when student is archived (transferred)', async () => {
+      mockStudentRepo.findOne.mockResolvedValue({
+        id: 's1',
+        status: 'transferred',
+      });
+      await expect(
+        service.updateStudent('s1', { gender: 'M' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('updateStudentStatus', () => {
+    it('should throw BadRequestException when student is already archived', async () => {
+      mockStudentRepo.findOne.mockResolvedValue({
+        id: 's1',
+        status: 'suspended',
+      });
+      await expect(
+        service.updateStudentStatus('s1', 'graduated'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should allow status change for active student', async () => {
+      mockStudentRepo.findOne.mockResolvedValue({
+        id: 's1',
+        status: 'active',
+      });
+      mockStudentRepo.save.mockResolvedValue({
+        id: 's1',
+        status: 'graduated',
+        statusChangedAt: new Date(),
+      });
+      const result = await service.updateStudentStatus('s1', 'graduated');
+      expect(result.status).toBe('graduated');
     });
   });
 });

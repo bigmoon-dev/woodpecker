@@ -15,6 +15,7 @@ import { ResultService } from '../result/result.service';
 import { TaskResult } from '../../entities/task/task-result.entity';
 import { TaskAnswer } from '../../entities/task/task-answer.entity';
 import { EncryptionService } from '../core/encryption.service';
+import { AuditLogService } from '../audit/audit-log.service';
 
 export interface FollowupResponse {
   alert: AlertRecord;
@@ -48,6 +49,7 @@ export class AlertService {
     private dataScopeFilter: DataScopeFilter,
     private resultService: ResultService,
     private encryptionService: EncryptionService,
+    private auditLogService: AuditLogService,
   ) {}
 
   async findAll(
@@ -142,6 +144,16 @@ export class AlertService {
         handleNote: saved.handleNote,
       })
       .catch(() => {});
+    await this.auditLogService
+      .log({
+        operatorId: handledById,
+        operatorName: handledById,
+        action: 'alert.handle',
+        entityType: 'alert',
+        entityId: id,
+        changes: { status: { before: 'pending', after: 'handled' } },
+      })
+      .catch(() => {});
     return saved;
   }
 
@@ -204,6 +216,17 @@ export class AlertService {
       }),
     );
 
+    await this.auditLogService
+      .log({
+        operatorId: handledById,
+        operatorName: handledById,
+        action: 'alert.followup',
+        entityType: 'alert',
+        entityId: id,
+        changes: { status: { before: 'pending', after: 'followup' } },
+      })
+      .catch(() => {});
+
     return { alert: saved, retestComparisonUrl };
   }
 
@@ -237,8 +260,14 @@ export class AlertService {
     level: string,
   ) {
     try {
-      const student = await this.studentRepo.findOne({
+      const user = await this.userRepo.findOne({
         where: { id: studentId },
+        select: ['id', 'studentId'],
+      });
+      if (!user?.studentId) return;
+
+      const student = await this.studentRepo.findOne({
+        where: { id: user.studentId },
       });
       if (!student) return;
 

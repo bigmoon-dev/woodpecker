@@ -1,8 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { InterviewTemplate } from '../../entities/interview/interview-template.entity';
+import { Interview } from '../../entities/interview/interview.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -11,6 +16,8 @@ export class TemplateService {
   constructor(
     @InjectRepository(InterviewTemplate)
     private templateRepo: Repository<InterviewTemplate>,
+    @InjectRepository(Interview)
+    private interviewRepo: Repository<Interview>,
   ) {}
 
   async create(dto: any): Promise<InterviewTemplate> {
@@ -42,6 +49,16 @@ export class TemplateService {
   async delete(id: string): Promise<void> {
     const template = await this.templateRepo.findOne({ where: { id } });
     if (!template) throw new NotFoundException(`Template ${id} not found`);
+
+    const refCount = await this.interviewRepo.count({
+      where: { templateId: id },
+    });
+    if (refCount > 0) {
+      throw new ConflictException(
+        `模板正在被 ${refCount} 条访谈记录引用，无法删除`,
+      );
+    }
+
     if (template.filePath) {
       const abs = path.join(process.cwd(), 'public', template.filePath);
       try {

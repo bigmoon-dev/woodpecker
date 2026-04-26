@@ -38,7 +38,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 interface AuthenticatedRequest extends Request {
-  user: { id: string };
+  user: { id: string; displayName?: string };
   dataScope: {
     scope: 'own' | 'class' | 'grade' | 'all';
     userId: string;
@@ -108,8 +108,11 @@ export class InterviewController {
 
   @Post()
   @SetMetadata(REQUIRE_PERMISSION, ['interview:write'])
-  async create(@Body() dto: CreateInterviewDto) {
-    return this.interviewService.create(dto);
+  async create(
+    @Body() dto: CreateInterviewDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.interviewService.create(dto, req.user.id);
   }
 
   @Post('templates')
@@ -231,8 +234,12 @@ export class InterviewController {
 
   @Put(':id')
   @SetMetadata(REQUIRE_PERMISSION, ['interview:write'])
-  async update(@Param('id') id: string, @Body() dto: UpdateInterviewDto) {
-    return this.interviewService.update(id, dto);
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateInterviewDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.interviewService.update(id, dto, req.user.id);
   }
 
   @Put(':id/status')
@@ -254,12 +261,6 @@ export class InterviewController {
   @SetMetadata(REQUIRE_PERMISSION, ['interview:write'])
   async markComplete(@Param('id') id: string) {
     return this.followUpService.markComplete(id);
-  }
-
-  @Delete(':id')
-  @SetMetadata(REQUIRE_PERMISSION, ['interview:write'])
-  async delete(@Param('id') id: string) {
-    return this.interviewService.delete(id);
   }
 
   @Delete('templates/:id')

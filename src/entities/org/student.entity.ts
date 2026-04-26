@@ -33,6 +33,16 @@ export class Student {
   @Column({ type: 'varchar', length: 10, nullable: true })
   gender: string | null;
 
+  @Column({
+    type: 'enum',
+    enum: ['active', 'suspended', 'graduated', 'transferred'],
+    default: 'active',
+  })
+  status: 'active' | 'suspended' | 'graduated' | 'transferred';
+
+  @Column({ type: 'timestamptz', nullable: true })
+  statusChangedAt: Date | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

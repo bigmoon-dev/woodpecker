@@ -18,6 +18,7 @@ import { ResultService } from '../result/result.service';
 import { HookBus } from '../plugin/hook-bus';
 import { DataScopeFilter } from '../auth/data-scope-filter';
 import { EncryptionService } from '../core/encryption.service';
+import { AuditLogService } from '../audit/audit-log.service';
 
 describe('Alert Followup Retest Comparison', () => {
   let controller: AlertController;
@@ -81,6 +82,10 @@ describe('Alert Followup Retest Comparison', () => {
         {
           provide: EncryptionService,
           useValue: { batchDecrypt: jest.fn().mockResolvedValue(new Map()) },
+        },
+        {
+          provide: AuditLogService,
+          useValue: { log: jest.fn().mockResolvedValue({}) },
         },
       ],
     }).compile();

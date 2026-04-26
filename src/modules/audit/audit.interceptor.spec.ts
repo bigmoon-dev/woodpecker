@@ -57,7 +57,7 @@ describe('AuditInterceptor', () => {
 
   it('should create and save audit log on successful request', (done) => {
     const req = {
-      user: { id: 'user-123' },
+      user: { id: 'user-123', displayName: 'Admin' },
       method: 'POST',
       url: '/api/admin/scales/12345678-1234-1234-1234-123456789abc',
       ip: '127.0.0.1',
@@ -71,11 +71,12 @@ describe('AuditInterceptor', () => {
         complete: () => {
           expect(auditRepo.create).toHaveBeenCalledWith(
             expect.objectContaining({
-              userId: 'user-123',
+              operatorId: 'user-123',
+              operatorName: 'Admin',
               action:
                 'POST /api/admin/scales/12345678-1234-1234-1234-123456789abc',
-              resourceType: 'admin',
-              resourceId: '12345678-1234-1234-1234-123456789abc',
+              entityType: 'admin',
+              entityId: '12345678-1234-1234-1234-123456789abc',
               ip: '127.0.0.1',
               userAgent: 'Jest',
             }),
@@ -86,7 +87,7 @@ describe('AuditInterceptor', () => {
       });
   });
 
-  it('should handle request without user (null userId)', (done) => {
+  it('should handle request without user (null operatorId)', (done) => {
     const req = {
       method: 'GET',
       url: '/api/auth/login',
@@ -101,10 +102,11 @@ describe('AuditInterceptor', () => {
         complete: () => {
           expect(auditRepo.create).toHaveBeenCalledWith(
             expect.objectContaining({
-              userId: null,
+              operatorId: null,
+              operatorName: 'anonymous',
               action: 'GET /api/auth/login',
-              resourceType: 'auth',
-              resourceId: null,
+              entityType: 'auth',
+              entityId: null,
             }),
           );
           done();
@@ -127,7 +129,7 @@ describe('AuditInterceptor', () => {
         complete: () => {
           expect(auditRepo.create).toHaveBeenCalledWith(
             expect.objectContaining({
-              resourceType: 'org',
+              entityType: 'org',
             }),
           );
           done();
@@ -150,7 +152,7 @@ describe('AuditInterceptor', () => {
         complete: () => {
           expect(auditRepo.create).toHaveBeenCalledWith(
             expect.objectContaining({
-              resourceType: 'unknown',
+              entityType: 'unknown',
             }),
           );
           done();
@@ -158,7 +160,7 @@ describe('AuditInterceptor', () => {
       });
   });
 
-  it('should extract UUID from URL as resourceId', (done) => {
+  it('should extract UUID from URL as entityId', (done) => {
     const uuid = '12345678-1234-1234-1234-123456789abc';
     const req = {
       method: 'PUT',
@@ -174,7 +176,7 @@ describe('AuditInterceptor', () => {
         complete: () => {
           expect(auditRepo.create).toHaveBeenCalledWith(
             expect.objectContaining({
-              resourceId: uuid,
+              entityId: uuid,
             }),
           );
           done();
@@ -182,7 +184,7 @@ describe('AuditInterceptor', () => {
       });
   });
 
-  it('should return null resourceId when URL has no UUID', (done) => {
+  it('should return null entityId when URL has no UUID', (done) => {
     const req = {
       method: 'GET',
       url: '/api/admin/users',
@@ -197,7 +199,7 @@ describe('AuditInterceptor', () => {
         complete: () => {
           expect(auditRepo.create).toHaveBeenCalledWith(
             expect.objectContaining({
-              resourceId: null,
+              entityId: null,
             }),
           );
           done();
@@ -207,7 +209,7 @@ describe('AuditInterceptor', () => {
 
   it('should swallow save errors gracefully', (done) => {
     const req = {
-      user: { id: 'u1' },
+      user: { id: 'u1', displayName: 'Test' },
       method: 'POST',
       url: '/api/test',
       ip: '127.0.0.1',

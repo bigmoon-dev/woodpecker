@@ -25,6 +25,16 @@ export class Class {
   @Column({ type: 'int' })
   sortOrder: number;
 
+  @Column({ length: 20, nullable: true })
+  cohort?: string;
+
+  @Column({
+    type: 'enum',
+    enum: ['active', 'archived'],
+    default: 'active',
+  })
+  status: 'active' | 'archived';
+
   @ManyToOne(() => Grade, (grade) => grade.classes, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'gradeId' })
   grade: Grade;

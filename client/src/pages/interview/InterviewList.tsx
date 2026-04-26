@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { ProTable, type ActionType } from '@ant-design/pro-components';
-import { Button, Modal, Form, Input, Select, DatePicker, Tag, message, Popconfirm } from 'antd';
+import { Button, Modal, Form, Input, Select, DatePicker, Tag, message } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import request from '../../utils/request';
 
@@ -58,16 +58,6 @@ export default function InterviewList() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await request.delete(`/interviews/${id}`);
-      message.success('删除成功');
-      actionRef.current?.reload();
-    } catch {
-      message.error('删除失败');
-    }
-  };
-
   const columns = [
     { title: '学生姓名', dataIndex: 'studentName', key: 'studentName', render: (_: any, record: any) => record.studentName || '-' },
     {
@@ -98,21 +88,11 @@ export default function InterviewList() {
     {
       title: '操作',
       key: 'action',
-      width: 180,
+      width: 80,
       render: (_: any, record: any) => (
-        <>
-          <Button type="link" onClick={() => navigate(`${basePath}/interviews/${record.id}`)}>
-            查看
-          </Button>
-          <Popconfirm
-            title="确定删除此访谈？"
-            onConfirm={() => handleDelete(record.id)}
-            okText="删除"
-            cancelText="取消"
-          >
-            <Button type="link" danger>删除</Button>
-          </Popconfirm>
-        </>
+        <Button type="link" onClick={() => navigate(`${basePath}/interviews/${record.id}`)}>
+          查看
+        </Button>
       ),
     },
   ];

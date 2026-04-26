@@ -17,6 +17,7 @@ import { HookBus } from '../plugin/hook-bus';
 import { DataScopeFilter } from '../auth/data-scope-filter';
 import { ResultService } from '../result/result.service';
 import { EncryptionService } from '../core/encryption.service';
+import { AuditLogService } from '../audit/audit-log.service';
 
 describe('AlertService', () => {
   let service: AlertService;
@@ -45,7 +46,7 @@ describe('AlertService', () => {
   };
   const mockStudentRepo = { findOne: jest.fn() };
   const mockClassRepo = { findOne: jest.fn() };
-  const mockUserRepo = { find: jest.fn() };
+  const mockUserRepo = { find: jest.fn(), findOne: jest.fn() };
   const mockRoleRepo = { findOne: jest.fn() };
   const mockHookBus = { emit: jest.fn().mockResolvedValue(undefined) };
   const mockDataScopeFilter = {
@@ -60,6 +61,9 @@ describe('AlertService', () => {
   const mockFollowupRepo = {
     create: jest.fn((d) => d),
     save: jest.fn((d) => Promise.resolve(d)),
+  };
+  const mockAuditLogService = {
+    log: jest.fn().mockResolvedValue({}),
   };
 
   beforeEach(async () => {
@@ -89,6 +93,7 @@ describe('AlertService', () => {
         { provide: DataScopeFilter, useValue: mockDataScopeFilter },
         { provide: ResultService, useValue: mockResultService },
         { provide: EncryptionService, useValue: mockEncryptionService },
+        { provide: AuditLogService, useValue: mockAuditLogService },
         {
           provide: getRepositoryToken(FollowUpReminder),
           useValue: mockFollowupRepo,
@@ -497,7 +502,14 @@ describe('AlertService', () => {
         level: 'red',
         status: 'pending',
       });
-      mockStudentRepo.findOne.mockResolvedValue({ id: 's1', classId: 'c1' });
+      mockUserRepo.findOne.mockResolvedValue({
+        id: 's1',
+        studentId: 'real-s1',
+      });
+      mockStudentRepo.findOne.mockResolvedValue({
+        id: 'real-s1',
+        classId: 'c1',
+      });
       mockUserRepo.find.mockResolvedValue([
         {
           id: 'u1',
@@ -524,7 +536,14 @@ describe('AlertService', () => {
         level: 'yellow',
         status: 'pending',
       });
-      mockStudentRepo.findOne.mockResolvedValue({ id: 's1', classId: 'c1' });
+      mockUserRepo.findOne.mockResolvedValue({
+        id: 's1',
+        studentId: 'real-s1',
+      });
+      mockStudentRepo.findOne.mockResolvedValue({
+        id: 'real-s1',
+        classId: 'c1',
+      });
       mockUserRepo.find.mockResolvedValue([
         {
           id: 'u1',
@@ -552,7 +571,7 @@ describe('AlertService', () => {
         level: 'red',
         status: 'pending',
       });
-      mockStudentRepo.findOne.mockRejectedValue(new Error('DB down'));
+      mockUserRepo.findOne.mockRejectedValue(new Error('DB down'));
 
       await expect(
         service.triggerAlert('r1', 's1', 'red'),

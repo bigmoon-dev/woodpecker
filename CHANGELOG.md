@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.42.0] - 2026-04-26
+### Fixed
+- P0 BUG: 学生画像 getProfile 用 students.id 查 users.id 列导致四表查询永远为空
+- P0 BUG: 预警通知 notifyRelevantUsers 用 users.id 查 students 表导致通知静默失败
+- P1: 访谈记录可被硬删除导致心理辅导证据丢失——移除 DELETE 端点和前端删除按钮
+- P1: 访谈模板删除不检查引用——增加 interview count 检查，有引用时返回 409
+- P1: 启动 banner 明文显示默认密码——移除密码显示
+- P1: seed 创建多余张毛毛账号——admin 合并为唯一用户，拥有 admin+psychologist 双角色
+
+### Added
+- 学生/班级/年级状态管理：Student 新增 status(active/suspended/graduated/transferred) + statusChangedAt，Grade/Class 新增 status(active/archived) + cohort
+- 移除学生/班级/年级硬删除端点，新增 PATCH status 端点
+- 归档学生锁定：休学/毕业/转学状态不可编辑、不可再变更状态
+- 审计日志系统：AuditLog 实体 + AuditLogService(log/query) + AuditLogController + 前端审计日志页面
+- 审计日志集成到 org/alert/interview 三模块的关键操作
+- 年级班级合并管理页面（GradeClassManage）：左侧年级列表 + 右侧班级列表
+- 学生管理页面状态中文标签（在读/休学/毕业/转学）+ 归档锁定图标
+- 侧边栏新增「年级班级」「学生管理」「审计日志」独立入口
+
+### Changed
+- 前端路由：TeacherLayout 移除，所有非学生角色统一使用 AdminLayout
+- SettingsPage：移除班级管理 tab（已独立为侧边栏入口）
+- 审计拦截器和完整性服务字段更新：operatorId/operatorName/entityType/entityId
+- 842 单元测试全部通过
+
 ## [0.41.2] - 2026-04-25
 ### Fixed
 - 模板管理页面"上传文件"按钮不可见：将 Ant Design `<Upload>` 组件替换为隐藏 `<input type="file">` + 可见按钮

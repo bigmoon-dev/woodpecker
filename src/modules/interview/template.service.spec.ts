@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, ConflictException } from '@nestjs/common';
 import { TemplateService } from './template.service';
 import { InterviewTemplate } from '../../entities/interview/interview-template.entity';
+import { Interview } from '../../entities/interview/interview.entity';
 
 describe('TemplateService', () => {
   let service: TemplateService;
@@ -16,15 +17,23 @@ describe('TemplateService', () => {
     save: jest.fn((d) => Promise.resolve({ ...d, id: d.id || 't1' })),
     remove: jest.fn(),
   };
+  const mockInterviewRepo = {
+    count: jest.fn().mockResolvedValue(0),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    mockInterviewRepo.count.mockResolvedValue(0);
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TemplateService,
         {
           provide: getRepositoryToken(InterviewTemplate),
           useValue: mockTemplateRepo,
+        },
+        {
+          provide: getRepositoryToken(Interview),
+          useValue: mockInterviewRepo,
         },
       ],
     }).compile();
@@ -116,6 +125,13 @@ describe('TemplateService', () => {
       await expect(service.delete('missing')).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('should throw ConflictException when template has interview references', async () => {
+      mockTemplateRepo.findOne.mockResolvedValue({ id: 't1' });
+      mockInterviewRepo.count.mockResolvedValue(3);
+
+      await expect(service.delete('t1')).rejects.toThrow(ConflictException);
     });
   });
 });

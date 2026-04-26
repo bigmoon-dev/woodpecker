@@ -10,28 +10,31 @@ export class AuditLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid', nullable: true })
-  userId: string | null;
+  @Column({ type: 'uuid' })
+  operatorId: string | null;
 
-  @Column({ length: 255, default: '' })
+  @Column({ length: 100 })
+  operatorName: string;
+
+  @Column({ length: 100 })
   action: string;
 
   @Column({ length: 50 })
-  resourceType: string;
+  entityType: string;
 
   @Column({ type: 'uuid', nullable: true })
-  resourceId: string | null;
+  entityId: string | null;
 
   @Column({ type: 'jsonb', nullable: true })
-  detail: Record<string, any>;
+  changes: Record<string, { before: unknown; after: unknown }> | null;
 
-  @Column({ type: 'varchar', length: 45, nullable: true })
-  ip: string;
+  @Column({ length: 45, nullable: true })
+  ip: string | null;
 
-  @Column({ type: 'varchar', length: 500, nullable: true })
-  userAgent: string;
+  @Column({ length: 500, nullable: true })
+  userAgent: string | null;
 
-  @Column({ type: 'varchar', length: 128, nullable: true })
+  @Column({ length: 128, nullable: true })
   integrityHash: string | null;
 
   @CreateDateColumn()

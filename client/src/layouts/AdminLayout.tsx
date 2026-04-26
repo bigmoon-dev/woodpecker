@@ -31,7 +31,10 @@ const menuRoutes = [
       { path: '/admin/interviews/followup-manage', name: '随访管理' },
     ],
   },
+  { path: '/admin/grades', name: '年级班级' },
+  { path: '/admin/students', name: '学生管理' },
   { path: '/admin/settings', name: '系统设置' },
+  { path: '/admin/audit-logs', name: '审计日志' },
   { path: '/admin/help', name: '使用帮助' },
 ];
 

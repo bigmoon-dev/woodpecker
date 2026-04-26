@@ -15,6 +15,7 @@ import { User } from '../../entities/auth/user.entity';
 import { Role } from '../../entities/auth/role.entity';
 import { EncryptionService } from '../core/encryption.service';
 import { DataScopeFilter, DataScope } from '../auth/data-scope-filter';
+import { AuditLogService } from '../audit/audit-log.service';
 import {
   RISK_LEVELS,
   INTERVIEW_STATUSES,
@@ -42,9 +43,10 @@ export class InterviewService {
     private roleRepo: Repository<Role>,
     private encryptionService: EncryptionService,
     private dataScopeFilter: DataScopeFilter,
+    private auditLogService: AuditLogService,
   ) {}
 
-  async create(dto: any): Promise<Interview> {
+  async create(dto: any, operatorId?: string): Promise<Interview> {
     const data: Partial<Interview> = { ...dto };
     if (dto.riskLevel && !RISK_LEVELS.includes(dto.riskLevel as RiskLevel)) {
       throw new BadRequestException(
@@ -82,6 +84,18 @@ export class InterviewService {
         .andWhere('interviewId IS NULL')
         .andWhere('completed = false')
         .execute()
+        .catch(() => {});
+    }
+
+    if (operatorId) {
+      await this.auditLogService
+        .log({
+          operatorId,
+          operatorName: operatorId,
+          action: 'interview.create',
+          entityType: 'interview',
+          entityId: saved.id,
+        })
         .catch(() => {});
     }
 
@@ -190,7 +204,7 @@ export class InterviewService {
     return interview;
   }
 
-  async update(id: string, dto: any): Promise<Interview> {
+  async update(id: string, dto: any, operatorId?: string): Promise<Interview> {
     const interview = await this.interviewRepo.findOne({ where: { id } });
     if (!interview) throw new NotFoundException(`Interview ${id} not found`);
 
@@ -214,7 +228,19 @@ export class InterviewService {
     }
 
     Object.assign(interview, data);
-    return this.interviewRepo.save(interview);
+    const saved = await this.interviewRepo.save(interview);
+    if (operatorId) {
+      await this.auditLogService
+        .log({
+          operatorId,
+          operatorName: operatorId,
+          action: 'interview.update',
+          entityType: 'interview',
+          entityId: id,
+        })
+        .catch(() => {});
+    }
+    return saved;
   }
 
   async updateStatus(id: string, newStatus: string): Promise<Interview> {
@@ -236,12 +262,6 @@ export class InterviewService {
 
     interview.status = newStatus;
     return this.interviewRepo.save(interview);
-  }
-
-  async delete(id: string): Promise<void> {
-    const interview = await this.interviewRepo.findOne({ where: { id } });
-    if (!interview) throw new NotFoundException(`Interview ${id} not found`);
-    await this.interviewRepo.remove(interview);
   }
 
   async addFile(

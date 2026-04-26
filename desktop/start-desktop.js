@@ -346,7 +346,6 @@ async function doSeed(attempt) {
 
     const users = [
       { username: 'admin', password: '$2b$10$6fpCy6AzEnC0frnktI0HS./nAmn1OAPWxn/q7593h8w92LI83T8OS', displayName: '系统管理员' },
-      { username: '张毛毛', password: '$2b$10$6AENzM1tdUjK1JwFcUpvbOloyn9tPKpFscWoh/L22mIGqYkcWtzDy', displayName: '张毛毛' },
     ];
     const userIds = {};
     for (const u of users) {
@@ -368,10 +367,10 @@ async function doSeed(attempt) {
         [userIds['admin'], roleIds['admin']]
       );
     }
-    if (userIds['张毛毛'] && roleIds['psychologist']) {
+    if (userIds['admin'] && roleIds['psychologist']) {
       await client.query(
         `INSERT INTO "user_roles" ("userId", "roleId") VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-        [userIds['张毛毛'], roleIds['psychologist']]
+        [userIds['admin'], roleIds['psychologist']]
       );
     }
 
@@ -693,8 +692,7 @@ async function main() {
     console.log('║          ✅ 启动成功！                    ║');
     console.log('╠══════════════════════════════════════════╣');
     console.log(`║  访问地址: ${appUrl.padEnd(28)}║`);
-    console.log('║  管理员: admin / admin123                ║');
-    console.log('║  心理老师: 张毛毛 / Abc12345              ║');
+    console.log('║  请使用管理员账号登录                     ║');
     console.log('║  关闭此窗口将停止服务                     ║');
     console.log('╚══════════════════════════════════════════╝');
     console.log('');
@@ -702,8 +700,7 @@ async function main() {
     console.log('');
     console.log('  ⚠️  应用可能未完全启动');
     console.log(`  请手动访问: ${appUrl}`);
-    console.log('  管理员: admin / admin123');
-    console.log('  心理老师: 张毛毛 / Abc12345');
+    console.log('  请使用管理员账号登录');
     console.log('');
   }
 

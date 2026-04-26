@@ -19,9 +19,8 @@ export default function Login() {
       const payload = parseJwtPayload(res.accessToken);
       setRoles(payload.roles || []);
       const roles = payload.roles || [];
-      if (roles.includes('admin')) navigate('/admin');
-      else if (roles.includes('psychologist') || roles.includes('teacher'))
-        navigate('/teacher');
+      if (roles.includes('admin') || roles.includes('psychologist') || roles.includes('teacher'))
+        navigate('/admin');
       else navigate('/student');
     } catch (err: any) {
       console.error('Login error:', err);
