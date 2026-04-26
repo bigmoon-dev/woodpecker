@@ -538,6 +538,239 @@ describe('Black-box E2E — Isolated Test DB', () => {
       expect(e2eNames).toEqual([]);
     });
   });
+
+  describe('DIR-2: Grade/Class/Student lifecycle + status management', () => {
+    let gradeId: string;
+    let classId: string;
+    let studentId: string;
+
+    it('creates a grade', async () => {
+      const res = await request(ctx.server)
+        .post('/api/admin/grades')
+        .set(authHeader(accessToken))
+        .send({ name: 'E2E测试年级', year: '2026' })
+        .expect(201);
+      gradeId = res.body.id;
+      expect(gradeId).toBeDefined();
+    });
+
+    it('lists grades and finds created', async () => {
+      const res = await request(ctx.server)
+        .get('/api/admin/grades')
+        .set(authHeader(accessToken))
+        .expect(200);
+      const found = (res.body.data || res.body).some((g: any) => g.id === gradeId);
+      expect(found).toBe(true);
+    });
+
+    it('archives grade via PATCH status', async () => {
+      const res = await request(ctx.server)
+        .patch(`/api/admin/grades/${gradeId}/status`)
+        .set(authHeader(accessToken))
+        .send({ status: 'archived' })
+        .expect(200);
+      expect(res.body.status).toBe('archived');
+    });
+
+    it('creates a class under a new grade', async () => {
+      const gradeRes = await request(ctx.server)
+        .post('/api/admin/grades')
+        .set(authHeader(accessToken))
+        .send({ name: 'E2E测试年级2' })
+        .expect(201);
+      const gid = gradeRes.body.id;
+
+      const res = await request(ctx.server)
+        .post('/api/admin/classes')
+        .set(authHeader(accessToken))
+        .send({ name: 'E2E测试班', gradeId: gid })
+        .expect(201);
+      classId = res.body.id;
+      expect(classId).toBeDefined();
+    });
+
+    it('archives class via PATCH status', async () => {
+      const res = await request(ctx.server)
+        .patch(`/api/admin/classes/${classId}/status`)
+        .set(authHeader(accessToken))
+        .send({ status: 'archived' })
+        .expect(200);
+      expect(res.body.status).toBe('archived');
+    });
+
+    it('creates a student', async () => {
+      const gradeRes = await request(ctx.server)
+        .post('/api/admin/grades')
+        .set(authHeader(accessToken))
+        .send({ name: 'E2E学生年级' })
+        .expect(201);
+      const classRes = await request(ctx.server)
+        .post('/api/admin/classes')
+        .set(authHeader(accessToken))
+        .send({ name: 'E2E学生班', gradeId: gradeRes.body.id })
+        .expect(201);
+
+      const res = await request(ctx.server)
+        .post('/api/admin/students')
+        .set(authHeader(accessToken))
+        .send({
+          name: 'E2E测试学生',
+          studentNumber: `E2E${Date.now()}`,
+          classId: classRes.body.id,
+        })
+        .expect(201);
+      studentId = res.body.id;
+      expect(studentId).toBeDefined();
+    });
+
+    it('student list returns status field', async () => {
+      const res = await request(ctx.server)
+        .get('/api/admin/students')
+        .set(authHeader(accessToken))
+        .expect(200);
+      const student = (res.body.data || res.body).find((s: any) => s.id === studentId);
+      expect(student).toBeDefined();
+      expect(student.status).toBe('active');
+    });
+
+    it('changes student status to graduated', async () => {
+      const res = await request(ctx.server)
+        .patch(`/api/admin/students/${studentId}/status`)
+        .set(authHeader(accessToken))
+        .send({ status: 'graduated' })
+        .expect(200);
+      expect(res.body.status).toBe('graduated');
+    });
+
+    it('archived student cannot be edited (PUT returns 400)', async () => {
+      await request(ctx.server)
+        .put(`/api/admin/students/${studentId}`)
+        .set(authHeader(accessToken))
+        .send({ gender: 'M' })
+        .expect(400);
+    });
+
+    it('archived student cannot change status again (PATCH returns 400)', async () => {
+      await request(ctx.server)
+        .patch(`/api/admin/students/${studentId}/status`)
+        .set(authHeader(accessToken))
+        .send({ status: 'suspended' })
+        .expect(400);
+    });
+
+    it('DELETE grade returns 404 (endpoint removed)', async () => {
+      await request(ctx.server)
+        .delete('/api/admin/grades/some-id')
+        .set(authHeader(accessToken))
+        .expect(404);
+    });
+
+    it('DELETE class returns 404 (endpoint removed)', async () => {
+      await request(ctx.server)
+        .delete('/api/admin/classes/some-id')
+        .set(authHeader(accessToken))
+        .expect(404);
+    });
+
+    it('DELETE student returns 404 (endpoint removed)', async () => {
+      await request(ctx.server)
+        .delete('/api/admin/students/some-id')
+        .set(authHeader(accessToken))
+        .expect(404);
+    });
+  });
+
+  describe('DIR-3: Interview protection', () => {
+    it('DELETE /interviews/:id returns 404 (endpoint removed)', async () => {
+      await request(ctx.server)
+        .delete('/api/interviews/non-existent-id')
+        .set(authHeader(accessToken))
+        .expect(404);
+    });
+
+    it('template delete returns 409 when referenced by interview', async () => {
+      const tmplRes = await request(ctx.server)
+        .post('/api/interviews/templates')
+        .set(authHeader(accessToken))
+        .send({
+          name: 'E2E RefCheck Template',
+          description: 'ref check',
+          fields: [{ key: 'note', label: 'Note' }],
+        })
+        .expect(201);
+      const tmplId = tmplRes.body.id;
+
+      const gradeRes = await request(ctx.server)
+        .post('/api/admin/grades')
+        .set(authHeader(accessToken))
+        .send({ name: 'E2E RefGrade' })
+        .expect(201);
+      const classRes = await request(ctx.server)
+        .post('/api/admin/classes')
+        .set(authHeader(accessToken))
+        .send({ name: 'E2E RefClass', gradeId: gradeRes.body.id })
+        .expect(201);
+      const stuRes = await request(ctx.server)
+        .post('/api/admin/students')
+        .set(authHeader(accessToken))
+        .send({
+          name: 'E2E RefStudent',
+          studentNumber: `REF${Date.now()}`,
+          classId: classRes.body.id,
+        })
+        .expect(201);
+
+      const meRes = await request(ctx.server)
+        .get('/api/auth/me')
+        .set(authHeader(accessToken))
+        .expect(200);
+      const adminUserId = meRes.body.id;
+
+      await request(ctx.server)
+        .post('/api/interviews')
+        .set(authHeader(accessToken))
+        .send({
+          studentId: stuRes.body.userId || stuRes.body.id,
+          psychologistId: adminUserId,
+          interviewDate: new Date().toISOString(),
+          templateId: tmplId,
+          content: 'E2E interview content',
+        })
+        .expect(201);
+
+      await request(ctx.server)
+        .delete(`/api/interviews/templates/${tmplId}`)
+        .set(authHeader(accessToken))
+        .expect(409);
+    });
+  });
+
+  describe('DIR-5: Audit log query', () => {
+    it('GET /admin/audit-logs returns paginated data', async () => {
+      const res = await request(ctx.server)
+        .get('/api/admin/audit-logs')
+        .set(authHeader(accessToken))
+        .expect(200);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(typeof res.body.total).toBe('number');
+    });
+
+    it('GET /admin/audit-logs supports entityType filter', async () => {
+      const res = await request(ctx.server)
+        .get('/api/admin/audit-logs?entityType=student')
+        .set(authHeader(accessToken))
+        .expect(200);
+      expect(Array.isArray(res.body.data)).toBe(true);
+    });
+
+    it('GET /admin/audit-logs supports pagination', async () => {
+      const res = await request(ctx.server)
+        .get('/api/admin/audit-logs?page=1&limit=5')
+        .set(authHeader(accessToken))
+        .expect(200);
+      expect(res.body.data.length).toBeLessThanOrEqual(5);
+    });
+  });
 });
 
 function createMinimalDocx(): Buffer {

@@ -44,13 +44,13 @@ export class AuditInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap(() => {
         const log = this.auditRepo.create({
-          operatorId: user?.id || null,
+          operatorId: user?.id || undefined,
           operatorName: user?.displayName || 'anonymous',
           action: `${method} ${url}`,
           entityType: this.extractResource(url),
-          entityId: this.extractId(url),
+          entityId: this.extractId(url) || undefined,
           ip: request.ip,
-          userAgent: request.headers['user-agent'],
+          userAgent: (request.headers['user-agent'] as string) || undefined,
         });
         log.integrityHash = this.integrityService.computeHash(
           log,

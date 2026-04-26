@@ -102,11 +102,11 @@ describe('AuditInterceptor', () => {
         complete: () => {
           expect(auditRepo.create).toHaveBeenCalledWith(
             expect.objectContaining({
-              operatorId: null,
+              operatorId: undefined,
               operatorName: 'anonymous',
               action: 'GET /api/auth/login',
               entityType: 'auth',
-              entityId: null,
+              entityId: undefined,
             }),
           );
           done();
@@ -199,7 +199,7 @@ describe('AuditInterceptor', () => {
         complete: () => {
           expect(auditRepo.create).toHaveBeenCalledWith(
             expect.objectContaining({
-              entityId: null,
+              entityId: undefined,
             }),
           );
           done();

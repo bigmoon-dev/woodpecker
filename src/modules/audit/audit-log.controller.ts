@@ -5,7 +5,7 @@ import { AuditLogService } from './audit-log.service';
 
 @UseGuards(JwtAuthGuard, RbacGuard)
 @SetMetadata(REQUIRE_PERMISSION, ['admin:all'])
-@Controller('admin/audit-logs')
+@Controller('api/admin/audit-logs')
 export class AuditLogController {
   constructor(private auditLogService: AuditLogService) {}
 

@@ -46,6 +46,7 @@ export default async function () {
     entities: entityClasses,
   });
   await syncDs.initialize();
+  await syncDs.query(`CREATE EXTENSION IF NOT EXISTS pgcrypto`);
   await syncDs.synchronize();
   console.log('[E2E Setup] Schema synchronized');
 

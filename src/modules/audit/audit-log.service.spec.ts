@@ -77,9 +77,9 @@ describe('AuditLogService', () => {
 
       expect(auditRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          entityId: null,
-          changes: null,
-          ip: null,
+          entityId: undefined,
+          changes: undefined,
+          ip: undefined,
         }),
       );
       expect(result).toBeDefined();

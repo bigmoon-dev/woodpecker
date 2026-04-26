@@ -102,7 +102,7 @@ describe('Audit Security', () => {
       complete: () => {
         const logged = auditRepo.create.mock.calls[0][0];
         expect(logged.action).toBe(`GET ${maliciousUrl}`);
-        expect(logged.entityId).toBeNull();
+        expect(logged.entityId).toBeUndefined();
         expect(auditRepo.save).toHaveBeenCalledTimes(1);
         done();
       },
@@ -152,7 +152,7 @@ describe('Audit Security', () => {
     interceptor.intercept(ctx(req), handler(of('ok'))).subscribe({
       complete: () => {
         const logged = auditRepo.create.mock.calls[0][0];
-        expect(logged.operatorId).toBeNull();
+        expect(logged.operatorId).toBeUndefined();
         expect(logged.operatorName).toBe('anonymous');
         done();
       },
@@ -208,7 +208,7 @@ describe('Audit Security', () => {
       operatorId: 'u1',
       action: 'POST /api/scales',
       entityType: 'scales',
-      entityId: null,
+      entityId: undefined,
       ip: '127.0.0.1',
       userAgent: 'Jest',
       createdAt: new Date(),

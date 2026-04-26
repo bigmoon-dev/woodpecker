@@ -22,13 +22,13 @@ export class AuditLogService {
 
   async log(entry: AuditLogEntry): Promise<AuditLog> {
     const record = this.auditRepo.create({
-      operatorId: entry.operatorId,
+      operatorId: entry.operatorId || undefined,
       operatorName: entry.operatorName,
       action: entry.action,
       entityType: entry.entityType,
-      entityId: entry.entityId || null,
-      changes: entry.changes || null,
-      ip: entry.ip || null,
+      entityId: entry.entityId || undefined,
+      changes: entry.changes || undefined,
+      ip: entry.ip || undefined,
     });
     return this.auditRepo.save(record);
   }
