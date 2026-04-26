@@ -132,8 +132,8 @@ export default function StudentManage() {
       dataIndex: 'status',
       key: 'status',
       width: 100,
-      render: (status: string) => {
-        const info = STATUS_MAP[status] || { label: status, color: 'default' };
+      render: (_: any, record: any) => {
+        const info = STATUS_MAP[record.status] || { label: record.status, color: 'default' };
         return <Tag color={info.color}>{info.label}</Tag>;
       },
     },

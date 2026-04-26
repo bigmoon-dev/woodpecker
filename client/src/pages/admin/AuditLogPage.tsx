@@ -53,8 +53,8 @@ export default function AuditLogPage() {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 180,
-      render: (val: string) =>
-        val ? new Date(val).toLocaleString('zh-CN') : '-',
+      render: (_: any, record: any) =>
+        record.createdAt ? new Date(record.createdAt).toLocaleString('zh-CN') : '-',
     },
     {
       title: '操作者',
@@ -67,8 +67,8 @@ export default function AuditLogPage() {
       dataIndex: 'action',
       key: 'action',
       width: 180,
-      render: (val: string) => (
-        <Tag color={actionColorMap[val] || 'default'}>{val}</Tag>
+      render: (_: any, record: any) => (
+        <Tag color={actionColorMap[record.action] || 'default'}>{record.action}</Tag>
       ),
     },
     {
@@ -76,7 +76,7 @@ export default function AuditLogPage() {
       dataIndex: 'entityType',
       key: 'entityType',
       width: 100,
-      render: (val: string) => entityLabel[val] || val,
+      render: (_: any, record: any) => entityLabel[record.entityType] || record.entityType,
     },
     {
       title: '目标ID',
@@ -90,11 +90,12 @@ export default function AuditLogPage() {
       dataIndex: 'changes',
       key: 'changes',
       ellipsis: true,
-      render: (val: Record<string, { before: unknown; after: unknown }>) => {
+      render: (_: any, record: any) => {
+        const val = record.changes;
         if (!val) return '-';
         return Object.entries(val)
           .map(
-            ([k, v]) =>
+            ([k, v]: [string, any]) =>
               `${k}: ${JSON.stringify(v.before)} → ${JSON.stringify(v.after)}`,
           )
           .join('; ');

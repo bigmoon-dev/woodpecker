@@ -82,8 +82,8 @@ export default function GradeClassManage() {
       dataIndex: 'status',
       key: 'status',
       width: 80,
-      render: (status: string) =>
-        status === 'archived' ? (
+      render: (_: any, record: any) =>
+        record.status === 'archived' ? (
           <Tag color="default">已归档</Tag>
         ) : (
           <Tag color="green">在读</Tag>
